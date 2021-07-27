@@ -1,0 +1,411 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1540605748791116
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4502222629321126}
+  m_Layer: 0
+  m_Name: SpawnPointPosition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4502222629321126
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1540605748791116}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -9, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4646029531774542}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1553205108944532
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4646029531774542}
+  - component: {fileID: 33305664777723718}
+  - component: {fileID: 23570906407070910}
+  - component: {fileID: 114268195336469576}
+  - component: {fileID: 114535713404190954}
+  - component: {fileID: 114076871044097134}
+  - component: {fileID: 208952467164977128}
+  m_Layer: 0
+  m_Name: Stable
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4646029531774542
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 4502222629321126}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &33305664777723718
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Mesh: {fileID: 4300000, guid: e2d6917236ec84c0899513e454b2eb5e, type: 2}
+--- !u!23 &23570906407070910
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6a5029268f9d5407f85482958f90b471, type: 2}
+  - {fileID: 2100000, guid: a7b2c856521aa42b3a7a9025b3d9b889, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &114268195336469576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06859283699884b77830a1f6f36f46c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildTime: 25
+  isBuilding: 1
+  isArcher: 0
+  isWizzard: 0
+  arrow: {fileID: 0}
+  arrowOffset: {x: 0, y: 0, z: 0}
+  velArrow: 20
+  hasBullets: 0
+  isWorker: 0
+  searchDistance: 30
+  maxAttackers: 50
+  stopDistOut: 2.5
+  critFailedR: 7
+  attackWaiter: 2
+  attackDelay: 1.5
+  damageCoolDownTime: 0.4
+  damageCoolDownMin: 1
+  damageCoolDownMax: 4
+  health: 100
+  maxHealth: 1500
+  selfHealFactor: 1
+  strength: 20
+  defence: 20
+  attackSounds: []
+  deathSounds: []
+  maxDeathCalls: 5
+  rEnclosed: 13.531806
+  unitCenter: {x: 0, y: 0, z: 0}
+  unitSize: 13.5
+  unitName: Stable
+  levelNames:
+  - life points
+  - attack
+  - defence
+  - building
+  - wood cutting
+  - resource collection
+  levelExpTimeGain:
+  - {x: 0, y: 0.5}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.5}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.1}
+  totalLevel: 0
+  maxFailPath: 10
+  maxFakePathCount: 2
+  buildSequenceMeshMode: 1
+  buildSequenceMeshes:
+  - {fileID: 4300000, guid: 3578b0088f5654bd199f487ce3d992c0, type: 2}
+  - {fileID: 4300000, guid: 3260f507782fc43bc9b494721bc32af1, type: 2}
+  - {fileID: 4300000, guid: 499b16b458a3b4fad81715610bd29ac0, type: 2}
+  - {fileID: 4300000, guid: 1c75a2573ca2f47a584c397d4cae33f9, type: 2}
+  - {fileID: 4300000, guid: ba05b7118a3e146dbabe7309c8de3c01, type: 2}
+  - {fileID: 4300000, guid: 52408dded96664cefb01d104c81953fc, type: 2}
+  - {fileID: 4300000, guid: 84471a9d6dc8f4879a49214b690054cb, type: 2}
+  - {fileID: 4300000, guid: 3d5b71836c97f4657a9c0aa090130fc5, type: 2}
+  - {fileID: 4300000, guid: 1c576192770a94db783a9e0176511e6b, type: 2}
+  - {fileID: 4300000, guid: 0e045e9385a3a4b82a052c5524679203, type: 2}
+  - {fileID: 4300000, guid: f96f760d530ec4c4088807d8958babd3, type: 2}
+  - {fileID: 4300000, guid: 50a51f38168f24f05a5d875c86719913, type: 2}
+  - {fileID: 4300000, guid: 0677a70d57fa641dbbb6ac8e903d27d2, type: 2}
+  - {fileID: 4300000, guid: 3688bd3c712e045fba369780d077b3ec, type: 2}
+  - {fileID: 4300000, guid: dc67fdcd895b2410d8b46a7d7b3c3907, type: 2}
+  - {fileID: 4300000, guid: 40b4fd13477b440998f2b3ffe4ec8ca9, type: 2}
+  - {fileID: 4300000, guid: 552733373554543d88078222295408b1, type: 2}
+  - {fileID: 4300000, guid: 5bf3d998eeaea4e7f90951294c4bf43c, type: 2}
+  - {fileID: 4300000, guid: fbfdda933398c4661b573dd13db684d1, type: 2}
+  - {fileID: 4300000, guid: ee64faa6cf7f84d7e80d2d4bcb8cefa2, type: 2}
+  - {fileID: 4300000, guid: e2d6917236ec84c0899513e454b2eb5e, type: 2}
+  buildSequencePrefabs: []
+  destroySequenceMeshMode: 1
+  destroySequenceMeshes:
+  - {fileID: 4300000, guid: e2d6917236ec84c0899513e454b2eb5e, type: 2}
+  - {fileID: 4300000, guid: 48b34c7deabd247088bc88ab4088e35f, type: 2}
+  - {fileID: 4300000, guid: 087e18de8c4d545369c17623cacc2698, type: 2}
+  - {fileID: 4300000, guid: 865d93292ffdb4bf5bff3ac893d47edf, type: 2}
+  - {fileID: 4300000, guid: ea61fbad72eb74aec89ed008c6e5796f, type: 2}
+  - {fileID: 4300000, guid: bc9c01bd6c3bf41e1ae57225a6941800, type: 2}
+  - {fileID: 4300000, guid: 519d3e81cd03f40dea23741e96311c7d, type: 2}
+  - {fileID: 4300000, guid: fb2b6186611114719b0acd6c526eee2a, type: 2}
+  - {fileID: 4300000, guid: 42a5fee9ee64c46c484e055df59cfa17, type: 2}
+  - {fileID: 4300000, guid: 4a5811912f9364f4a999c112ee7b2910, type: 2}
+  - {fileID: 4300000, guid: d101c135312cb484db0f1236320904ee, type: 2}
+  - {fileID: 4300000, guid: 883d6f007118849b6970fc8c06aca981, type: 2}
+  - {fileID: 4300000, guid: b284f828358a64861b95ee384b37fbf4, type: 2}
+  - {fileID: 4300000, guid: 4744915681222407ca3c29583ba9a003, type: 2}
+  - {fileID: 4300000, guid: b128f23734cc1466ab15fffe60982eb1, type: 2}
+  - {fileID: 4300000, guid: b333a74e538764234b52590d9e15eadc, type: 2}
+  - {fileID: 4300000, guid: 8a707a2b9591a40e78bc9372a1e2d556, type: 2}
+  - {fileID: 4300000, guid: 51cf90e4ffd0143fc8631081afdd3358, type: 2}
+  - {fileID: 4300000, guid: 31b26b91e760e4af88886c14a6ab4bec, type: 2}
+  - {fileID: 4300000, guid: 42422dc019f514d7e9ca14ed5d99a9c2, type: 2}
+  - {fileID: 4300000, guid: c99bbeeb57bf44ca8a22912f310202d5, type: 2}
+  destroySequencePrefabs: []
+  smoke: {fileID: 0}
+  smokeMinUpdateTime: 3
+  smokeMaxUpdateTime: 9
+  costs:
+  - name: Iron
+    amount: 50
+  - name: Gold
+    amount: 80
+  - name: Lumber
+    amount: 100
+  - name: Population
+    amount: 6
+  buildSequenceMeshesPath: RTSToolkit/Models/Buildings/Stable/
+  destroySequenceMeshesPath: RTSToolkit/Models/Buildings/Stable/
+--- !u!114 &114535713404190954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd24dcf048894015b14cde28a8db84b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitParsType: {fileID: 0}
+  rtsUnitId: 7
+  isBuildFinished: 0
+  isMovable: 0
+  onManualControl: 0
+  militaryMode: 0
+  wanderingMode: 0
+  sqrSearchDistance: 900
+  strictApproachMode: 0
+  isAttackable: 1
+  isDying: 0
+  isSinking: 0
+  velocityVector: {x: 0, y: 0, z: 0}
+  lastPosition: {x: 0, y: 0, z: 0}
+  thisNMA: {fileID: 0}
+  thisNMO: {fileID: 208952467164977128}
+  thisUA: {fileID: 0}
+  thisSpawn: {fileID: 0}
+  agentPars: {fileID: 0}
+  targetUP: {fileID: 0}
+  targetPos: {x: 0, y: 0, z: 0}
+  attackers: []
+  prevR: 0
+  failedR: 0
+  timeMark: -100
+  health: 100
+  maxHealth: 1500
+  selfHealFactor: 1
+  lastDamageTakenTime: -1000
+  strength: 20
+  defence: 20
+  deathCalls: 0
+  nation: 0
+  nationName: 
+  isSelected: 0
+  isMovingMC: 0
+  prevDist: 0
+  failedDist: 0
+  manualDestination: {x: 0, y: 0, z: 0}
+  guardingPosition: {x: 0, y: 0, z: 0}
+  guardResetCount: -1
+  rEnclosed: 13.531806
+  collectionUnit: {fileID: 0}
+  chopTreePhase: -1
+  collectionTimeSpend: 0
+  resourcePointObject:
+    go: {fileID: 0}
+    position: {x: 0, y: 0, z: 0}
+    resourceType: 0
+    resourceAmount: 0
+    maxResourceAmount: 0
+    terrain: {fileID: 0}
+    indexOnTerrain: 0
+    tile:
+      x: 0
+      z: 0
+    treeType: 0
+    minNeighbourDist: 0
+    collectionRtsUnitId: -1
+    isAlive: 1
+    primaryFire: {fileID: 0}
+    fires: []
+    linkedUnits: []
+  deliveryPointId: -1
+  resourceType: -1
+  resourceAmount: 0
+  collectionOrDeliveryPoint: {fileID: 0}
+  unitsGroup:
+    members: []
+    mode: 0
+    formationMode: 0
+    journeyMode: 0
+  formation:
+    units: []
+    size: 0
+    positions: []
+    formationMask: {fileID: 0}
+    strictMode: 0
+  levelExp: []
+  levelValues: 
+  totalLevel: 0
+  failPath: 0
+  remainingPathDistance: 1e+12
+  fakePathMode: 0
+  fakePathCount: 0
+  restoreTruePath: {x: 0, y: 0, z: 0}
+  um_staticPosition: {x: 0, y: 0, z: 0}
+  um_previousPosition: {x: 0, y: 0, z: 0}
+  um_completionMark: 0
+  um_complete: 0
+  um_stopDistance: 0
+  um_animationOnMove: 
+  um_animationOnComplete: 
+  hasPath: 0
+  um_isOnMilitaryAvoiders: 0
+  isWandering: 0
+  lockForestSpeedChanges: 0
+  networkUnique: {fileID: 0}
+  primaryFire: {fileID: 0}
+  fires: []
+  mf: {fileID: 0}
+  isRestoring: 0
+  isBuildingGrowing: 0
+  smoke: {fileID: 0}
+  meshRenderer: {fileID: 0}
+  attackDelayCorPass: 1
+  isAttackDelayRunning: 0
+  attackDelayStartTime: 0
+--- !u!114 &114076871044097134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fdfd1dece08342b395fd0da6e040bdf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  model: {fileID: 0}
+  readynow: 1
+  timestep: 0.5
+  count: 0
+  numberOfObjects: 0
+  formationSize: 1
+  size: 1
+  progress_loc: 0
+  progress_gl: 0
+  enoughResources: 1
+  nation: 0
+  nationName: 
+  addToBS: 1
+  isSpawning: 0
+  useAutoRespawn: 0
+  autoRespawnThreshold: 50
+  isManualPosition: 0
+  manualPosition: []
+  manualRotation: []
+  thisPars: {fileID: 114535713404190954}
+  thisNationAI: {fileID: 0}
+  nationPars: {fileID: 0}
+  spawnPointPositionTransform: {fileID: 4502222629321126}
+--- !u!208 &208952467164977128
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1553205108944532}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 8.315001, y: 4, z: 10.681001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.35700002, y: 4, z: 0}
+  m_TimeToStationary: 0.5

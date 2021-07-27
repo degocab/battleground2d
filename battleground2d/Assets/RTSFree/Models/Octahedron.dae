@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset><contributor><author></author><authoring_tool>FBX COLLADA exporter</authoring_tool><comments></comments></contributor><created>2014-05-05T17:39:26Z</created><keywords></keywords><modified>2014-05-05T17:39:26Z</modified><revision></revision><subject></subject><title></title><unit meter="1.000000" name="centimeter"></unit><up_axis>Y_UP</up_axis></asset>
+  <library_geometries>
+    <geometry id="Octahedron-lib" name="OctahedronMesh">
+      <mesh>
+        <source id="Octahedron-POSITION">
+          <float_array id="Octahedron-POSITION-array" count="18">
+0.500000 0.000000 0.000000
+-0.500000 0.000000 0.000000
+0.000000 0.500000 0.000000
+0.000000 -0.500000 0.000000
+0.000000 0.000000 0.500000
+0.000000 0.000000 -0.500000
+</float_array>
+          <technique_common>
+            <accessor source="#Octahedron-POSITION-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Octahedron-Normal0">
+          <float_array id="Octahedron-Normal0-array" count="72">
+0.577350 0.577350 0.577350
+0.577350 0.577350 0.577350
+0.577350 0.577350 0.577350
+0.577350 -0.577350 0.577350
+0.577350 -0.577350 0.577350
+0.577350 -0.577350 0.577350
+0.577350 -0.577350 -0.577350
+0.577350 -0.577350 -0.577350
+0.577350 -0.577350 -0.577350
+0.577350 0.577350 -0.577350
+0.577350 0.577350 -0.577350
+0.577350 0.577350 -0.577350
+-0.577350 0.577350 -0.577350
+-0.577350 0.577350 -0.577350
+-0.577350 0.577350 -0.577350
+-0.577350 -0.577350 -0.577350
+-0.577350 -0.577350 -0.577350
+-0.577350 -0.577350 -0.577350
+-0.577350 -0.577350 0.577350
+-0.577350 -0.577350 0.577350
+-0.577350 -0.577350 0.577350
+-0.577350 0.577350 0.577350
+-0.577350 0.577350 0.577350
+-0.577350 0.577350 0.577350
+</float_array>
+          <technique_common>
+            <accessor source="#Octahedron-Normal0-array" count="24" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Octahedron-UV0">
+          <float_array id="Octahedron-UV0-array" count="48">
+0.875000 1.000000
+0.750000 0.500000
+1.000000 0.500000
+0.750000 0.500000
+0.875000 0.000000
+1.000000 0.500000
+0.125000 0.000000
+0.250000 0.500000
+0.000000 0.500000
+0.250000 0.500000
+0.125000 1.000000
+0.000000 0.500000
+0.375000 1.000000
+0.250000 0.500000
+0.500000 0.500000
+0.250000 0.500000
+0.375000 0.000000
+0.500000 0.500000
+0.625000 0.000000
+0.750000 0.500000
+0.500000 0.500000
+0.750000 0.500000
+0.625000 1.000000
+0.500000 0.500000
+</float_array>
+          <technique_common>
+            <accessor source="#Octahedron-UV0-array" count="24" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Octahedron-VERTEX">
+          <input semantic="POSITION" source="#Octahedron-POSITION"/>
+        </vertices>
+        <polylist count="8"><input semantic="VERTEX" offset="0" source="#Octahedron-VERTEX"/><input semantic="NORMAL" offset="1" source="#Octahedron-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#Octahedron-UV0"/><vcount>3 3 3 3 3 3 3 3 </vcount><p> 2 0 0 4 1 1 0 2 2 4 3 3 3 4 4 0 5 5 3 6 6 5 7 7 0 8 8 5 9 9 2 10 10 0 11 11 2 12 12 5 13 13 1 14 14 5 15 15 3 16 16 1 17 17 3 18 18 4 19 19 1 20 20 4 21 21 2 22 22 1 23 23</p></polylist>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Untitled-Scene" name="Untitled-Scene">
+      <node name="Octahedron" id="Octahedron" sid="Octahedron"><matrix sid="matrix">8.000000 0.000000 0.000000 0.000000 0.000000 8.000000 0.000000 0.000000 0.000000 0.000000 8.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#Octahedron-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node>
+      <extra><technique profile="MAX3D"><frame_rate>29.970030</frame_rate></technique><technique profile="FCOLLADA"><start_time>0.000000</start_time><end_time>6.666667</end_time></technique></extra>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Untitled-Scene"></instance_visual_scene>
+  </scene>
+</COLLADA>

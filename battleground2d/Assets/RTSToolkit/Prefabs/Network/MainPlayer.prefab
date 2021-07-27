@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &175022
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 461916}
+  - component: {fileID: 11481062}
+  - component: {fileID: 114729197138502942}
+  m_Layer: 0
+  m_Name: MainPlayer
+  m_TagString: MainCamera
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &461916
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175022}
+  m_LocalRotation: {x: 0.2650488, y: 0, z: 0, w: 0.964235}
+  m_LocalPosition: {x: 624.25806, y: 34.20386, z: 111.58191}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &11481062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b97b769c7f8b441a98f68b7096365c5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rtsm: {fileID: 0}
+  isHost: -1
+  healths: []
+  clientId: -1
+--- !u!114 &114729197138502942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cf74ade25a63490f95ad49e90eb6e87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _posLerpRate: 1
+  _rotLerpRate: 1
+  _posThreshold: 0.5
+  _posThresholdLodMin: 0.5
+  _posThresholdLodMax: 5
+  _rotThreshold: 1
+  _rotThresholdLodMin: 1
+  _rotThresholdLodMax: 20
+  _syncNavMeshAgent: 0
+  _navMeshDestinationThreshold: 3
+  _posObjectToCameraDistanceMultiplier: 0.01
+  _rotObjectToCameraDistanceMultiplier: 0.05
+  _posUpdateTime: 1
+  _rotUpdateTime: 1
+  _animationNameUpdateTime: 1
+  _navMeshDestinationUpdateTime: 2

@@ -1,0 +1,438 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1438225234235124
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4631332614142552}
+  - component: {fileID: 33565204374787602}
+  - component: {fileID: 23787655888951168}
+  m_Layer: 0
+  m_Name: WindmillSails
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &4631332614142552
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438225234235124}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 9.20619, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4980038231496426}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &33565204374787602
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438225234235124}
+  m_Mesh: {fileID: 4300000, guid: 9cbd2856dd5d449fdbcf5913393fb38f, type: 2}
+--- !u!23 &23787655888951168
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438225234235124}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 1c600be05eb19429e85fc29d1aa62339, type: 2}
+  - {fileID: 2100000, guid: 6a5029268f9d5407f85482958f90b471, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!1 &1459827343062620
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4980038231496426}
+  - component: {fileID: 33778314670131318}
+  - component: {fileID: 23686402529027246}
+  - component: {fileID: 114641989133914352}
+  - component: {fileID: 114577815653625876}
+  - component: {fileID: 114179023724107396}
+  - component: {fileID: 208312655609058526}
+  m_Layer: 0
+  m_Name: Windmill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4980038231496426
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 4631332614142552}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &33778314670131318
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Mesh: {fileID: 4300000, guid: 865704df3f8a943ea9b581e999bef2ae, type: 2}
+--- !u!23 &23686402529027246
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 6a5029268f9d5407f85482958f90b471, type: 2}
+  - {fileID: 2100000, guid: 1c600be05eb19429e85fc29d1aa62339, type: 2}
+  - {fileID: 2100000, guid: a7b2c856521aa42b3a7a9025b3d9b889, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+--- !u!114 &114641989133914352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06859283699884b77830a1f6f36f46c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buildTime: 25
+  isBuilding: 1
+  isArcher: 0
+  isWizzard: 0
+  arrow: {fileID: 0}
+  arrowOffset: {x: 0, y: 0, z: 0}
+  velArrow: 20
+  hasBullets: 0
+  isWorker: 0
+  searchDistance: 30
+  maxAttackers: 50
+  stopDistOut: 2.5
+  critFailedR: 7
+  attackWaiter: 2
+  attackDelay: 1.5
+  damageCoolDownTime: 0.4
+  damageCoolDownMin: 1
+  damageCoolDownMax: 4
+  health: 100
+  maxHealth: 1800
+  selfHealFactor: 1
+  strength: 20
+  defence: 20
+  attackSounds: []
+  deathSounds: []
+  maxDeathCalls: 5
+  rEnclosed: 10
+  unitCenter: {x: 0, y: 0, z: 0}
+  unitSize: 7
+  unitName: Windmill
+  levelNames:
+  - life points
+  - attack
+  - defence
+  - building
+  - wood cutting
+  - resource collection
+  levelExpTimeGain:
+  - {x: 0, y: 0.5}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.5}
+  - {x: 0, y: 0.1}
+  - {x: 0, y: 0.1}
+  totalLevel: 0
+  maxFailPath: 10
+  maxFakePathCount: 2
+  buildSequenceMeshMode: 1
+  buildSequenceMeshes:
+  - {fileID: 4300000, guid: 30c667f82ce8b4ed98ed19c928a01a1f, type: 2}
+  - {fileID: 4300000, guid: 95da808f113234639ad3c7dc7d8d0da7, type: 2}
+  - {fileID: 4300000, guid: a2dbf5fd15d4544018a4fbc064546238, type: 2}
+  - {fileID: 4300000, guid: 87cebeeb2cd8f4b5180580ead1190c44, type: 2}
+  - {fileID: 4300000, guid: e3d0af6d3604f4f52bf91fde5d043e92, type: 2}
+  - {fileID: 4300000, guid: 3a693a9fb159e48fe874e790981ea2aa, type: 2}
+  - {fileID: 4300000, guid: 31303284a9587434f87f05ba389066c6, type: 2}
+  - {fileID: 4300000, guid: 59161d347db724554be8423b6cd0c189, type: 2}
+  - {fileID: 4300000, guid: 43e3dc95261204d9c8be386ccdea0d2f, type: 2}
+  - {fileID: 4300000, guid: 63efe64ad3c9b47b4986a7e461bb3b11, type: 2}
+  - {fileID: 4300000, guid: b13dbfe6bfdd742f09b1b49a8675814a, type: 2}
+  - {fileID: 4300000, guid: 5e9965c61610c46918f1abf621100122, type: 2}
+  - {fileID: 4300000, guid: 66576c25b555d4547bf5daa7413513ee, type: 2}
+  - {fileID: 4300000, guid: 3dd603eb8b60947bba24a7e62427da5f, type: 2}
+  - {fileID: 4300000, guid: a19295ebf2de04db59be4a70ae479280, type: 2}
+  - {fileID: 4300000, guid: 1c66f8f010b604741bd8758efda3ba10, type: 2}
+  - {fileID: 4300000, guid: 190034dda09684e24b6d65b9d267bdee, type: 2}
+  - {fileID: 4300000, guid: 2faa22ef1b7f34af693d4d52a00839c0, type: 2}
+  - {fileID: 4300000, guid: 68f84168bb4444b18b1ba98d964747b4, type: 2}
+  - {fileID: 4300000, guid: 0f47ce9c7d4af4a749445fe5dedaf558, type: 2}
+  - {fileID: 4300000, guid: 865704df3f8a943ea9b581e999bef2ae, type: 2}
+  buildSequencePrefabs: []
+  destroySequenceMeshMode: 1
+  destroySequenceMeshes:
+  - {fileID: 4300000, guid: 865704df3f8a943ea9b581e999bef2ae, type: 2}
+  - {fileID: 4300000, guid: 48699f52216734dd0b603fd5d7ba4cf7, type: 2}
+  - {fileID: 4300000, guid: 8443d3ede7e444fe2a2d45dff5570e0e, type: 2}
+  - {fileID: 4300000, guid: 86ea6e49718df417aaf1a0ad2ffeb536, type: 2}
+  - {fileID: 4300000, guid: c7caf86c2e6d84fe0855a3e22fe0c1ce, type: 2}
+  - {fileID: 4300000, guid: 91030691c7dcb444b983c559299f67ed, type: 2}
+  - {fileID: 4300000, guid: fc4fc4c9bccd2477baad9724839e1fa7, type: 2}
+  - {fileID: 4300000, guid: 158f3723f517c485582f687f063e20d1, type: 2}
+  - {fileID: 4300000, guid: 82eff8728d9244dd6815706e17eb8d6e, type: 2}
+  - {fileID: 4300000, guid: ae8bcf3254cb64f95931e01c35be0bdf, type: 2}
+  - {fileID: 4300000, guid: 85cfbcd38de44404596e368320a70390, type: 2}
+  - {fileID: 4300000, guid: 7afb0932dbf2e4bd7bfccd9163c19c1b, type: 2}
+  - {fileID: 4300000, guid: 997cae41b78e84f9f8e0950610c78dde, type: 2}
+  - {fileID: 4300000, guid: 91af778ac2d9f4ea79fe44bd5aedf7d1, type: 2}
+  - {fileID: 4300000, guid: f96d3e515c20b4290af8b108650dfa5f, type: 2}
+  - {fileID: 4300000, guid: 6ebd10c6bfea04719b7b64967274bd8d, type: 2}
+  - {fileID: 4300000, guid: c464898ad959644d891a8c8ea02b11e0, type: 2}
+  - {fileID: 4300000, guid: 9c639a13f08ee419d823403b43bebba1, type: 2}
+  - {fileID: 4300000, guid: dd80c25d67bf7426ca9a27b117eac0ea, type: 2}
+  - {fileID: 4300000, guid: d0c09bd5fa40f4ba2a9446c2e65227ca, type: 2}
+  - {fileID: 4300000, guid: 5ec974dee6121420980a79a01254df2f, type: 2}
+  destroySequencePrefabs: []
+  smokes: []
+  smokeMinUpdateTime: 3
+  smokeMaxUpdateTime: 9
+  costs:
+  - name: Iron
+    amount: 100
+  - name: Gold
+    amount: 100
+  - name: Lumber
+    amount: 200
+  - name: Population
+    amount: 10
+  buildSequenceMeshesPath: RTSToolkit/Models/Buildings/Windmill/
+  destroySequenceMeshesPath: RTSToolkit/Models/Buildings/Windmill/
+--- !u!114 &114577815653625876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdd24dcf048894015b14cde28a8db84b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitParsType: {fileID: 0}
+  rtsUnitId: 8
+  isBuildFinished: 0
+  isMovable: 0
+  onManualControl: 0
+  militaryMode: 0
+  wanderingMode: 0
+  sqrSearchDistance: 900
+  strictApproachMode: 0
+  isAttackable: 1
+  isDying: 0
+  isSinking: 0
+  velocityVector: {x: 0, y: 0, z: 0}
+  lastPosition: {x: 0, y: 0, z: 0}
+  thisNMA: {fileID: 0}
+  thisNMO: {fileID: 208312655609058526}
+  thisUA: {fileID: 0}
+  thisSpawn: {fileID: 0}
+  agentPars: {fileID: 0}
+  targetUP: {fileID: 0}
+  targetPos: {x: 0, y: 0, z: 0}
+  attackers: []
+  prevR: 0
+  failedR: 0
+  timeMark: -100
+  health: 100
+  maxHealth: 1800
+  selfHealFactor: 1
+  lastDamageTakenTime: -1000
+  strength: 20
+  defence: 20
+  deathCalls: 0
+  nation: 0
+  nationName: 
+  isSelected: 0
+  isMovingMC: 0
+  prevDist: 0
+  failedDist: 0
+  manualDestination: {x: 0, y: 0, z: 0}
+  guardingPosition: {x: 0, y: 0, z: 0}
+  guardResetCount: -1
+  rEnclosed: 10
+  collectionUnit: {fileID: 0}
+  chopTreePhase: -1
+  collectionTimeSpend: 0
+  resourcePointObject:
+    go: {fileID: 0}
+    position: {x: 0, y: 0, z: 0}
+    resourceType: 0
+    resourceAmount: 0
+    maxResourceAmount: 0
+    terrain: {fileID: 0}
+    indexOnTerrain: 0
+    tile:
+      x: 0
+      z: 0
+    treeType: 0
+    minNeighbourDist: 0
+    collectionRtsUnitId: -1
+    isAlive: 1
+    primaryFire: {fileID: 0}
+    fires: []
+    linkedUnits: []
+  deliveryPointId: -1
+  resourceType: -1
+  resourceAmount: 0
+  collectionOrDeliveryPoint: {fileID: 0}
+  unitsGroup:
+    members: []
+    mode: 0
+    formationMode: 0
+    journeyMode: 0
+  formation:
+    units: []
+    size: 0
+    positions: []
+    formationMask: {fileID: 0}
+    strictMode: 0
+  levelExp: []
+  levelValues: 
+  totalLevel: 0
+  failPath: 0
+  remainingPathDistance: 1e+12
+  fakePathMode: 0
+  fakePathCount: 0
+  restoreTruePath: {x: 0, y: 0, z: 0}
+  um_staticPosition: {x: 0, y: 0, z: 0}
+  um_previousPosition: {x: 0, y: 0, z: 0}
+  um_completionMark: 0
+  um_complete: 0
+  um_stopDistance: 0
+  um_animationOnMove: 
+  um_animationOnComplete: 
+  hasPath: 0
+  um_isOnMilitaryAvoiders: 0
+  isWandering: 0
+  lockForestSpeedChanges: 0
+  networkUnique: {fileID: 0}
+  primaryFire: {fileID: 0}
+  fires: []
+  mf: {fileID: 0}
+  isRestoring: 0
+  isBuildingGrowing: 0
+  smokes: []
+  meshRenderer: {fileID: 0}
+  attackDelayCorPass: 1
+  isAttackDelayRunning: 0
+  attackDelayStartTime: 0
+--- !u!114 &114179023724107396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af8eefc64afbf4e33b43dac392d1f2ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotatingPart: {fileID: 1438225234235124}
+  rotationAxis: 2
+  flipRotationDirection: 1
+  useWind: 1
+  allignToWind: 0
+--- !u!208 &208312655609058526
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459827343062620}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.421, y: 5, z: 4.9870005}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 5, z: 0}
+  m_TimeToStationary: 0.5

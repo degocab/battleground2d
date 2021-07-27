@@ -1,0 +1,167 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &138964
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 465646}
+  - component: {fileID: 114339054235648226}
+  - component: {fileID: 11444938}
+  - component: {fileID: 11464542}
+  - component: {fileID: 195345361842431498}
+  m_Layer: 0
+  m_Name: Horse
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &465646
+Transform:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 138964}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &11444938
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 138964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df5b504cf66d545139dc629b2d8f1f7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitAnimationType: {fileID: 0}
+  unitAnimationTypeId: 9
+  repeatableAnimations: 0
+  animName: Idle
+  bilboardDistance: 20
+  m_castShadows: 1
+  m_receiveShadows: 1
+  a_phase: 0
+  currentUnitAnim:
+    animationName: 
+    animationSpeed: 1
+    scaleWithSpeed: 0
+  maxMovementSpeed: 3
+  prevPos: {x: 0, y: 0, z: 0}
+  walkSpeedMultiplier: 1
+  nation: -1
+  isSpriteEnabled: 1
+  pos: {x: 0, y: 0, z: 0}
+  rot: {x: 0, y: 0, z: 0, w: 0}
+  startTime: 0
+  currentAnimationSpeed: 1
+  currentAnimationIndex: -1
+--- !u!114 &11464542
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 138964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b671a3e3b981548bf8642666bec2df0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  position: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0, w: 0}
+  prefabGo: {fileID: 0}
+  animalGoSet: 1
+  onHighPriority: 1
+  cullingDistance: 1000
+  agent: {fileID: 195345361842431498}
+  targetGo: {fileID: 0}
+  timeSinceLastMovement: 1000
+  family: 0
+  height: 0
+  heightRandomness: 0
+  currentHeight: 0
+  movementDestination: {x: 0, y: 0, z: 0}
+  spriteGameObjectModule: {fileID: 11444938}
+  rtsm: {fileID: 0}
+  terrainTile:
+    x: 0
+    z: 0
+  terrain: {fileID: 0}
+--- !u!1001 &100100000
+Prefab:
+  m_ObjectHideFlags: 1
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications: []
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 0}
+  m_RootGameObject: {fileID: 138964}
+  m_IsPrefabAsset: 1
+--- !u!114 &114339054235648226
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 138964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41aa8c2449970402f8d14e537f3248a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spriteSize: 2
+  modelName: Horse
+  offset: {x: 0, y: 0, z: 0}
+  castShadows: 1
+  idleAnimation:
+    animationName: Idle
+    animationSpeed: 1
+    scaleWithSpeed: 0
+  walkAnimation:
+    animationName: Walk
+    animationSpeed: 1
+    scaleWithSpeed: 1
+  runAnimation:
+    animationName: 
+    animationSpeed: 1
+    scaleWithSpeed: 0
+  attackAnimation:
+    animationName: 
+    animationSpeed: 1
+    scaleWithSpeed: 0
+  deathAnimation:
+    animationName: 
+    animationSpeed: 1
+    scaleWithSpeed: 0
+  otherAnimations: []
+  maxMovementSpeed: 3
+--- !u!195 &195345361842431498
+NavMeshAgent:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 138964}
+  m_Enabled: 0
+  m_AgentTypeID: 0
+  m_Radius: 2.1
+  m_Speed: 3
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 4
+  m_BaseOffset: -0.75
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
