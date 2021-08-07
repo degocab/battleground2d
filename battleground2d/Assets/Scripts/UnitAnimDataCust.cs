@@ -27,9 +27,21 @@ public class UnitAnimDataCust
     public static List<Material> RunUpMaterials = Resources.LoadAll("Material/RunUp", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> RunDownMaterials = Resources.LoadAll("Material/RunDown", typeof(Material)).Cast<Material>().ToList();
 
+    public static List<Material> IdleRightMaterials = Resources.LoadAll("Material/IdleRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleLeftMaterials = Resources.LoadAll("Material/IdleLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleUpMaterials = Resources.LoadAll("Material/IdleUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleDownMaterials = Resources.LoadAll("Material/IdleDown", typeof(Material)).Cast<Material>().ToList();
 
 
-
+    public static List<Material> AttackRightMaterials = Resources.LoadAll("Material/AttackRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackLeftMaterials = Resources.LoadAll("Material/AttackLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackUpMaterials = Resources.LoadAll("Material/AttackUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackDownMaterials = Resources.LoadAll("Material/AttackDown", typeof(Material)).Cast<Material>().ToList();
+    
+    public static List<Material> DieRightMaterials = Resources.LoadAll("Material/DieRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieLeftMaterials = Resources.LoadAll("Material/DieLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieUpMaterials = Resources.LoadAll("Material/DieUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieDownMaterials = Resources.LoadAll("Material/DieDown", typeof(Material)).Cast<Material>().ToList();
 
 
     public static void Init()
@@ -50,46 +62,50 @@ public class UnitAnimDataCust
         switch (animType)
         {
             default:
-            //case AnimMaterialTypeEnum.IdleRight:
-            //    return new UnitAnimDataCust()
-            //    {
-            //        CurrentFrame = 0,
-            //        FrameCount = 2,
-            //        FrameRate = .1f,
-            //        VerticalCount = 0,
-            //        HorizontalCount = 0
-            //    };
-            //    break;
-            //case AnimMaterialTypeEnum.IdleLeft:
-            //    return new UnitAnimDataCust()
-            //    {
-            //        CurrentFrame = 0,
-            //        FrameCount = 2,
-            //        FrameRate = .1f,
-            //        VerticalCount = 0,
-            //        HorizontalCount = 2
-            //    };
-            //    break;
-            //case AnimMaterialTypeEnum.IdleUp:
-            //    return new UnitAnimDataCust()
-            //    {
-            //        CurrentFrame = 0,
-            //        FrameCount = 2,
-            //        FrameRate = .1f,
-            //        VerticalCount = 0,
-            //        HorizontalCount = 4
-            //    };
-            //    break;
-            //case AnimMaterialTypeEnum.IdleDown:
-            //    return new UnitAnimDataCust()
-            //    {
-            //        CurrentFrame = 0,
-            //        FrameCount = 2,
-            //        FrameRate = .1f,
-            //        VerticalCount = 0,
-            //        HorizontalCount = 6
-            //    };
-            //    break;
+            case AnimMaterialTypeEnum.IdleRight:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 2,
+                    FrameRate = .1f,
+                    VerticalCount = 0,
+                    HorizontalCount = 0,
+                    Materials = IdleRightMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.IdleLeft:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 2,
+                    FrameRate = .1f,
+                    VerticalCount = 0,
+                    HorizontalCount = 2,
+                    Materials = IdleLeftMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.IdleUp:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 2,
+                    FrameRate = .1f,
+                    VerticalCount = 0,
+                    HorizontalCount = 4,
+                    Materials = IdleUpMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.IdleDown:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 2,
+                    FrameRate = .1f,
+                    VerticalCount = 0,
+                    HorizontalCount = 6,
+                    Materials = IdleDownMaterials
+                };
+                break;
 
 
             //case AnimMaterialTypeEnum.WalkRight:
@@ -183,38 +199,122 @@ public class UnitAnimDataCust
 
 
 
-                //case AnimMaterialTypeEnum.DamagedRight:
-                //    break;
-                //case AnimMaterialTypeEnum.DamagedLeft:
-                //    break;
-                //case AnimMaterialTypeEnum.DamagedUp:
-                //    break;
-                //case AnimMaterialTypeEnum.DamagedDown:
-                //    break;
-                //case AnimMaterialTypeEnum.BlockRight:
-                //    break;
-                //case AnimMaterialTypeEnum.BlockLeft:
-                //    break;
-                //case AnimMaterialTypeEnum.BlockUp:
-                //    break;
-                //case AnimMaterialTypeEnum.BlockDown:
-                //    break;
-                //case AnimMaterialTypeEnum.DefendRight:
-                //    break;
-                //case AnimMaterialTypeEnum.DefendLeft:
-                //    break;
-                //case AnimMaterialTypeEnum.DefendUp:
-                //    break;
-                //case AnimMaterialTypeEnum.DefendDown:
-                //    break;
-                //case AnimMaterialTypeEnum.DieRight:
-                //    break;
-                //case AnimMaterialTypeEnum.DieLeft:
-                //    break;
-                //case AnimMaterialTypeEnum.DieUp:
-                //    break;
-                //case AnimMaterialTypeEnum.DieDown:
-                //    break;
+            //case AnimMaterialTypeEnum.DamagedRight:
+            //    break;
+            //case AnimMaterialTypeEnum.DamagedLeft:
+            //    break;
+            //case AnimMaterialTypeEnum.DamagedUp:
+            //    break;
+            //case AnimMaterialTypeEnum.DamagedDown:
+            //    break;
+            //case AnimMaterialTypeEnum.BlockRight:
+            //    break;
+            //case AnimMaterialTypeEnum.BlockLeft:
+            //    break;
+            //case AnimMaterialTypeEnum.BlockUp:
+            //    break;
+            //case AnimMaterialTypeEnum.BlockDown:
+            //    break;
+            //case AnimMaterialTypeEnum.DefendRight:
+            //    break;
+            //case AnimMaterialTypeEnum.DefendLeft:
+            //    break;
+            //case AnimMaterialTypeEnum.DefendUp:
+            //    break;
+            //case AnimMaterialTypeEnum.DefendDown:
+            //    break;
+            case AnimMaterialTypeEnum.DieRight:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    Materials = DieRightMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.DieLeft:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    Materials = DieRightMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.DieUp:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    Materials = DieRightMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.DieDown:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    Materials = DieRightMaterials
+                };
+                break;
+
+
+
+            case AnimMaterialTypeEnum.AttackRight:
+                //var test =  Resources.LoadAll("Material/AttackRight", typeof(Material)).Cast<Material>().ToList();
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    Materials = AttackRightMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.AttackLeft:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 6,
+                    Materials = AttackLeftMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.AttackUp:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 0,
+                    Materials = AttackUpMaterials
+                };
+                break;
+            case AnimMaterialTypeEnum.AttackDown:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 6,
+                    Materials = AttackDownMaterials
+                };
+                break;
 
         }
     }
@@ -224,20 +324,20 @@ public class UnitAnimDataCust
         switch (baseAnimTypeEnum)
         {
             default:
-            //case BaseAnimMaterialType.Idle:
-            //    switch (animDir)
-            //    {
-            //        default:
-            //        case 1:
-            //            return AnimMaterialTypeEnum.IdleRight;
-            //        case 2:
-            //            return AnimMaterialTypeEnum.IdleLeft;
-            //        case 3:
-            //            return AnimMaterialTypeEnum.IdleUp;
-            //        case 4:
-            //            return AnimMaterialTypeEnum.IdleDown;
-            //    }
-            //    break;
+            case BaseAnimMaterialType.Idle:
+                switch (animDir)
+                {
+                    default:
+                    case 1:
+                        return AnimMaterialTypeEnum.IdleRight;
+                    case 2:
+                        return AnimMaterialTypeEnum.IdleLeft;
+                    case 3:
+                        return AnimMaterialTypeEnum.IdleUp;
+                    case 4:
+                        return AnimMaterialTypeEnum.IdleDown;
+                }
+                break;
             //case BaseAnimMaterialType.Walk:
             //    switch (animDir)
             //    {
@@ -266,62 +366,76 @@ public class UnitAnimDataCust
                         return AnimMaterialTypeEnum.RunDown;
                 }
                 break;
-                //case BaseAnimMaterialType.Damgaged:
-                //    switch (animDir)
-                //    {
-                //        default:
-                //        case 1:
-                //            return AnimMaterialTypeEnum.DamagedRight;
-                //        case 2:
-                //            return AnimMaterialTypeEnum.DamagedLeft;
-                //        case 3:
-                //            return AnimMaterialTypeEnum.DamagedUp;
-                //        case 4:
-                //            return AnimMaterialTypeEnum.DamagedDown;
-                //    }
-                //    break;
-                //case BaseAnimMaterialType.Block:
-                //    switch (animDir)
-                //    {
-                //        default:
-                //        case 1:
-                //            return AnimMaterialTypeEnum.BlockRight;
-                //        case 2:
-                //            return AnimMaterialTypeEnum.BlockLeft;
-                //        case 3:
-                //            return AnimMaterialTypeEnum.BlockUp;
-                //        case 4:
-                //            return AnimMaterialTypeEnum.BlockDown;
-                //    }
-                //    break;
-                //case BaseAnimMaterialType.Defend:
-                //    switch (animDir)
-                //    {
-                //        default:
-                //        case 1:
-                //            return AnimMaterialTypeEnum.DefendRight;
-                //        case 2:
-                //            return AnimMaterialTypeEnum.DefendLeft;
-                //        case 3:
-                //            return AnimMaterialTypeEnum.DefendUp;
-                //        case 4:
-                //            return AnimMaterialTypeEnum.DefendDown;
-                //    }
-                //    break;
-                //case BaseAnimMaterialType.Die:
-                //    switch (animDir)
-                //    {
-                //        default:
-                //        case 1:
-                //            return AnimMaterialTypeEnum.DieRight;
-                //        case 2:
-                //            return AnimMaterialTypeEnum.DieLeft;
-                //        case 3:
-                //            return AnimMaterialTypeEnum.DieUp;
-                //        case 4:
-                //            return AnimMaterialTypeEnum.DieDown;
-                //    }
-                //    break;
+            //case BaseAnimMaterialType.Damgaged:
+            //    switch (animDir)
+            //    {
+            //        default:
+            //        case 1:
+            //            return AnimMaterialTypeEnum.DamagedRight;
+            //        case 2:
+            //            return AnimMaterialTypeEnum.DamagedLeft;
+            //        case 3:
+            //            return AnimMaterialTypeEnum.DamagedUp;
+            //        case 4:
+            //            return AnimMaterialTypeEnum.DamagedDown;
+            //    }
+            //    break;
+            //case BaseAnimMaterialType.Block:
+            //    switch (animDir)
+            //    {
+            //        default:
+            //        case 1:
+            //            return AnimMaterialTypeEnum.BlockRight;
+            //        case 2:
+            //            return AnimMaterialTypeEnum.BlockLeft;
+            //        case 3:
+            //            return AnimMaterialTypeEnum.BlockUp;
+            //        case 4:
+            //            return AnimMaterialTypeEnum.BlockDown;
+            //    }
+            //    break;
+            //case BaseAnimMaterialType.Defend:
+            //    switch (animDir)
+            //    {
+            //        default:
+            //        case 1:
+            //            return AnimMaterialTypeEnum.DefendRight;
+            //        case 2:
+            //            return AnimMaterialTypeEnum.DefendLeft;
+            //        case 3:
+            //            return AnimMaterialTypeEnum.DefendUp;
+            //        case 4:
+            //            return AnimMaterialTypeEnum.DefendDown;
+            //    }
+            //    break;
+            //case BaseAnimMaterialType.Die:
+            //    switch (animDir)
+            //    {
+            //        default:
+            //        case 1:
+            //            return AnimMaterialTypeEnum.DieRight;
+            //        case 2:
+            //            return AnimMaterialTypeEnum.DieLeft;
+            //        case 3:
+            //            return AnimMaterialTypeEnum.DieUp;
+            //        case 4:
+            //            return AnimMaterialTypeEnum.DieDown;
+            //    }
+            //    break;
+            case BaseAnimMaterialType.Attack:
+                switch (animDir)
+                {
+                    default:
+                    case 1:
+                        return AnimMaterialTypeEnum.AttackRight;
+                    case 2:
+                        return AnimMaterialTypeEnum.AttackLeft;
+                    case 3:
+                        return AnimMaterialTypeEnum.AttackUp;
+                    case 4:
+                        return AnimMaterialTypeEnum.AttackDown;
+                }
+                break;
         }
     }
 
@@ -334,15 +448,16 @@ public class UnitAnimDataCust
         Damgaged,
         Block,
         Defend,
-        Die
+        Die,
+        Attack
     }
 
     public enum AnimMaterialTypeEnum
     {
-        //IdleRight,
-        //IdleLeft,
-        //IdleUp,
-        //IdleDown,
+        IdleRight,
+        IdleLeft,
+        IdleUp,
+        IdleDown,
         //WalkRight,
         //WalkLeft,
         //WalkUp,
@@ -350,7 +465,7 @@ public class UnitAnimDataCust
         RunRight,
         RunLeft,
         RunUp,
-        RunDown//,
+        RunDown,
         //DamagedRight,
         //DamagedLeft,
         //DamagedUp,
@@ -363,10 +478,14 @@ public class UnitAnimDataCust
         //DefendLeft,
         //DefendUp,
         //DefendDown,
-        //DieRight,
-        //DieLeft,
-        //DieUp,
-        //DieDown
+        DieRight,
+        DieLeft,
+        DieUp,
+        DieDown,
+        AttackRight,
+        AttackLeft,
+        AttackUp,
+        AttackDown
     }
 
     public static int GetAnimDir(Vector3 dir)
@@ -456,7 +575,7 @@ public struct SpriteSheetAnimationDataCust
     public int frameCount;
     public float frameTimer;
     public float frameTimerMax;
-    
+
     public int activeDir;
     public UnitAnimDataCust.BaseAnimMaterialType activeBaseAnimTypeEnum;
 
@@ -465,7 +584,7 @@ public struct SpriteSheetAnimationDataCust
     public int loopCount;
 
     public List<Material> materials;
-    
+
 
 }
 
@@ -477,8 +596,8 @@ public class UnitAnimationCust
     public static SpriteSheetAnimationDataCust PlayAnimForced(/*ref UnitParsCust unit,*/ UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete)
     {
         //unit.spriteSheetData =
-            
-            return GetSpriteSheetData(baseAnimEnum, animDir, onComplete);
+
+        return GetSpriteSheetData(baseAnimEnum, animDir, onComplete);
     }
 
     private static SpriteSheetAnimationDataCust GetSpriteSheetData(UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete)

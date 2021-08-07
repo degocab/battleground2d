@@ -25,7 +25,7 @@ public class KDTreeCust
     {
         Vector3[] points = new Vector3[pointss.Length + 1];
 
-        points[0] = new Vector3(-999999999999.99f, -999999999999.99f, -999999999999.99f);
+        points[0] = new Vector3(-999999999999.99f, -999999999999.99f, 0f);
 
         for (int i = 1; i < points.Length; i++)
         {

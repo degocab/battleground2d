@@ -7,10 +7,14 @@ public class BattleSystemCust : MonoBehaviour
 
     public List<UnitParsCust> allUnits = new List<UnitParsCust>();
 
+    public List<UnitParsCust> deadUnits = new List<UnitParsCust>();
+
+
 
     //i dont need the sinks
 
     public List<List<UnitParsCust>> targets = new List<List<UnitParsCust>>();
+
     public List<float> targetRefreshTimes = new List<float>();
     public List<KDTreeCust> targetKD = new List<KDTreeCust>();
 
@@ -36,6 +40,11 @@ public class BattleSystemCust : MonoBehaviour
 
     public GameObject objectToSpawn;
     public GameObject objectToSpawn2;
+
+
+    public int unitCount = 1000;
+
+
     void Start()
     {
 
@@ -47,22 +56,24 @@ public class BattleSystemCust : MonoBehaviour
         UnityEngine.AI.NavMesh.pathfindingIterationsPerFrame = 10000;
 
 
-        int unitCount = 4;
 
         for (int i = 0; i < unitCount; i++)
         {
-            Vector2 randPos = Random.insideUnitCircle * 4;
+            Vector2 randPos = new Vector2(Random.Range(-10f, 10f), Random.Range(-10f, 10f));//Random.insideUnitCircle * 10;
             Vector3 pos = new Vector3(randPos.x, randPos.y, 0f);
 
 
             GameObject currentGameObject;
+            bool isEnemy = false;
             if (i % 2 == 0)
             {
                 currentGameObject = objectToSpawn2;
+                isEnemy = true;
             }
             else
             {
                 currentGameObject = objectToSpawn;
+                isEnemy = false;
             }
 
 
@@ -80,11 +91,12 @@ public class BattleSystemCust : MonoBehaviour
                     DiplomacyCust.active.AddNation();
                 }
                 instanceUp.isReady = true;
+                instanceUp.IsEnemy = isEnemy;
                 allUnits.Add(instanceUp);
+                //instanceUp.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, instanceUp.transform.forward, default);
+
             }
         }
-
-
 
         //GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Default");
         //foreach (GameObject go in gameObjects)
@@ -106,8 +118,6 @@ public class BattleSystemCust : MonoBehaviour
         //    }
         //}
 
-
-
     }
 
     void Update()
@@ -128,8 +138,7 @@ public class BattleSystemCust : MonoBehaviour
 
         AttackPhase();
 
-        //SelfHealingPhase(deltaTime); // they might all need this
-
+        SelfHealingPhase(deltaTime);
         DeathPhase();
 
         //SinkPhase(deltaTime); -- not needed
@@ -137,7 +146,7 @@ public class BattleSystemCust : MonoBehaviour
         //ManualMover();
 
         //run sprite animations i guess
-        PrepAnimation();
+        //PrepAnimation();
         PrepSpriteSheetData();
         RenderAnimation();
     }
@@ -151,16 +160,16 @@ public class BattleSystemCust : MonoBehaviour
             for (int i = 0; i < allUnits.Count; i++)
             {
                 //play nimations
-                if (allUnits[i].isApproaching)
+                if (allUnits[i].isApproaching && allUnits[i].transform.hasChanged)
                 {
                     //TODO add walking/run logic
-                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, allUnits[i].transform.forward, default);
+                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, allUnits[i].direction, default);
 
                 }
                 else
                 {
                     //TODO: add idle logic
-                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, allUnits[i].transform.forward, default);
+                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, allUnits[i].direction, default);
 
                 }
             }
@@ -197,6 +206,34 @@ public class BattleSystemCust : MonoBehaviour
                 }
             }
         }
+
+
+        //play dead animations?
+        if (deadUnits.Count > 0)
+        {
+            for (int i = 0; i < deadUnits.Count; i++)
+            {
+                //play nimations
+                if (deadUnits[i].playAnimationCust.forced)
+                {
+                    //TODO add walking/run logic
+                    deadUnits[i].spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref deadUnits[i], */deadUnits[i].playAnimationCust.baseAnimType, deadUnits[i].playAnimationCust.animDir, deadUnits[i].playAnimationCust.onComplete);
+
+                }
+                else
+                {
+                    SpriteSheetAnimationDataCust currSpriteSheetData = deadUnits[i].spriteSheetData;
+                    //TODO: add idle logic
+                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref deadUnits[i], */deadUnits[i].playAnimationCust.baseAnimType, currSpriteSheetData, deadUnits[i].playAnimationCust.animDir, deadUnits[i].playAnimationCust.onComplete);
+
+                    // if changes
+                    if (newSpriteSheetData != null)
+                    {
+                        deadUnits[i].spriteSheetData = newSpriteSheetData.Value;
+                    }
+                }
+            }
+        }
     }
 
     public List<Material> springAttractFrames;
@@ -212,27 +249,36 @@ public class BattleSystemCust : MonoBehaviour
             //Camera camera = Camera.main;
             ////Mesh quadMesh = GameHandler.GetInstance().quadMesh;
             ////Material material = GameHandler.GetInstance().walkingSpriteSheetMaterial;
+            var deltaTime = Time.deltaTime;
+            ///
             for (int i = 0; i < allUnits.Count; i++)
             {
                 MeshRenderer springAttractScreenRend = allUnits[i].springAttractScreenRend;
                 //float springAttractFrameRefTime = allUnits[i].springAttractFrameRefTime;
-                var deltaTime = Time.deltaTime;
                 var spriteSheetAnimationData = allUnits[i].spriteSheetData;
 
 
-                spriteSheetAnimationData.frameTimer -= deltaTime;
-                while (spriteSheetAnimationData.frameTimer < 0)
+                allUnits[i].spriteSheetData.frameTimer -= deltaTime;
+                while (allUnits[i].spriteSheetData.frameTimer < 0)
                 {
-                    spriteSheetAnimationData.frameTimer += .1f;// spriteSheetAnimationData.frameRate;
-                    spriteSheetAnimationData.currentFrame = ((spriteSheetAnimationData.currentFrame + 1) % spriteSheetAnimationData.frameCount);// + spriteSheetAnimationData.horizontalCount;
-
-                    if (spriteSheetAnimationData.currentFrame >= (spriteSheetAnimationData.frameCount))
+                    allUnits[i].spriteSheetData.frameTimer += .1f;// allUnits[i].spriteSheetData.frameRate;
+                    if (allUnits[i].spriteSheetData.frameCount == 6)
                     {
-                        spriteSheetAnimationData.loopCount++;
+
                     }
-                    springAttractFrames = spriteSheetAnimationData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
-                    Material[] newMats = { springAttractFrames[spriteSheetAnimationData.currentFrame] };
-                    springAttractScreenRend.materials = newMats;
+                    allUnits[i].spriteSheetData.currentFrame = ((allUnits[i].spriteSheetData.currentFrame + 1) % allUnits[i].spriteSheetData.frameCount);// + allUnits[i].spriteSheetData.horizontalCount;
+
+                    if (allUnits[i].spriteSheetData.currentFrame >= (allUnits[i].spriteSheetData.frameCount))
+                    {
+                        allUnits[i].spriteSheetData.loopCount++;
+                    }
+                    springAttractFrames = allUnits[i].spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+                    Material[] newMats = { springAttractFrames[allUnits[i].spriteSheetData.currentFrame] };
+                    allUnits[i].springAttractScreenRend.materials = newMats;
+                    if (allUnits[i].IsEnemy)
+                    {
+                        allUnits[i].springAttractScreenRend.materials[0].color = Color.red;
+                    }
                 }
 
 
@@ -241,10 +287,10 @@ public class BattleSystemCust : MonoBehaviour
 
                 //if (Time.time - springAttractFrameRefTime > springAttractFrameTime)
                 //{
-                //    curSpringAttractFrameIndex = (curSpringAttractFrameIndex - 1 + springAttractFrames.Count) % springAttractFrames.Count;
+                //    allUnits[i].curSpringAttractFrameIndex = (allUnits[i].curSpringAttractFrameIndex - 1 + springAttractFrames.Count) % springAttractFrames.Count;
 
-                //    Material[] newMats = { springAttractFrames[curSpringAttractFrameIndex] };
-                //    springAttractScreenRend.materials = newMats;
+                //    Material[] newMats = { springAttractFrames[allUnits[i].curSpringAttractFrameIndex] };
+                //    allUnits[i].springAttractScreenRend.materials = newMats;
 
                 //    springAttractFrameRefTime = Time.time;
                 //}
@@ -271,7 +317,7 @@ public class BattleSystemCust : MonoBehaviour
                 //    materialPropertyBlock
                 //);
             }
-            }
+        }
     }
 
     int iSearchPhase = 0;
@@ -415,7 +461,7 @@ public class BattleSystemCust : MonoBehaviour
     float fApproachPhase = 0f;
 
     // this phase starting attackers to move towards their targets
-    void ApproachPhase()
+    public void ApproachPhase()
     {
         fApproachPhase += allUnits.Count * approachUpdateFraction;
 
@@ -447,13 +493,12 @@ public class BattleSystemCust : MonoBehaviour
 
                     //stop condition for navmesh
 
-
-                    apprNav.stoppingDistance = apprNav.radius / (apprPars.transform.localScale.x) + targNav.radius / (targ.transform.localScale.x);
+                    apprNav.stoppingDistance = .25f;// apprNav.radius / (apprPars.transform.localScale.x) + targNav.radius / (targ.transform.localScale.x);
 
                     // distance between approacher and target
 
                     float rTarget = (apprPars.transform.position - targ.transform.position).magnitude;
-                    float stoppDistance = .25f;// (2f + apprPars.transform.localScale.x * targ.transform.localScale.x * apprNav.stoppingDistance);
+                    float stoppDistance = (apprPars.transform.localScale.x * targ.transform.localScale.x * apprNav.stoppingDistance);
 
                     // counting increased distances (failure to approch) between attacker and target
                     // if counter failedR becomes bigger than critFailedR, preparing for new target search
@@ -484,11 +529,12 @@ public class BattleSystemCust : MonoBehaviour
                         if (rTarget < stoppDistance)
                         {
                             apprNav.SetDestination(apprPars.transform.position);
-
+                            var direction = apprPars.transform.position - apprNav.destination;
+                            apprPars.direction = direction;
                             // pre-setting for attacking
                             apprPars.isApproaching = false;
                             apprPars.isAttacking = true;
-
+                            allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
                         }
                         else
                         {
@@ -500,7 +546,10 @@ public class BattleSystemCust : MonoBehaviour
                                 if ((destination - targ.transform.position).sqrMagnitude > .125f)
                                 {
                                     apprNav.SetDestination(targ.transform.position);
+                                    var direction = apprPars.transform.position - apprNav.destination;
+                                    apprPars.direction = direction;
                                     apprNav.speed = 1f;
+                                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                                 }
                             }
                         }
@@ -514,7 +563,8 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     apprPars.target = null;
                     apprNav.SetDestination(apprPars.transform.position);
-
+                    var direction = apprPars.transform.position - apprNav.destination;
+                    apprPars.direction = direction;
                     apprPars.isApproachable = false;
                     apprPars.isReady = true;
 
@@ -529,7 +579,7 @@ public class BattleSystemCust : MonoBehaviour
 
     // attacking phase set attackers to attack their targets and cause damage when they alreayd approached their targets
 
-    void AttackPhase()
+    public void AttackPhase()
     {
         fAttackPhase += allUnits.Count * attackUpdateFraction;
 
@@ -586,9 +636,20 @@ public class BattleSystemCust : MonoBehaviour
                     float defence = attPars.defence;
 
                     // if attack passes target through target defence, cause damage to target
-                    if (Random.value > (strength / (strength + defence)))
+                    if (Time.time > attPars.nextAttack)
                     {
-                        targPars.health = targPars.health - 2.0f * strength * Random.value;
+                        attPars.nextAttack = Time.time + (attPars.attackRate - attPars.randomAttackRange);
+
+                        if (Random.value > (strength / (strength + defence)))
+                        {
+                            attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
+                            targPars.health = targPars.health - (40f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
+                        }
+                    }
+                    else
+                    {
+                        //defend?
+                        attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, attPars.direction, default);
                     }
                 }
 
@@ -602,9 +663,51 @@ public class BattleSystemCust : MonoBehaviour
     }
 
     // finish later
+
+    int iSelfHealingPhase = 0;
+    float fSelfHealingPhase = 0f;
     void SelfHealingPhase(float deltaTime)
     {
-        throw new System.NotImplementedException();
+        fSelfHealingPhase += allUnits.Count * selfHealUpdateFraction;
+
+        int nToLoop = (int)fSelfHealingPhase;
+        fSelfHealingPhase -= nToLoop;
+        // checking which units are damaged	
+        for (int i = 0; i < nToLoop; i++)
+        {
+            iSelfHealingPhase++;
+
+            if (iSelfHealingPhase >= allUnits.Count)
+            {
+                iSelfHealingPhase = 0;
+            }
+
+            UnitParsCust shealPars = allUnits[iSelfHealingPhase];
+
+            if (shealPars.health < shealPars.maxHealth)
+            {
+                // if unit has less health than 0, preparing it to die
+                if (shealPars.health < 0f)
+                {
+                    shealPars.isHealing = false;
+                    shealPars.isImmune = true;
+                    shealPars.isDying = true;
+                }
+                //// healing unit	
+                //else
+                //{
+                //    shealPars.isHealing = true;
+                //    shealPars.health += shealPars.selfHealFactor * deltaTime / selfHealUpdateFraction;
+
+                //    // if unit health reaches maximum, unset self-healing
+                //    if (shealPars.health >= shealPars.maxHealth)
+                //    {
+                //        shealPars.health = shealPars.maxHealth;
+                //        shealPars.isHealing = false;
+                //    }
+                //}
+            }
+        }
     }
 
     int iDeathPhase = 0;
@@ -634,6 +737,9 @@ public class BattleSystemCust : MonoBehaviour
             if (deadPars.isDying)
             {
 
+                deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
+
+
                 // if unit is dead lon enough, prepare for rotting phase from the unit list
                 // TODO: need to find a way to keep sprite and merge with others to create bigger sprite
                 if (deadPars.deathCalls > deadPars.maxDeathCalls)
@@ -644,6 +750,7 @@ public class BattleSystemCust : MonoBehaviour
                     deadPars.GetComponent<UnityEngine.AI.NavMeshAgent>().enabled = false;
                     //sink.Add(deadPars);
                     allUnits.Remove(deadPars);
+                    deadUnits.Add(deadPars);
 
                     for (int j = 0; j < targetRefreshTimes.Count; j++)
                     {
@@ -653,6 +760,10 @@ public class BattleSystemCust : MonoBehaviour
                 //unsetting unit activity and keep it dying
                 else
                 {
+
+                    deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
+
+
                     deadPars.isMovable = false;
                     deadPars.isReady = false;
                     deadPars.isApproaching = false;
@@ -676,6 +787,8 @@ public class BattleSystemCust : MonoBehaviour
 
                     UnityEngine.AI.NavMeshAgent nma = deadPars.GetComponent<UnityEngine.AI.NavMeshAgent>();
                     nma.SetDestination(deadPars.transform.position);
+                    //var direction = apprPars.transform.position - apprNav.destination;
+                    //apprPars.direction = direction;
                     nma.avoidancePriority = 0;
 
                     deadPars.deathCalls++;

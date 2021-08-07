@@ -6,6 +6,8 @@ using UnityEngine;
 public class UnitParsCust : MonoBehaviour
 {
 
+    public bool IsEnemy { get; set; }
+
     public bool isMovable = true;
 
     public bool isReady = true;
@@ -59,6 +61,13 @@ public class UnitParsCust : MonoBehaviour
 
 
     public PlayAnimationCust playAnimationCust;
+    public Vector3 direction;
+
+
+    public float nextAttack { get; set; }
+    public float randomAttackRange { get; set; }
+
+    public float attackRate { get; set; }
 
     void Start()
     {
@@ -66,10 +75,10 @@ public class UnitParsCust : MonoBehaviour
         {
             currentFrame = UnityEngine.Random.Range(0, 5),
             frameCount = 6,
-            frameTimer = UnityEngine.Random.Range(0f, 1f),
+            frameTimer = 0,// UnityEngine.Random.Range(0f, 1f),
             frameTimerMax = .1f
         };
-
+        playAnimationCust = new PlayAnimationCust();
         UnityEngine.AI.NavMeshAgent nma = GetComponent<UnityEngine.AI.NavMeshAgent>();
 
         if (nma != null)
@@ -81,6 +90,11 @@ public class UnitParsCust : MonoBehaviour
         childSpriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
 
         springAttractScreenRend = this.GetComponent<MeshRenderer>();
+
+        playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Walk, transform.forward, default);
+        randomAttackRange = UnityEngine.Random.Range(0f, 2f);
+        attackRate = 3;
+        nextAttack = 0;
     }
 
     void Update()
