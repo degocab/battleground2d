@@ -5,7 +5,8 @@ using UnityEngine;
 
 public class UnitParsCust : MonoBehaviour
 {
-
+    [SerializeField]
+    public int UniqueID = 0;
     public bool IsEnemy { get; set; }
 
     public bool isMovable = true;
@@ -101,34 +102,34 @@ public class UnitParsCust : MonoBehaviour
     {
 
 
-        if (CheckForChanges())
-        {
-            childTransform.rotation = Quaternion.Euler(0.0f, 0.0f, this.transform.rotation.z * -1.0f);
-            if (isMovable && isApproaching)
-            {
-                //childAnimator.SetFloat("Speed", 1f);
+        //if (CheckForChanges())
+        //{
+            childTransform.rotation = Quaternion.Euler(0.0f, 0.0f,  this.transform.rotation.z * -1.0f);
+        //    if (isMovable && isApproaching)
+        //    {
+        //        //childAnimator.SetFloat("Speed", 1f);
 
-                if (target != null)
-                {
-                    float horizontal = target.transform.position.x - childTransform.position.x;
-                    float vertical = target.transform.position.x - childTransform.position.y;
+        //        if (target != null)
+        //        {
+        //            float horizontal = target.transform.position.x - childTransform.position.x;
+        //            float vertical = target.transform.position.x - childTransform.position.y;
 
-                    //int direction = SetMovementDirection(horizontal, vertical);
+        //            //int direction = SetMovementDirection(horizontal, vertical);
 
 
-                    //childAnimator.SetFloat("Horiztonal", horizontal);
-                    //childAnimator.SetFloat("Vertical", vertical);
-                    //childAnimator.SetInteger("Direction", direction);
+        //            //childAnimator.SetFloat("Horiztonal", horizontal);
+        //            //childAnimator.SetFloat("Vertical", vertical);
+        //            //childAnimator.SetInteger("Direction", direction);
 
-                }
+        //        }
 
-            }
+        //    }
 
-            if (isAttacking)
-            {
-                //childAnimator.SetInteger("AttackComboSeq", 1);
-            }
-        }
+        //    if (isAttacking)
+        //    {
+        //        //childAnimator.SetInteger("AttackComboSeq", 1);
+        //    }
+        //}
 
 
     }

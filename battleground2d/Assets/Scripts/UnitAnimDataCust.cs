@@ -157,7 +157,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
                     Materials = RunRightMaterials
@@ -168,7 +168,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
                     Materials = RunLeftMaterials
@@ -179,7 +179,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
                     Materials = RunUpMaterials
@@ -190,7 +190,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
                     Materials = RunDownMaterials
@@ -242,7 +242,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieRightMaterials
+                    Materials = DieLeftMaterials
                 };
                 break;
             case AnimMaterialTypeEnum.DieUp:
@@ -253,7 +253,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieRightMaterials
+                    Materials = DieUpMaterials
                 };
                 break;
             case AnimMaterialTypeEnum.DieDown:
@@ -264,7 +264,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieRightMaterials
+                    Materials = DieDownMaterials
                 };
                 break;
 
@@ -408,20 +408,20 @@ public class UnitAnimDataCust
             //            return AnimMaterialTypeEnum.DefendDown;
             //    }
             //    break;
-            //case BaseAnimMaterialType.Die:
-            //    switch (animDir)
-            //    {
-            //        default:
-            //        case 1:
-            //            return AnimMaterialTypeEnum.DieRight;
-            //        case 2:
-            //            return AnimMaterialTypeEnum.DieLeft;
-            //        case 3:
-            //            return AnimMaterialTypeEnum.DieUp;
-            //        case 4:
-            //            return AnimMaterialTypeEnum.DieDown;
-            //    }
-            //    break;
+            case BaseAnimMaterialType.Die:
+                switch (animDir)
+                {
+                    default:
+                    case 1:
+                        return AnimMaterialTypeEnum.DieRight;
+                    case 2:
+                        return AnimMaterialTypeEnum.DieLeft;
+                    case 3:
+                        return AnimMaterialTypeEnum.DieUp;
+                    case 4:
+                        return AnimMaterialTypeEnum.DieDown;
+                }
+                break;
             case BaseAnimMaterialType.Attack:
                 switch (animDir)
                 {
@@ -491,8 +491,8 @@ public class UnitAnimDataCust
     public static int GetAnimDir(Vector3 dir)
     {
         float horizontal = dir.x;
-        float vertical = dir.z;
-        float maxValue = Mathf.Max(Mathf.Abs(dir.x), Mathf.Abs(dir.z));
+        float vertical = dir.y;
+        float maxValue = Mathf.Max(Mathf.Abs(dir.x), Mathf.Abs(dir.y));
 
         int direction = 1;
         if (vertical > 0 && Mathf.Abs(vertical) == maxValue) // up

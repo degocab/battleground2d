@@ -56,24 +56,38 @@ public class BattleSystemCust : MonoBehaviour
         UnityEngine.AI.NavMesh.pathfindingIterationsPerFrame = 10000;
 
 
-
+        float xAlly = -2;
+        float xEnemy = 2;
         for (int i = 0; i < unitCount; i++)
         {
             Vector2 randPos = new Vector2(Random.Range(-10f, 10f), Random.Range(-10f, 10f));//Random.insideUnitCircle * 10;
-            Vector3 pos = new Vector3(randPos.x, randPos.y, 0f);
+            Vector3 pos = new Vector3(0, randPos.y, 0f);
 
 
             GameObject currentGameObject;
             bool isEnemy = false;
             if (i % 2 == 0)
             {
-                currentGameObject = objectToSpawn2;
+                currentGameObject = objectToSpawn;
                 isEnemy = true;
+                if (i % 25 == 0)
+                {
+                    xEnemy++;
+                }
+                pos.x = xEnemy;
             }
             else
             {
-                currentGameObject = objectToSpawn;
+                currentGameObject = objectToSpawn2;
                 isEnemy = false;
+
+
+                if (i % 25 == 0)
+                {
+                    xAlly--;
+
+                }
+                pos.x = xAlly;
             }
 
 
@@ -92,6 +106,7 @@ public class BattleSystemCust : MonoBehaviour
                 }
                 instanceUp.isReady = true;
                 instanceUp.IsEnemy = isEnemy;
+                instanceUp.UniqueID = i;
                 allUnits.Add(instanceUp);
                 //instanceUp.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, instanceUp.transform.forward, default);
 
@@ -145,35 +160,8 @@ public class BattleSystemCust : MonoBehaviour
 
         //ManualMover();
 
-        //run sprite animations i guess
-        //PrepAnimation();
         PrepSpriteSheetData();
         RenderAnimation();
-    }
-
-    private void PrepAnimation()
-    {
-        var deltaTime = Time.deltaTime;
-
-        if (allUnits.Count > 0)
-        {
-            for (int i = 0; i < allUnits.Count; i++)
-            {
-                //play nimations
-                if (allUnits[i].isApproaching && allUnits[i].transform.hasChanged)
-                {
-                    //TODO add walking/run logic
-                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, allUnits[i].direction, default);
-
-                }
-                else
-                {
-                    //TODO: add idle logic
-                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, allUnits[i].direction, default);
-
-                }
-            }
-        }
     }
 
 
@@ -207,33 +195,6 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
 
-
-        //play dead animations?
-        if (deadUnits.Count > 0)
-        {
-            for (int i = 0; i < deadUnits.Count; i++)
-            {
-                //play nimations
-                if (deadUnits[i].playAnimationCust.forced)
-                {
-                    //TODO add walking/run logic
-                    deadUnits[i].spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref deadUnits[i], */deadUnits[i].playAnimationCust.baseAnimType, deadUnits[i].playAnimationCust.animDir, deadUnits[i].playAnimationCust.onComplete);
-
-                }
-                else
-                {
-                    SpriteSheetAnimationDataCust currSpriteSheetData = deadUnits[i].spriteSheetData;
-                    //TODO: add idle logic
-                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref deadUnits[i], */deadUnits[i].playAnimationCust.baseAnimType, currSpriteSheetData, deadUnits[i].playAnimationCust.animDir, deadUnits[i].playAnimationCust.onComplete);
-
-                    // if changes
-                    if (newSpriteSheetData != null)
-                    {
-                        deadUnits[i].spriteSheetData = newSpriteSheetData.Value;
-                    }
-                }
-            }
-        }
     }
 
     public List<Material> springAttractFrames;
@@ -244,11 +205,6 @@ public class BattleSystemCust : MonoBehaviour
     {
         if (allUnits.Count > 0)
         {
-            //MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
-            //Vector4[] uv = new Vector4[1];
-            //Camera camera = Camera.main;
-            ////Mesh quadMesh = GameHandler.GetInstance().quadMesh;
-            ////Material material = GameHandler.GetInstance().walkingSpriteSheetMaterial;
             var deltaTime = Time.deltaTime;
             ///
             for (int i = 0; i < allUnits.Count; i++)
@@ -257,15 +213,16 @@ public class BattleSystemCust : MonoBehaviour
                 //float springAttractFrameRefTime = allUnits[i].springAttractFrameRefTime;
                 var spriteSheetAnimationData = allUnits[i].spriteSheetData;
 
+                if (allUnits[i].spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
+                {
+
+                }
+
 
                 allUnits[i].spriteSheetData.frameTimer -= deltaTime;
                 while (allUnits[i].spriteSheetData.frameTimer < 0)
                 {
                     allUnits[i].spriteSheetData.frameTimer += .1f;// allUnits[i].spriteSheetData.frameRate;
-                    if (allUnits[i].spriteSheetData.frameCount == 6)
-                    {
-
-                    }
                     allUnits[i].spriteSheetData.currentFrame = ((allUnits[i].spriteSheetData.currentFrame + 1) % allUnits[i].spriteSheetData.frameCount);// + allUnits[i].spriteSheetData.horizontalCount;
 
                     if (allUnits[i].spriteSheetData.currentFrame >= (allUnits[i].spriteSheetData.frameCount))
@@ -281,43 +238,9 @@ public class BattleSystemCust : MonoBehaviour
                     }
                 }
 
-
-
-
-
-                //if (Time.time - springAttractFrameRefTime > springAttractFrameTime)
-                //{
-                //    allUnits[i].curSpringAttractFrameIndex = (allUnits[i].curSpringAttractFrameIndex - 1 + springAttractFrames.Count) % springAttractFrames.Count;
-
-                //    Material[] newMats = { springAttractFrames[allUnits[i].curSpringAttractFrameIndex] };
-                //    allUnits[i].springAttractScreenRend.materials = newMats;
-
-                //    springAttractFrameRefTime = Time.time;
-                //}
-
-
-
-
-
-
-                //Mesh quadMesh = allUnits[i].quadMesh;
-                //Material material = allUnits[i].walkingSpriteSheetMaterial;
-
-                //var spriteSheetAnimationData = allUnits[i].spiteSheetData;
-                //uv[0] = spriteSheetAnimationData.uv;
-                //materialPropertyBlock.SetVectorArray("_MainTex_UV", uv);
-
-                //Graphics.DrawMesh(
-                //    quadMesh,
-                //    spriteSheetAnimationData.matrix,
-                //    material,
-                //    0, // Layer
-                //    camera,
-                //    0, // Submesh index
-                //    materialPropertyBlock
-                //);
             }
         }
+
     }
 
     int iSearchPhase = 0;
@@ -398,6 +321,12 @@ public class BattleSystemCust : MonoBehaviour
                     targetUp.attackers.Add(up);
                     targetUp.noAttackers = targetUp.attackers.Count;
                     up.target = targetUp;
+
+
+                    //TODO: see if this fixed all units facing up
+                    var direction = targetUp.transform.position - up.transform.position;
+                    up.direction = direction;
+
                     up.isReady = false;
                     up.isApproaching = true;
                 }
@@ -463,6 +392,7 @@ public class BattleSystemCust : MonoBehaviour
     // this phase starting attackers to move towards their targets
     public void ApproachPhase()
     {
+
         fApproachPhase += allUnits.Count * approachUpdateFraction;
 
         int nToLoop = (int)fApproachPhase;
@@ -473,12 +403,20 @@ public class BattleSystemCust : MonoBehaviour
         {
             iApproachPhase++;
 
+
             if (iApproachPhase >= allUnits.Count)
             {
                 iApproachPhase = 0;
             }
 
             UnitParsCust apprPars = allUnits[iApproachPhase];
+
+
+
+            if (apprPars.UniqueID == 311)
+            {
+
+            }
 
             if (apprPars.isApproaching && apprPars.target != null)
             {
@@ -504,7 +442,14 @@ public class BattleSystemCust : MonoBehaviour
                     // if counter failedR becomes bigger than critFailedR, preparing for new target search
                     // basically what I was tring to do to stop units from targeting one until they reach it or die
 
-                    if (apprPars.prevR <= rTarget)
+
+                    //round?
+                    var roundedPrevR = float.Parse(apprPars.prevR.ToString("0.0"));
+                    var roundedrTarget = float.Parse(rTarget.ToString("0.0"));
+
+
+                    //if (apprPars.prevR <= rTarget)
+                    if (roundedPrevR < roundedrTarget)
                     {
                         apprPars.failedR = apprPars.failedR + 1;
                         if (apprPars.failedR > apprPars.critFailedR)
@@ -529,12 +474,12 @@ public class BattleSystemCust : MonoBehaviour
                         if (rTarget < stoppDistance)
                         {
                             apprNav.SetDestination(apprPars.transform.position);
-                            var direction = apprPars.transform.position - apprNav.destination;
+                            var direction = apprNav.destination - apprPars.transform.position;
                             apprPars.direction = direction;
                             // pre-setting for attacking
                             apprPars.isApproaching = false;
                             apprPars.isAttacking = true;
-                            allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
+                            apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
                         }
                         else
                         {
@@ -546,11 +491,16 @@ public class BattleSystemCust : MonoBehaviour
                                 if ((destination - targ.transform.position).sqrMagnitude > .125f)
                                 {
                                     apprNav.SetDestination(targ.transform.position);
-                                    var direction = apprPars.transform.position - apprNav.destination;
+                                    var direction = targ.transform.position - apprPars.transform.position ;
                                     apprPars.direction = direction;
                                     apprNav.speed = 1f;
-                                    allUnits[i].playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
+                                    apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                                 }
+                                //else
+                                //{
+                                //    // TEST 
+                                //    apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, apprPars.direction, default);
+                                //}
                             }
                         }
                     }
@@ -563,12 +513,14 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     apprPars.target = null;
                     apprNav.SetDestination(apprPars.transform.position);
-                    var direction = apprPars.transform.position - apprNav.destination;
-                    apprPars.direction = direction;
                     apprPars.isApproachable = false;
                     apprPars.isReady = true;
-
+                    //apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                 }
+            }
+            else
+            {
+                apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, apprPars.direction, default);
             }
 
         }
@@ -646,11 +598,11 @@ public class BattleSystemCust : MonoBehaviour
                             targPars.health = targPars.health - (40f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
                         }
                     }
-                    else
-                    {
-                        //defend?
-                        attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, attPars.direction, default);
-                    }
+                    //else
+                    //{
+                    //    //defend?
+                    //    attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, attPars.direction, default);
+                    //}
                 }
 
 
@@ -750,6 +702,7 @@ public class BattleSystemCust : MonoBehaviour
                     deadPars.GetComponent<UnityEngine.AI.NavMeshAgent>().enabled = false;
                     //sink.Add(deadPars);
                     allUnits.Remove(deadPars);
+
                     deadUnits.Add(deadPars);
 
                     for (int j = 0; j < targetRefreshTimes.Count; j++)
@@ -761,7 +714,6 @@ public class BattleSystemCust : MonoBehaviour
                 else
                 {
 
-                    deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
 
 
                     deadPars.isMovable = false;

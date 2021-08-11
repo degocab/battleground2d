@@ -344,6 +344,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   allUnits: []
+  deadUnits: []
   targetRefreshTimes: []
   randomSeed: 0
   searchUpdateFraction: 0.1
@@ -356,7 +357,7 @@ MonoBehaviour:
     type: 3}
   objectToSpawn2: {fileID: 7421421371445201456, guid: 3f85815864d95f843b7ecfc5369bde93,
     type: 3}
-  unitCount: 1500
+  unitCount: 1000
   springAttractFrames:
   - {fileID: 2100000, guid: 309c98b07ea6b3441b1f49554e0bbb8f, type: 2}
   - {fileID: 2100000, guid: d3d646dc3634c7d4ab46b9f4a1fff034, type: 2}
@@ -626,6 +627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a44861b384c84c947b921ab9bddd6bce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UniqueID: 0
   isMovable: 1
   isReady: 0
   isApproaching: 0
