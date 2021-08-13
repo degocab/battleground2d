@@ -9,7 +9,7 @@ public class BattleSystemCust : MonoBehaviour
 
     public List<UnitParsCust> deadUnits = new List<UnitParsCust>();
 
-
+    public GameObject deadUnitHolder;
 
     //i dont need the sinks
 
@@ -165,83 +165,6 @@ public class BattleSystemCust : MonoBehaviour
     }
 
 
-    private void PrepSpriteSheetData()
-    {
-        var deltaTime = Time.deltaTime;
-
-        if (allUnits.Count > 0)
-        {
-            for (int i = 0; i < allUnits.Count; i++)
-            {
-                //play nimations
-                if (allUnits[i].playAnimationCust.forced)
-                {
-                    //TODO add walking/run logic
-                    allUnits[i].spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref allUnits[i], */allUnits[i].playAnimationCust.baseAnimType, allUnits[i].playAnimationCust.animDir, allUnits[i].playAnimationCust.onComplete);
-
-                }
-                else
-                {
-                    SpriteSheetAnimationDataCust currSpriteSheetData = allUnits[i].spriteSheetData;
-                    //TODO: add idle logic
-                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref allUnits[i], */allUnits[i].playAnimationCust.baseAnimType, currSpriteSheetData, allUnits[i].playAnimationCust.animDir, allUnits[i].playAnimationCust.onComplete);
-
-                    // if changes
-                    if (newSpriteSheetData != null)
-                    {
-                        allUnits[i].spriteSheetData = newSpriteSheetData.Value;
-                    }
-                }
-            }
-        }
-
-    }
-
-    public List<Material> springAttractFrames;
-    float springAttractFrameTime = 0.2f;
-
-    private float springAttractFrameRefTime;
-    private void RenderAnimation()
-    {
-        if (allUnits.Count > 0)
-        {
-            var deltaTime = Time.deltaTime;
-            ///
-            for (int i = 0; i < allUnits.Count; i++)
-            {
-                MeshRenderer springAttractScreenRend = allUnits[i].springAttractScreenRend;
-                //float springAttractFrameRefTime = allUnits[i].springAttractFrameRefTime;
-                var spriteSheetAnimationData = allUnits[i].spriteSheetData;
-
-                if (allUnits[i].spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
-                {
-
-                }
-
-
-                allUnits[i].spriteSheetData.frameTimer -= deltaTime;
-                while (allUnits[i].spriteSheetData.frameTimer < 0)
-                {
-                    allUnits[i].spriteSheetData.frameTimer += .1f;// allUnits[i].spriteSheetData.frameRate;
-                    allUnits[i].spriteSheetData.currentFrame = ((allUnits[i].spriteSheetData.currentFrame + 1) % allUnits[i].spriteSheetData.frameCount);// + allUnits[i].spriteSheetData.horizontalCount;
-
-                    if (allUnits[i].spriteSheetData.currentFrame >= (allUnits[i].spriteSheetData.frameCount))
-                    {
-                        allUnits[i].spriteSheetData.loopCount++;
-                    }
-                    springAttractFrames = allUnits[i].spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
-                    Material[] newMats = { springAttractFrames[allUnits[i].spriteSheetData.currentFrame] };
-                    allUnits[i].springAttractScreenRend.materials = newMats;
-                    if (allUnits[i].IsEnemy)
-                    {
-                        allUnits[i].springAttractScreenRend.materials[0].color = Color.red;
-                    }
-                }
-
-            }
-        }
-
-    }
 
     int iSearchPhase = 0;
     float fSearchPhase = 0f;
@@ -473,7 +396,7 @@ public class BattleSystemCust : MonoBehaviour
                         // if approachers already close to their targets
                         if (rTarget < stoppDistance)
                         {
-                            apprNav.SetDestination(apprPars.transform.position);
+                            apprNav.SetDestination(new Vector3(targ.transform.position.x, targ.transform.position.y, 0f));
                             var direction = apprNav.destination - apprPars.transform.position;
                             apprPars.direction = direction;
                             // pre-setting for attacking
@@ -490,8 +413,8 @@ public class BattleSystemCust : MonoBehaviour
                                 Vector3 destination = apprNav.destination;
                                 if ((destination - targ.transform.position).sqrMagnitude > .125f)
                                 {
-                                    apprNav.SetDestination(targ.transform.position);
-                                    var direction = targ.transform.position - apprPars.transform.position ;
+                                    apprNav.SetDestination(new Vector3(targ.transform.position.x, targ.transform.position.y, 0f));
+                                    var direction = targ.transform.position - apprPars.transform.position;
                                     apprPars.direction = direction;
                                     apprNav.speed = 1f;
                                     apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
@@ -512,7 +435,7 @@ public class BattleSystemCust : MonoBehaviour
                 else
                 {
                     apprPars.target = null;
-                    apprNav.SetDestination(apprPars.transform.position);
+                    apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
                     apprPars.isApproachable = false;
                     apprPars.isReady = true;
                     //apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
@@ -595,7 +518,7 @@ public class BattleSystemCust : MonoBehaviour
                         if (Random.value > (strength / (strength + defence)))
                         {
                             attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
-                            targPars.health = targPars.health - (40f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
+                            targPars.health = targPars.health - (50f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
                         }
                     }
                     //else
@@ -620,21 +543,21 @@ public class BattleSystemCust : MonoBehaviour
     float fSelfHealingPhase = 0f;
     void SelfHealingPhase(float deltaTime)
     {
-        fSelfHealingPhase += allUnits.Count * selfHealUpdateFraction;
+        //fSelfHealingPhase += allUnits.Count * selfHealUpdateFraction;
 
-        int nToLoop = (int)fSelfHealingPhase;
-        fSelfHealingPhase -= nToLoop;
+        //int nToLoop = (int)fSelfHealingPhase;
+        //fSelfHealingPhase -= nToLoop;
         // checking which units are damaged	
-        for (int i = 0; i < nToLoop; i++)
+        for (int i = 0; i < allUnits.Count; i++)
         {
-            iSelfHealingPhase++;
+            //iSelfHealingPhase++;
 
-            if (iSelfHealingPhase >= allUnits.Count)
-            {
-                iSelfHealingPhase = 0;
-            }
+            //if (iSelfHealingPhase >= allUnits.Count)
+            //{
+            //    iSelfHealingPhase = 0;
+            //}
 
-            UnitParsCust shealPars = allUnits[iSelfHealingPhase];
+            UnitParsCust shealPars = allUnits[i];
 
             if (shealPars.health < shealPars.maxHealth)
             {
@@ -669,13 +592,15 @@ public class BattleSystemCust : MonoBehaviour
 
     void DeathPhase()
     {
+
+
+        // fix target refhres times
         fDeathPhase += allUnits.Count * deathUpdateFraction;
 
         int nToLoop = (int)fDeathPhase;
         fDeathPhase -= nToLoop;
 
-        //get dying units
-        for (int i = 0; i < nToLoop; i++)
+        for (int i = 0; i < allUnits.Count; i++)
         {
             iDeathPhase++;
 
@@ -683,19 +608,45 @@ public class BattleSystemCust : MonoBehaviour
             {
                 iDeathPhase = 0;
             }
+            for (int j = 0; j < targetRefreshTimes.Count; j++)
+            {
+                targetRefreshTimes[j] = -1f;
+            }
+        }
 
-            UnitParsCust deadPars = allUnits[iDeathPhase];
+
+
+
+
+
+
+        //fDeathPhase += allUnits.Count * deathUpdateFraction;
+
+        //int nToLoop = (int)fDeathPhase;
+        //fDeathPhase -= nToLoop;
+
+        //get dying units
+        for (int i = 0; i < allUnits.Count; i++)
+        {
+            //iDeathPhase++;
+
+            //if (iDeathPhase >= allUnits.Count)
+            //{
+            //    iDeathPhase = 0;
+            //}
+
+            UnitParsCust deadPars = allUnits[i];
 
             if (deadPars.isDying)
             {
 
-                deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
 
 
                 // if unit is dead lon enough, prepare for rotting phase from the unit list
                 // TODO: need to find a way to keep sprite and merge with others to create bigger sprite
                 if (deadPars.deathCalls > deadPars.maxDeathCalls)
                 {
+
                     deadPars.isDying = false;
                     deadPars.isSinking = true;
 
@@ -705,17 +656,16 @@ public class BattleSystemCust : MonoBehaviour
 
                     deadUnits.Add(deadPars);
 
-                    for (int j = 0; j < targetRefreshTimes.Count; j++)
-                    {
-                        targetRefreshTimes[j] = -1f;
-                    }
+                    //for (int j = 0; j < targetRefreshTimes.Count; j++)
+                    //{
+                    //    targetRefreshTimes[j] = -1f;
+                    //}
                 }
-                //unsetting unit activity and keep it dying
+                ////unsetting unit activity and keep it dying
                 else
                 {
 
-
-
+                    deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
                     deadPars.isMovable = false;
                     deadPars.isReady = false;
                     deadPars.isApproaching = false;
@@ -750,6 +700,239 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
     }
+
+
+    int iPrepSpriteSheetDataPhase = 0;
+    float fPrepSpriteSheetDataPhase = 0f;
+
+    public float prepSpriteSheetDataFraction = 1f;
+
+    private void PrepSpriteSheetData()
+    {
+
+
+        //fPrepSpriteSheetDataPhase += allUnits.Count * prepSpriteSheetDataFraction;
+
+        //int nToLoop = (int)fPrepSpriteSheetDataPhase;
+        //fPrepSpriteSheetDataPhase -= nToLoop;
+
+        if (allUnits.Count > 0)
+        {
+            for (int i = 0; i < allUnits.Count; i++)
+            {
+
+                //iPrepSpriteSheetDataPhase++;
+
+                //if (iPrepSpriteSheetDataPhase >= allUnits.Count)
+                //{
+                //    iPrepSpriteSheetDataPhase = 0;
+                //}
+
+                UnitParsCust prepSheetUnitPars = allUnits[i];
+
+                //play animations
+                if (prepSheetUnitPars.playAnimationCust.forced)
+                {
+                    //TODO add walking/run logic
+                    prepSheetUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete);
+
+                }
+                else
+                {
+                    SpriteSheetAnimationDataCust currSpriteSheetData = prepSheetUnitPars.spriteSheetData;
+                    //TODO: add idle logic
+                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete);
+
+                    // if changes
+                    if (newSpriteSheetData != null)
+                    {
+                        prepSheetUnitPars.spriteSheetData = newSpriteSheetData.Value;
+                    }
+                }
+            }
+        }
+
+    }
+
+    public List<Material> springAttractFrames;
+
+    int iRenderAnimationPhase = 0;
+    float fRenderAnimationPhase = 0f;
+
+    public float renderAnimationFraction = 1f;
+
+    private void RenderAnimation()
+    {
+
+        //fRenderAnimationPhase += allUnits.Count * renderAnimationFraction;
+
+        //int nToLoop = (int)fRenderAnimationPhase;
+        //fRenderAnimationPhase -= nToLoop;
+
+
+
+
+        if (allUnits.Count > 0)
+        {
+            var deltaTime = Time.deltaTime;
+            ///
+            for (int i = 0; i < allUnits.Count; i++)
+            {
+
+                //iRenderAnimationPhase++;
+
+                //if (iRenderAnimationPhase >= allUnits.Count)
+                //{
+                //    iRenderAnimationPhase = 0;
+                //}
+
+                UnitParsCust renderAnimationParsCust = allUnits[i];
+
+
+
+                MeshRenderer springAttractScreenRend = renderAnimationParsCust.springAttractScreenRend;
+                //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
+                var spriteSheetAnimationData = renderAnimationParsCust.spriteSheetData;
+
+                if (renderAnimationParsCust.spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
+                {
+
+                }
+
+
+                renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
+                while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
+                {
+                    renderAnimationParsCust.spriteSheetData.frameTimer += .1f;// renderAnimationParsCust.spriteSheetData.frameRate;
+                    renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);// + renderAnimationParsCust.spriteSheetData.horizontalCount;
+
+                    if (renderAnimationParsCust.spriteSheetData.currentFrame >= (renderAnimationParsCust.spriteSheetData.frameCount))
+                    {
+                        renderAnimationParsCust.spriteSheetData.loopCount++;
+                    }
+                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+                    Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
+                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+                    if (renderAnimationParsCust.IsEnemy)
+                    {
+                        renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                    }
+                }
+
+            }
+        }
+
+
+
+        if (deadUnits.Count > 0)
+        {
+            var deltaTime = Time.deltaTime;
+            ///
+            for (int i = 0; i < deadUnits.Count; i++)
+            {
+
+                //iRenderAnimationPhase++;
+
+                //if (iRenderAnimationPhase >= allUnits.Count)
+                //{
+                //    iRenderAnimationPhase = 0;
+                //}
+
+                UnitParsCust renderAnimationParsCust = deadUnits[i];
+
+
+
+                MeshRenderer springAttractScreenRend = renderAnimationParsCust.springAttractScreenRend;
+                //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
+                var spriteSheetAnimationData = renderAnimationParsCust.spriteSheetData;
+
+                if (renderAnimationParsCust.spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
+                {
+
+                }
+
+
+                //cancel if deadtimer ?
+                if (renderAnimationParsCust.spriteSheetData.currentFrame == renderAnimationParsCust.spriteSheetData.frameCount - 1)
+                {
+                    deadUnits.Remove(renderAnimationParsCust);
+                    renderAnimationParsCust.springAttractScreenRend.materials[0].color =
+Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.black, .5f);
+                    renderAnimationParsCust.transform.position = new Vector3(renderAnimationParsCust.transform.position. x, renderAnimationParsCust.transform.position.y, .01f);
+                    renderAnimationParsCust.gameObject.transform.SetParent(deadUnitHolder.transform);
+                    //Object.Destroy(renderAnimationParsCust.springAttractScreenRend);
+                    Object.Destroy(renderAnimationParsCust.nma);
+                    //Object.Destroy(renderAnimationParsCust.GetComponent<MeshFilter>());
+                    Object.Destroy(renderAnimationParsCust);
+                    return;
+                }
+
+
+                renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
+                while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
+                {
+                    renderAnimationParsCust.spriteSheetData.frameTimer += .1f;// renderAnimationParsCust.spriteSheetData.frameRate;
+                    renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);// + renderAnimationParsCust.spriteSheetData.horizontalCount;
+
+                    if (renderAnimationParsCust.spriteSheetData.currentFrame >= (renderAnimationParsCust.spriteSheetData.frameCount))
+                    {
+                        renderAnimationParsCust.spriteSheetData.loopCount++;
+                    }
+                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+                    Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
+                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+                    if (renderAnimationParsCust.IsEnemy)
+                    {
+                        renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                    }
+                }
+
+            }
+        }
+
+        //if (allUnits.Count > 0)
+        //{
+        //    var deltaTime = Time.deltaTime;
+        //    ///
+        //    for (int i = 0; i < allUnits.Count; i++)
+        //    {
+        //        MeshRenderer springAttractScreenRend = allUnits[i].springAttractScreenRend;
+        //        //float springAttractFrameRefTime = allUnits[i].springAttractFrameRefTime;
+        //        var spriteSheetAnimationData = allUnits[i].spriteSheetData;
+
+        //        if (allUnits[i].spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
+        //        {
+
+        //        }
+
+
+        //        allUnits[i].spriteSheetData.frameTimer -= deltaTime;
+        //        while (allUnits[i].spriteSheetData.frameTimer < 0)
+        //        {
+        //            allUnits[i].spriteSheetData.frameTimer += .1f;// allUnits[i].spriteSheetData.frameRate;
+        //            allUnits[i].spriteSheetData.currentFrame = ((allUnits[i].spriteSheetData.currentFrame + 1) % allUnits[i].spriteSheetData.frameCount);// + allUnits[i].spriteSheetData.horizontalCount;
+
+        //            if (allUnits[i].spriteSheetData.currentFrame >= (allUnits[i].spriteSheetData.frameCount))
+        //            {
+        //                allUnits[i].spriteSheetData.loopCount++;
+        //            }
+        //            springAttractFrames = allUnits[i].spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+        //            Material[] newMats = { springAttractFrames[allUnits[i].spriteSheetData.currentFrame] };
+        //            allUnits[i].springAttractScreenRend.materials = newMats;
+        //            if (allUnits[i].IsEnemy)
+        //            {
+        //                allUnits[i].springAttractScreenRend.materials[0].color = Color.red;
+        //            }
+        //        }
+
+        //    }
+        //}
+
+
+    }
+
+
+
 
     void ManualMover()
     {

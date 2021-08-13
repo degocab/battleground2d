@@ -14,7 +14,7 @@ public class UnitParsCust : MonoBehaviour
     public bool isReady = true;
     public bool isApproaching = false;
     public bool isAttacking = false;
-    [HideInInspector] public bool isApproachable = true;
+    public bool isApproachable = true;
     public bool isHealing = false;
     public bool isImmune = false;
     public bool isDying = false;
@@ -70,6 +70,7 @@ public class UnitParsCust : MonoBehaviour
 
     public float attackRate { get; set; }
 
+    public UnityEngine.AI.NavMeshAgent nma;
     void Start()
     {
         spriteSheetData = new SpriteSheetAnimationDataCust
@@ -80,15 +81,15 @@ public class UnitParsCust : MonoBehaviour
             frameTimerMax = .1f
         };
         playAnimationCust = new PlayAnimationCust();
-        UnityEngine.AI.NavMeshAgent nma = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        nma = GetComponent<UnityEngine.AI.NavMeshAgent>();
 
         if (nma != null)
         {
             nma.enabled = true;
         }
         childTransform = this.GetComponentInChildren<Transform>();
-        childAnimator = this.GetComponentInChildren<Animator>();
-        childSpriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
+       // childAnimator = this.GetComponentInChildren<Animator>();
+        ///childSpriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
 
         springAttractScreenRend = this.GetComponent<MeshRenderer>();
 
@@ -104,7 +105,12 @@ public class UnitParsCust : MonoBehaviour
 
         //if (CheckForChanges())
         //{
-            childTransform.rotation = Quaternion.Euler(0.0f, 0.0f,  this.transform.rotation.z * -1.0f);
+        var newRot = Quaternion.Euler(0.0f, 0.0f, this.transform.rotation.z * -1.0f);
+        newRot.z = 0;
+        childTransform.rotation = Quaternion.Euler(0.0f, 0.0f, this.transform.rotation.z * -1.0f);
+        //transform.position = new Vector3(childTransform.position.x, childTransform.position.y, 0f);
+
+        springAttractScreenRend.sortingOrder = Mathf.RoundToInt(transform.position.y * 100f) * -1;
         //    if (isMovable && isApproaching)
         //    {
         //        //childAnimator.SetFloat("Speed", 1f);
@@ -132,6 +138,13 @@ public class UnitParsCust : MonoBehaviour
         //}
 
 
+    }
+
+    private void FixedUpdate()
+    {
+        Vector3 nextPos = nma.nextPosition;
+        Vector3 correctPos = new Vector3(nextPos.x, nextPos.y, 0f); // do all modifications you need for nextPos
+        transform.position = correctPos;
     }
 
     private int SetMovementDirection(float horizontal, float vertical)
