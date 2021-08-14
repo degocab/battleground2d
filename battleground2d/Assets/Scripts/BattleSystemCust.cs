@@ -419,11 +419,6 @@ public class BattleSystemCust : MonoBehaviour
                                     apprNav.speed = 1f;
                                     apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                                 }
-                                //else
-                                //{
-                                //    // TEST 
-                                //    apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, apprPars.direction, default);
-                                //}
                             }
                         }
                     }
@@ -436,7 +431,7 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     apprPars.target = null;
                     apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
-                    apprPars.isApproachable = false;
+                    //apprPars.isApproachable = false; -- this was making units stop moving after a while?
                     apprPars.isReady = true;
                     //apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                 }
@@ -594,25 +589,25 @@ public class BattleSystemCust : MonoBehaviour
     {
 
 
-        // fix target refhres times
-        fDeathPhase += allUnits.Count * deathUpdateFraction;
+        //// fix target refhres times
+        //fDeathPhase += allUnits.Count * deathUpdateFraction;
 
-        int nToLoop = (int)fDeathPhase;
-        fDeathPhase -= nToLoop;
+        //int nToLoop = (int)fDeathPhase;
+        //fDeathPhase -= nToLoop;
 
-        for (int i = 0; i < allUnits.Count; i++)
-        {
-            iDeathPhase++;
+        //for (int i = 0; i < allUnits.Count; i++)
+        //{
+        //    iDeathPhase++;
 
-            if (iDeathPhase >= allUnits.Count)
-            {
-                iDeathPhase = 0;
-            }
-            for (int j = 0; j < targetRefreshTimes.Count; j++)
-            {
-                targetRefreshTimes[j] = -1f;
-            }
-        }
+        //    if (iDeathPhase >= allUnits.Count)
+        //    {
+        //        iDeathPhase = 0;
+        //    }
+        //    for (int j = 0; j < targetRefreshTimes.Count; j++)
+        //    {
+        //        targetRefreshTimes[j] = -1f;
+        //    }
+        //}
 
 
 
@@ -857,8 +852,10 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     deadUnits.Remove(renderAnimationParsCust);
                     renderAnimationParsCust.springAttractScreenRend.materials[0].color =
-Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.black, .5f);
-                    renderAnimationParsCust.transform.position = new Vector3(renderAnimationParsCust.transform.position. x, renderAnimationParsCust.transform.position.y, .01f);
+                                            Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.black, .25f);
+                    renderAnimationParsCust.springAttractScreenRend.sortingOrder = 9999999;
+                    renderAnimationParsCust.transform.position = new Vector3(renderAnimationParsCust.transform.position.x, renderAnimationParsCust.transform.position.y, .01f);
+                    renderAnimationParsCust.gameObject.transform.localPosition = new Vector3(renderAnimationParsCust.gameObject.transform.position.x, renderAnimationParsCust.gameObject.transform.position.y, 0);
                     renderAnimationParsCust.gameObject.transform.SetParent(deadUnitHolder.transform);
                     //Object.Destroy(renderAnimationParsCust.springAttractScreenRend);
                     Object.Destroy(renderAnimationParsCust.nma);

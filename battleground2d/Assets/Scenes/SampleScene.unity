@@ -388,7 +388,7 @@ MonoBehaviour:
     type: 3}
   objectToSpawn2: {fileID: 7421421371445201456, guid: 3f85815864d95f843b7ecfc5369bde93,
     type: 3}
-  unitCount: 50
+  unitCount: 1500
   prepSpriteSheetDataFraction: 0.05
   springAttractFrames:
   - {fileID: 2100000, guid: 309c98b07ea6b3441b1f49554e0bbb8f, type: 2}
@@ -692,6 +692,7 @@ MonoBehaviour:
   walkingSpriteSheetMaterial: {fileID: 0}
   springAttractScreenRend: {fileID: 0}
   direction: {x: 0, y: 0, z: 0}
+  nma: {fileID: 0}
 --- !u!23 &7989803096806798730
 MeshRenderer:
   m_ObjectHideFlags: 0
