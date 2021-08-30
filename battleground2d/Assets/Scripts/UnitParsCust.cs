@@ -9,6 +9,9 @@ public class UnitParsCust : MonoBehaviour
     public int UniqueID = 0;
     public bool IsEnemy { get; set; }
 
+
+    public string UnitType { get; set; }
+
     public bool isMovable = true;
 
     public bool isReady = true;

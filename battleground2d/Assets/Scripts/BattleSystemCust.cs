@@ -69,7 +69,7 @@ public class BattleSystemCust : MonoBehaviour
             if (i % 2 == 0)
             {
                 currentGameObject = objectToSpawn;
-                isEnemy = true;
+                isEnemy = false;
                 if (i % 25 == 0)
                 {
                     xEnemy++;
@@ -79,7 +79,7 @@ public class BattleSystemCust : MonoBehaviour
             else
             {
                 currentGameObject = objectToSpawn2;
-                isEnemy = false;
+                isEnemy = true;
 
 
                 if (i % 25 == 0)
@@ -468,7 +468,7 @@ public class BattleSystemCust : MonoBehaviour
 
             UnitParsCust attPars = allUnits[iAttackPhase];
 
-            if (attPars.isAttacking && attPars.tag != null)
+            if (attPars.isAttacking && attPars.tag != null && attPars.target != null)
             {
                 UnitParsCust targPars = attPars.target;
 
@@ -513,7 +513,7 @@ public class BattleSystemCust : MonoBehaviour
                         if (Random.value > (strength / (strength + defence)))
                         {
                             attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
-                            targPars.health = targPars.health - (50f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
+                            targPars.health = targPars.health - (10f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
                         }
                     }
                     //else
@@ -805,13 +805,35 @@ public class BattleSystemCust : MonoBehaviour
                     {
                         renderAnimationParsCust.spriteSheetData.loopCount++;
                     }
-                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
-                    Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
-                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+
+
+
                     if (renderAnimationParsCust.IsEnemy)
                     {
-                        renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
                     }
+                    else
+                    {
+                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
+                    }
+
+
+                    //UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+                    Material[] newMats = null;
+                        try
+                    {
+                        newMats = new Material[]{ springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
+                    }
+                    catch (System.Exception)
+                    {
+
+                        throw;
+                    }
+                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+                    //if (renderAnimationParsCust.IsEnemy)
+                    //{
+                    //    renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                    //}
                 }
 
             }
@@ -875,13 +897,25 @@ public class BattleSystemCust : MonoBehaviour
                     {
                         renderAnimationParsCust.spriteSheetData.loopCount++;
                     }
-                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
-                    Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
-                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+                    //springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+
+
                     if (renderAnimationParsCust.IsEnemy)
                     {
-                        renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
                     }
+                    else
+                    {
+                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
+                    }
+
+
+                    Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
+                    renderAnimationParsCust.springAttractScreenRend.materials = newMats;
+                    //if (renderAnimationParsCust.IsEnemy)
+                    //{
+                    //    renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
+                    //}
                 }
 
             }

@@ -16,6 +16,7 @@ public class UnitAnimDataCust
     public float FrameRate;
 
     public List<Material> Materials;
+    public List<Material> MaterialsEnemy;
 
     public AnimMaterialTypeEnum ecsAnimTypeEnum;
 
@@ -44,6 +45,34 @@ public class UnitAnimDataCust
     public static List<Material> DieDownMaterials = Resources.LoadAll("Material/DieDown", typeof(Material)).Cast<Material>().ToList();
 
 
+
+
+
+
+
+
+    public static List<Material> RunRightMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunLeftMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunUpMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunDownMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunDown", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> IdleRightMaterialsEnemy = Resources.LoadAll("Material/Enemy/IdleRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleLeftMaterialsEnemy = Resources.LoadAll("Material/Enemy/IdleLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleUpMaterialsEnemy = Resources.LoadAll("Material/Enemy/IdleUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleDownMaterialsEnemy = Resources.LoadAll("Material/Enemy/IdleDown", typeof(Material)).Cast<Material>().ToList();
+
+
+    public static List<Material> AttackRightMaterialsEnemy = Resources.LoadAll("Material/Enemy/AttackRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackLeftMaterialsEnemy = Resources.LoadAll("Material/Enemy/AttackLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackUpMaterialsEnemy = Resources.LoadAll("Material/Enemy/AttackUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackDownMaterialsEnemy = Resources.LoadAll("Material/Enemy/AttackDown", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> DieRightMaterialsEnemy = Resources.LoadAll("Material/Enemy/DieRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieLeftMaterialsEnemy = Resources.LoadAll("Material/Enemy/DieLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieUpMaterialsEnemy = Resources.LoadAll("Material/Enemy/DieUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieDownMaterialsEnemy = Resources.LoadAll("Material/Enemy/DieDown", typeof(Material)).Cast<Material>().ToList();
+
+
     public static void Init()
     {
         unitAnimTypeDic = new Dictionary<AnimMaterialTypeEnum, UnitAnimDataCust>();
@@ -70,7 +99,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 0,
-                    Materials = IdleRightMaterials
+                    Materials = IdleRightMaterials,
+                    MaterialsEnemy = IdleRightMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.IdleLeft:
@@ -81,7 +111,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 2,
-                    Materials = IdleLeftMaterials
+                    Materials = IdleLeftMaterials,
+                    MaterialsEnemy = IdleLeftMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.IdleUp:
@@ -92,7 +123,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 4,
-                    Materials = IdleUpMaterials
+                    Materials = IdleUpMaterials,
+                    MaterialsEnemy = IdleUpMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.IdleDown:
@@ -103,7 +135,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 6,
-                    Materials = IdleDownMaterials
+                    Materials = IdleDownMaterials,
+                    MaterialsEnemy = IdleDownMaterialsEnemy
                 };
                 break;
 
@@ -160,7 +193,8 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = RunRightMaterials
+                    Materials = RunRightMaterials,
+                    MaterialsEnemy = RunRightMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.RunLeft:
@@ -171,7 +205,8 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    Materials = RunLeftMaterials
+                    Materials = RunLeftMaterials,
+                    MaterialsEnemy = RunLeftMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.RunUp:
@@ -182,7 +217,8 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    Materials = RunUpMaterials
+                    Materials = RunUpMaterials,
+                    MaterialsEnemy = RunUpMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.RunDown:
@@ -193,7 +229,8 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    Materials = RunDownMaterials
+                    Materials = RunDownMaterials,
+                    MaterialsEnemy = RunDownMaterialsEnemy
                 };
                 break;
 
@@ -231,7 +268,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieRightMaterials
+                    Materials = DieRightMaterials,
+                    MaterialsEnemy = DieRightMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.DieLeft:
@@ -242,7 +280,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieLeftMaterials
+                    Materials = DieLeftMaterials,
+                    MaterialsEnemy = DieLeftMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.DieUp:
@@ -253,7 +292,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieUpMaterials
+                    Materials = DieUpMaterials,
+                    MaterialsEnemy = DieUpMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.DieDown:
@@ -264,7 +304,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieDownMaterials
+                    Materials = DieDownMaterials,
+                    MaterialsEnemy = DieDownMaterialsEnemy
                 };
                 break;
 
@@ -279,7 +320,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = AttackRightMaterials
+                    Materials = AttackRightMaterials,
+                    MaterialsEnemy = AttackRightMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.AttackLeft:
@@ -290,7 +332,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    Materials = AttackLeftMaterials
+                    Materials = AttackLeftMaterials,
+                    MaterialsEnemy = AttackLeftMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.AttackUp:
@@ -301,7 +344,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    Materials = AttackUpMaterials
+                    Materials = AttackUpMaterials,
+                    MaterialsEnemy = AttackUpMaterialsEnemy
                 };
                 break;
             case AnimMaterialTypeEnum.AttackDown:
@@ -312,7 +356,8 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    Materials = AttackDownMaterials
+                    Materials = AttackDownMaterials,
+                    MaterialsEnemy = AttackDownMaterialsEnemy
                 };
                 break;
 
@@ -585,7 +630,7 @@ public struct SpriteSheetAnimationDataCust
 
     public List<Material> materials;
 
-
+    public List<Material> materialsEnemy;
 }
 
 
@@ -614,7 +659,8 @@ public class UnitAnimationCust
             activeDir = animDir,
             activeBaseAnimTypeEnum = baseAnimEnum,
             onComplete = onComplete,
-            materials = data.Materials
+            materials = data.Materials,
+            materialsEnemy = data.MaterialsEnemy
         };
     }
 
