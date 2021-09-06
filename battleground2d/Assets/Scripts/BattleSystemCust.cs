@@ -60,7 +60,7 @@ public class BattleSystemCust : MonoBehaviour
         float xEnemy = 2;
         for (int i = 0; i < unitCount; i++)
         {
-            Vector2 randPos = new Vector2(Random.Range(-10f, 10f), Random.Range(-10f, 10f));//Random.insideUnitCircle * 10;
+            Vector2 randPos = new Vector2(Random.Range(-10f, 10f), Random.Range(-20f, 20f));//Random.insideUnitCircle * 10;
             Vector3 pos = new Vector3(0, randPos.y, 0f);
 
 
