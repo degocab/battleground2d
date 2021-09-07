@@ -74,6 +74,10 @@ public class UnitParsCust : MonoBehaviour
     public float attackRate { get; set; }
 
     public UnityEngine.AI.NavMeshAgent nma;
+
+    public string CurrentCommand { get; set; }
+    public string PreviousCommand { get; set; }
+
     void Start()
     {
         spriteSheetData = new SpriteSheetAnimationDataCust

@@ -29,12 +29,21 @@ public class BattleSystemCust : MonoBehaviour
     //public float sinkUpdateFraction = 1f; -- not needed
 
     // Start is called before the first frame update
+
+
+
+    public GameObject player;
+
+    public UnitParsCust playerUnitPars { get; set; }
+
     void Awake()
     {
         active = this;
         Random.InitState(randomSeed); // not sure why this needs to be initialized
 
-
+        playerControl = player.GetComponent<PlayerControl>();
+        aiControl = this.GetComponent<AIControl>();
+        playerUnitPars = player.GetComponent<UnitParsCust>();
 
     }
 
@@ -44,9 +53,14 @@ public class BattleSystemCust : MonoBehaviour
 
     public int unitCount = 1000;
 
+    public int PlayerNation = 1;
+    public PlayerControl playerControl { get; set; }
+
+    private AIControl aiControl { get; set; }
 
     void Start()
     {
+
 
         //load resources
         UnitAnimDataCust.Init();
@@ -113,25 +127,12 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
 
-        //GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Default");
-        //foreach (GameObject go in gameObjects)
-        //{
-        //    UnitParsCust instanceUp = go.GetComponent<UnitParsCust>();
-
-        //    //freeze rotation
-        //    //var transf = go.GetComponentInChildren<Transform>();
 
 
-        //    if (instanceUp != null)
-        //    {
-        //        if (instanceUp.nation >= DiplomacyCust.active.numberNations)
-        //        {
-        //            DiplomacyCust.active.AddNation();
-        //        }
-        //        instanceUp.isReady = true;
-        //        allUnits.Add(instanceUp);
-        //    }
-        //}
+
+
+
+
 
     }
 
@@ -144,6 +145,19 @@ public class BattleSystemCust : MonoBehaviour
     void UpdateWithoutStatistics()
     {
         float deltaTime = Time.deltaTime;
+
+        //commnad system?
+        CommandPhase();
+
+        //hold phase?
+        //stop all movement before search even begins
+        HoldPhase();
+
+        //move phase?
+        //move units to location phase
+
+
+
 
         SearchPhase(deltaTime);
 
@@ -164,6 +178,87 @@ public class BattleSystemCust : MonoBehaviour
         RenderAnimation();
     }
 
+
+    /// <summary>
+    /// command system to set units to listen to commands
+    /// </summary>
+    void CommandPhase()
+    {
+        if (allUnits.Count > 0)
+        {
+            for (int i = 0; i < allUnits.Count; i++)
+            {
+                UnitParsCust unit = allUnits[i];
+
+                string commandToFollow = "";
+
+                if (unit.nation == PlayerNation)
+                {
+                    commandToFollow = playerControl.PlayerCommand;
+                }
+                else
+                {
+                    commandToFollow = aiControl.CurrentCommand;
+                }
+
+                if (unit.CurrentCommand != commandToFollow)
+                {
+                    unit.CurrentCommand = commandToFollow;
+                    unit.PreviousCommand = commandToFollow;
+                    switch (commandToFollow)
+                    {
+                        default:
+                        case "Hold":
+
+                            break;
+                        case "Move":
+                            //get player location to move to?
+                            unit.nma.isStopped = false;
+                            break;
+                        case "Attack":
+                            unit.nma.isStopped = false;
+                            break;
+                        case "Retreat":
+                            break;
+                    }
+                }
+                else
+                {
+                    unit.CurrentCommand = unit.PreviousCommand;
+                }
+
+            }
+        }
+    }
+
+
+
+
+    void HoldPhase()
+    {
+        if (allUnits.Count > 0)
+        {
+            for (int i = 0; i < allUnits.Count; i++)
+            {
+                UnitParsCust unit = allUnits[i];
+
+                if (unit.CurrentCommand == "Hold")
+                {
+                    unit.isApproachable = true;
+                    unit.isApproaching = false;
+                    unit.isAttacking = false;
+                    unit.isReady = true;
+                    unit.nma.isStopped = true;
+                }
+
+            }
+        }
+    }
+
+    void MovePhase()
+    {
+
+    }
 
 
     int iSearchPhase = 0;
@@ -231,7 +326,7 @@ public class BattleSystemCust : MonoBehaviour
             UnitParsCust up = allUnits[iSearchPhase];
             int nation = up.nation;
 
-            if (up.isReady && targets[nation].Count > 0)
+            if (up.isReady && targets[nation].Count > 0 && (new List<string> { "Attack" }).Contains(up.CurrentCommand))
             {
                 int targetId = targetKD[nation].FindNearest(up.transform.position);
                 UnitParsCust targetUp = targets[nation][targetId];
@@ -246,7 +341,6 @@ public class BattleSystemCust : MonoBehaviour
                     up.target = targetUp;
 
 
-                    //TODO: see if this fixed all units facing up
                     var direction = targetUp.transform.position - up.transform.position;
                     up.direction = direction;
 
@@ -747,6 +841,31 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
 
+
+
+
+        #region Player
+        // player
+        if (playerUnitPars.playAnimationCust.forced)
+        {
+            //TODO add walking/run logic
+            playerUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete);
+
+        }
+        else
+        {
+            SpriteSheetAnimationDataCust currSpriteSheetData = playerUnitPars.spriteSheetData;
+            //TODO: add idle logic
+            SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete);
+
+            // if changes
+            if (newSpriteSheetData != null)
+            {
+                playerUnitPars.spriteSheetData = newSpriteSheetData.Value;
+            }
+        }
+
+        #endregion
     }
 
     public List<Material> springAttractFrames;
@@ -820,9 +939,9 @@ public class BattleSystemCust : MonoBehaviour
 
                     //UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
                     Material[] newMats = null;
-                        try
+                    try
                     {
-                        newMats = new Material[]{ springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
+                        newMats = new Material[] { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
                     }
                     catch (System.Exception)
                     {
@@ -921,44 +1040,71 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
 
-        //if (allUnits.Count > 0)
+
+
+
+        //player animations
+
+
+
+
+
+        //MeshRenderer springAttractScreenRendPlayer = playerUnitPars.springAttractScreenRend;
+        ////float springAttractFrameRefTime = playerUnitPars.springAttractFrameRefTime;
+        //var spriteSheetAnimationData = playerUnitPars.spriteSheetData;
+
+
+
+        #region PLayer
+        //cancel if deadtimer ?
+        //if (playerUnitPars.spriteSheetData.currentFrame == playerUnitPars.spriteSheetData.frameCount - 1)
         //{
-        //    var deltaTime = Time.deltaTime;
-        //    ///
-        //    for (int i = 0; i < allUnits.Count; i++)
-        //    {
-        //        MeshRenderer springAttractScreenRend = allUnits[i].springAttractScreenRend;
-        //        //float springAttractFrameRefTime = allUnits[i].springAttractFrameRefTime;
-        //        var spriteSheetAnimationData = allUnits[i].spriteSheetData;
-
-        //        if (allUnits[i].spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
-        //        {
-
-        //        }
-
-
-        //        allUnits[i].spriteSheetData.frameTimer -= deltaTime;
-        //        while (allUnits[i].spriteSheetData.frameTimer < 0)
-        //        {
-        //            allUnits[i].spriteSheetData.frameTimer += .1f;// allUnits[i].spriteSheetData.frameRate;
-        //            allUnits[i].spriteSheetData.currentFrame = ((allUnits[i].spriteSheetData.currentFrame + 1) % allUnits[i].spriteSheetData.frameCount);// + allUnits[i].spriteSheetData.horizontalCount;
-
-        //            if (allUnits[i].spriteSheetData.currentFrame >= (allUnits[i].spriteSheetData.frameCount))
-        //            {
-        //                allUnits[i].spriteSheetData.loopCount++;
-        //            }
-        //            springAttractFrames = allUnits[i].spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
-        //            Material[] newMats = { springAttractFrames[allUnits[i].spriteSheetData.currentFrame] };
-        //            allUnits[i].springAttractScreenRend.materials = newMats;
-        //            if (allUnits[i].IsEnemy)
-        //            {
-        //                allUnits[i].springAttractScreenRend.materials[0].color = Color.red;
-        //            }
-        //        }
-
-        //    }
+        //    deadUnits.Remove(playerUnitPars);
+        //    playerUnitPars.springAttractScreenRend.materials[0].color =
+        //                            Color.Lerp(playerUnitPars.springAttractScreenRend.materials[0].color, Color.black, .25f);
+        //    playerUnitPars.springAttractScreenRend.sortingOrder = 9999999;
+        //    playerUnitPars.transform.position = new Vector3(playerUnitPars.transform.position.x, playerUnitPars.transform.position.y, .01f);
+        //    playerUnitPars.gameObject.transform.localPosition = new Vector3(playerUnitPars.gameObject.transform.position.x, playerUnitPars.gameObject.transform.position.y, 0);
+        //    playerUnitPars.gameObject.transform.SetParent(deadUnitHolder.transform);
+        //    //Object.Destroy(playerUnitPars.springAttractScreenRend);
+        //    Object.Destroy(playerUnitPars.nma);
+        //    //Object.Destroy(playerUnitPars.GetComponent<MeshFilter>());
+        //    Object.Destroy(playerUnitPars);
+        //    return;
         //}
 
+        var deltaTime2 = Time.deltaTime;
+        playerUnitPars.spriteSheetData.frameTimer -= deltaTime2;
+        while (playerUnitPars.spriteSheetData.frameTimer < 0)
+        {
+            playerUnitPars.spriteSheetData.frameTimer += .1f;// playerUnitPars.spriteSheetData.frameRate;
+            playerUnitPars.spriteSheetData.currentFrame = ((playerUnitPars.spriteSheetData.currentFrame + 1) % playerUnitPars.spriteSheetData.frameCount);// + playerUnitPars.spriteSheetData.horizontalCount;
+
+            if (playerUnitPars.spriteSheetData.currentFrame >= (playerUnitPars.spriteSheetData.frameCount))
+            {
+                playerUnitPars.spriteSheetData.loopCount++;
+            }
+            //springAttractFrames = playerUnitPars.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
+
+
+            if (playerUnitPars.IsEnemy)
+            {
+                springAttractFrames = playerUnitPars.spriteSheetData.materialsEnemy;
+            }
+            else
+            {
+                springAttractFrames = playerUnitPars.spriteSheetData.materials;
+            }
+
+
+            Material[] newMats = { springAttractFrames[playerUnitPars.spriteSheetData.currentFrame] };
+            playerUnitPars.springAttractScreenRend.materials = newMats;
+            //if (playerUnitPars.IsEnemy)
+            //{
+            //    playerUnitPars.springAttractScreenRend.materials[0].color = Color.red;
+            //}
+        }
+        #endregion
 
     }
 
