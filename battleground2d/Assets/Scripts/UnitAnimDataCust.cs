@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 public class UnitAnimDataCust
@@ -38,7 +39,7 @@ public class UnitAnimDataCust
     public static List<Material> AttackLeftMaterials = Resources.LoadAll("Material/AttackLeft", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> AttackUpMaterials = Resources.LoadAll("Material/AttackUp", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> AttackDownMaterials = Resources.LoadAll("Material/AttackDown", typeof(Material)).Cast<Material>().ToList();
-    
+
     public static List<Material> DieRightMaterials = Resources.LoadAll("Material/DieRight", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> DieLeftMaterials = Resources.LoadAll("Material/DieLeft", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> DieUpMaterials = Resources.LoadAll("Material/DieUp", typeof(Material)).Cast<Material>().ToList();
@@ -73,20 +74,51 @@ public class UnitAnimDataCust
     public static List<Material> DieDownMaterialsEnemy = Resources.LoadAll("Material/Enemy/DieDown", typeof(Material)).Cast<Material>().ToList();
 
 
+
+
+
+    public static List<Material> RunRightMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/RunRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunLeftMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/RunLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunUpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/RunUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunDownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/RunDown", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> IdleRightMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/IdleRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleLeftMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/IdleLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleUpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/IdleUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleDownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/IdleDown", typeof(Material)).Cast<Material>().ToList();
+
+
+    public static List<Material> ShootRightMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/ShootRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootLeftMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/ShootLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootUpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/ShootUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootDownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/ShootDown", typeof(Material)).Cast<Material>().ToList();
+
+
+    public static List<Material> Shoot45RightMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/Shoot45Right", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45LeftMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/Shoot45Left", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45UpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/Shoot45Up", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45DownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/Shoot45Down", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> DieRightMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieLeftMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieUpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieDownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieDown", typeof(Material)).Cast<Material>().ToList();
+
     public static void Init()
     {
-        unitAnimTypeDic = new Dictionary<AnimMaterialTypeEnum, UnitAnimDataCust>();
-        unitAnimTypeList = new List<UnitAnimDataCust>();
+        // I DONT THINK THIS IS USED AT ALL????
+        //unitAnimTypeDic = new Dictionary<AnimMaterialTypeEnum, UnitAnimDataCust>();
+        //unitAnimTypeList = new List<UnitAnimDataCust>();
 
-        foreach (AnimMaterialTypeEnum animTypeEnum in System.Enum.GetValues(typeof(AnimMaterialTypeEnum)))
-        {
-            UnitAnimDataCust unitAnimDataCust = GetAnimTypeData(animTypeEnum);
-            unitAnimTypeDic[animTypeEnum] = unitAnimDataCust;
-            unitAnimTypeList.Add(unitAnimDataCust);
-        }
+        //foreach (AnimMaterialTypeEnum animTypeEnum in System.Enum.GetValues(typeof(AnimMaterialTypeEnum)))
+        //{
+        //    UnitAnimDataCust unitAnimDataCust = GetAnimTypeData(animTypeEnum);
+        //    unitAnimTypeDic[animTypeEnum] = unitAnimDataCust;
+        //    unitAnimTypeList.Add(unitAnimDataCust);
+        //}
     }
 
-    public static UnitAnimDataCust GetAnimTypeData(AnimMaterialTypeEnum animType)
+    public static UnitAnimDataCust GetAnimTypeData(AnimMaterialTypeEnum animType, string unitType, bool isEnemy)
     {
         switch (animType)
         {
@@ -185,7 +217,6 @@ public class UnitAnimDataCust
 
 
             case AnimMaterialTypeEnum.RunRight:
-                //var test =  Resources.LoadAll("Material/RunRight", typeof(Material)).Cast<Material>().ToList();
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
@@ -193,7 +224,8 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = RunRightMaterials,
+                    //Materials = RunRightMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.RunRight, unitType, isEnemy),
                     MaterialsEnemy = RunRightMaterialsEnemy
                 };
                 break;
@@ -312,7 +344,6 @@ public class UnitAnimDataCust
 
 
             case AnimMaterialTypeEnum.AttackRight:
-                //var test =  Resources.LoadAll("Material/AttackRight", typeof(Material)).Cast<Material>().ToList();
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
@@ -361,8 +392,123 @@ public class UnitAnimDataCust
                 };
                 break;
 
+
+
+            case AnimMaterialTypeEnum.ShootRight:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    //Materials = /*ShootRightMaterials*/,
+                    MaterialsEnemy = ShootRightMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.ShootLeft:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 6,
+                    //Materials = ShootLeftMaterials,
+                    MaterialsEnemy = ShootLeftMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.ShootUp:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 0,
+                    //Materials = ShootUpMaterials,
+                    MaterialsEnemy = ShootUpMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.ShootDown:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 6,
+                    //Materials = ShootDownMaterials,
+                    MaterialsEnemy = ShootDownMaterialsEnemyArcher
+                };
+                break;
+
+
+
+
+
+            case AnimMaterialTypeEnum.Shoot45Right:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 0,
+                    //Materials = /*Shoot45RightMaterials*/,
+                    MaterialsEnemy = Shoot45RightMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.Shoot45Left:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 8,
+                    HorizontalCount = 6,
+                    //Materials = Shoot45LeftMaterials,
+                    MaterialsEnemy = Shoot45LeftMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.Shoot45Up:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 0,
+                    //Materials = Shoot45UpMaterials,
+                    MaterialsEnemy = Shoot45UpMaterialsEnemyArcher
+                };
+                break;
+            case AnimMaterialTypeEnum.Shoot45Down:
+                return new UnitAnimDataCust()
+                {
+                    CurrentFrame = 0,
+                    FrameCount = 6,
+                    FrameRate = .1f,
+                    VerticalCount = 7,
+                    HorizontalCount = 6,
+                    //Materials = Shoot45DownMaterials,
+                    MaterialsEnemy = Shoot45DownMaterialsEnemyArcher
+                };
+                break;
         }
     }
+
+    private static List<Material> GetMaterials(AnimMaterialTypeEnum typeEnum, string unitType, bool isEnemy)
+    {
+        return GetPropValue(typeEnum.ToString() + "Materials" + (isEnemy ? "Enemy" : "") + unitType);
+    }
+
+    public static List<Material> GetPropValue( string propName)
+    {
+        var propertyInfo = typeof(UnitAnimDataCust).GetField(propName);
+        return (List<Material>)propertyInfo.GetValue(null);
+    }
+
 
     public static AnimMaterialTypeEnum GetAnimTypeEnum(int animDir, BaseAnimMaterialType baseAnimTypeEnum)
     {
@@ -481,6 +627,34 @@ public class UnitAnimDataCust
                         return AnimMaterialTypeEnum.AttackDown;
                 }
                 break;
+            case BaseAnimMaterialType.Shoot:
+                switch (animDir)
+                {
+                    default:
+                    case 1:
+                        return AnimMaterialTypeEnum.ShootRight;
+                    case 2:
+                        return AnimMaterialTypeEnum.ShootLeft;
+                    case 3:
+                        return AnimMaterialTypeEnum.ShootUp;
+                    case 4:
+                        return AnimMaterialTypeEnum.ShootDown;
+                }
+                break;
+            case BaseAnimMaterialType.Shoot45:
+                switch (animDir)
+                {
+                    default:
+                    case 1:
+                        return AnimMaterialTypeEnum.Shoot45Right;
+                    case 2:
+                        return AnimMaterialTypeEnum.Shoot45Left;
+                    case 3:
+                        return AnimMaterialTypeEnum.Shoot45Up;
+                    case 4:
+                        return AnimMaterialTypeEnum.Shoot45Down;
+                }
+                break;
         }
     }
 
@@ -494,7 +668,10 @@ public class UnitAnimDataCust
         Block,
         Defend,
         Die,
-        Attack
+        Attack,
+
+        Shoot,
+        Shoot45
     }
 
     public enum AnimMaterialTypeEnum
@@ -530,7 +707,15 @@ public class UnitAnimDataCust
         AttackRight,
         AttackLeft,
         AttackUp,
-        AttackDown
+        AttackDown,
+        ShootRight,
+        ShootLeft,
+        ShootUp,
+        ShootDown,
+        Shoot45Right,
+        Shoot45Left,
+        Shoot45Up,
+        Shoot45Down
     }
 
     public static int GetAnimDir(Vector3 dir)
@@ -559,6 +744,31 @@ public class UnitAnimDataCust
 
         return direction;
     }
+
+
+
+    private static UnitAnimDataCust instance = null;
+    private static readonly object padlock = new object();
+
+    UnitAnimDataCust()
+    {
+
+    }
+    public static UnitAnimDataCust Instance
+    {
+        get
+        {
+            lock (padlock)
+            {
+                if (instance == null)
+                {
+                    instance = new UnitAnimDataCust();
+                }
+                return instance;
+            }
+        }
+    }
+
 }
 
 
@@ -638,17 +848,19 @@ public struct SpriteSheetAnimationDataCust
 public class UnitAnimationCust
 {
     //return animation data
-    public static SpriteSheetAnimationDataCust PlayAnimForced(/*ref UnitParsCust unit,*/ UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete)
+    public static SpriteSheetAnimationDataCust PlayAnimForced(/*ref UnitParsCust unit,*/ UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete
+                                                              ,string unitType, bool isEnemy)
     {
         //unit.spriteSheetData =
 
-        return GetSpriteSheetData(baseAnimEnum, animDir, onComplete);
+        return GetSpriteSheetData(baseAnimEnum, animDir, onComplete, unitType, isEnemy);
     }
 
-    private static SpriteSheetAnimationDataCust GetSpriteSheetData(UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete)
+    private static SpriteSheetAnimationDataCust GetSpriteSheetData(UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, int animDir, AnimationOnCompleteCust onComplete
+                                                                   , string unitType, bool isEnemy )
     {
         UnitAnimDataCust.AnimMaterialTypeEnum animType = UnitAnimDataCust.GetAnimTypeEnum(animDir, baseAnimEnum);
-        UnitAnimDataCust data = UnitAnimDataCust.GetAnimTypeData(animType);
+        UnitAnimDataCust data = UnitAnimDataCust.GetAnimTypeData(animType, unitType, isEnemy);
         return new SpriteSheetAnimationDataCust
         {
             frameCount = data.FrameCount,
@@ -665,11 +877,12 @@ public class UnitAnimationCust
     }
 
 
-    public static SpriteSheetAnimationDataCust? PlayAnim(/*ref UnitParsCust unit,*/  UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, SpriteSheetAnimationDataCust spriteSheetAnimationData, int animDir, AnimationOnCompleteCust onComplete)
+    public static SpriteSheetAnimationDataCust? PlayAnim(/*ref UnitParsCust unit,*/  UnitAnimDataCust.BaseAnimMaterialType baseAnimEnum, SpriteSheetAnimationDataCust spriteSheetAnimationData, int animDir, AnimationOnCompleteCust onComplete
+                                                        , string unitType, bool isEnemy)
     {
         if (IsAnimDifferentFromActive(spriteSheetAnimationData, animDir, baseAnimEnum))
         {
-            return PlayAnimForced(baseAnimEnum, animDir, onComplete);
+            return PlayAnimForced(baseAnimEnum, animDir, onComplete, unitType, isEnemy);
         }
         return (SpriteSheetAnimationDataCust?)null;
     }

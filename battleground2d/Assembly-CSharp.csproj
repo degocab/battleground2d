@@ -288,6 +288,7 @@
     <Compile Include="Assets\RTSToolkit\Standard Assets\Utility\ParticleSystemDestroyer.cs" />
     <Compile Include="Assets\Scripts\AIControl.cs" />
     <Compile Include="Assets\Scripts\BattleSystemCust.cs" />
+    <Compile Include="Assets\Scripts\CameraFollow.cs" />
     <Compile Include="Assets\Scripts\DiplomacyCust.cs" />
     <Compile Include="Assets\Scripts\General.cs" />
     <Compile Include="Assets\Scripts\KDTreeCust.cs" />

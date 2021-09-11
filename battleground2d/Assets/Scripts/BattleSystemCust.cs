@@ -50,6 +50,9 @@ public class BattleSystemCust : MonoBehaviour
     public GameObject objectToSpawn;
     public GameObject objectToSpawn2;
 
+    //enemy archer
+    public GameObject objectToSpawn3;
+
 
     public int unitCount = 1000;
 
@@ -92,7 +95,17 @@ public class BattleSystemCust : MonoBehaviour
             }
             else
             {
-                currentGameObject = objectToSpawn2;
+
+                //if (i % 3 == 0)
+                //{
+
+                //    currentGameObject = objectToSpawn2;
+                //}
+                //else
+                //{
+                    currentGameObject = objectToSpawn2;
+
+                //}
                 isEnemy = true;
 
 
@@ -120,6 +133,14 @@ public class BattleSystemCust : MonoBehaviour
                 }
                 instanceUp.isReady = true;
                 instanceUp.IsEnemy = isEnemy;
+
+                if (instanceUp.IsEnemy == true)
+                {
+                    if (i % 3 == 0)
+                    {
+                    }
+                }
+
                 instanceUp.UniqueID = i;
                 allUnits.Add(instanceUp);
                 //instanceUp.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, instanceUp.transform.forward, default);
@@ -823,14 +844,16 @@ public class BattleSystemCust : MonoBehaviour
                 if (prepSheetUnitPars.playAnimationCust.forced)
                 {
                     //TODO add walking/run logic
-                    prepSheetUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete);
+                    prepSheetUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete
+                                                                                         , prepSheetUnitPars.UnitType, prepSheetUnitPars.IsEnemy);
 
                 }
                 else
                 {
                     SpriteSheetAnimationDataCust currSpriteSheetData = prepSheetUnitPars.spriteSheetData;
                     //TODO: add idle logic
-                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete);
+                    SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete
+                                                                                                  , playerUnitPars.UnitType, playerUnitPars.IsEnemy);
 
                     // if changes
                     if (newSpriteSheetData != null)
@@ -849,14 +872,16 @@ public class BattleSystemCust : MonoBehaviour
         if (playerUnitPars.playAnimationCust.forced)
         {
             //TODO add walking/run logic
-            playerUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete);
+            playerUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete
+                                                                             , playerUnitPars.UnitType, playerUnitPars.IsEnemy);
 
         }
         else
         {
             SpriteSheetAnimationDataCust currSpriteSheetData = playerUnitPars.spriteSheetData;
             //TODO: add idle logic
-            SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete);
+            SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */playerUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, playerUnitPars.playAnimationCust.animDir, playerUnitPars.playAnimationCust.onComplete
+                                                                                        , playerUnitPars.UnitType, playerUnitPars.IsEnemy);
 
             // if changes
             if (newSpriteSheetData != null)

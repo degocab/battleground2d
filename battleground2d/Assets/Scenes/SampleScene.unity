@@ -241,6 +241,7 @@ GameObject:
   - component: {fileID: 519420032}
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
+  - component: {fileID: 519420030}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -256,6 +257,20 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_Enabled: 1
+--- !u!114 &519420030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e1f80122e303214f8d42eb373c16321, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 7989803096806798838}
+  offset: {x: 0, y: 0, z: 0}
 --- !u!20 &519420031
 Camera:
   m_ObjectHideFlags: 0
@@ -390,7 +405,8 @@ MonoBehaviour:
     type: 3}
   objectToSpawn2: {fileID: 7421421371445201456, guid: 3f85815864d95f843b7ecfc5369bde93,
     type: 3}
-  unitCount: 500
+  objectToSpawn3: {fileID: 0}
+  unitCount: 3000
   PlayerNation: 0
   prepSpriteSheetDataFraction: 0.05
   springAttractFrames:
