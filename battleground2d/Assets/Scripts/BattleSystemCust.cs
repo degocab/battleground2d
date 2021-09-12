@@ -132,13 +132,19 @@ public class BattleSystemCust : MonoBehaviour
                     DiplomacyCust.active.AddNation();
                 }
                 instanceUp.isReady = true;
+
+                if (isEnemy == true)
+                {
+
+                }
                 instanceUp.IsEnemy = isEnemy;
 
                 if (instanceUp.IsEnemy == true)
                 {
-                    if (i % 3 == 0)
-                    {
-                    }
+                    //if (i % 3 == 0)
+                    //{
+                        instanceUp.UnitType = "Archer";
+                    //}
                 }
 
                 instanceUp.UniqueID = i;
@@ -450,12 +456,6 @@ public class BattleSystemCust : MonoBehaviour
             UnitParsCust apprPars = allUnits[iApproachPhase];
 
 
-
-            if (apprPars.UniqueID == 311)
-            {
-
-            }
-
             if (apprPars.isApproaching && apprPars.target != null)
             {
 
@@ -475,6 +475,12 @@ public class BattleSystemCust : MonoBehaviour
 
                     float rTarget = (apprPars.transform.position - targ.transform.position).magnitude;
                     float stoppDistance = (apprPars.transform.localScale.x * targ.transform.localScale.x * apprNav.stoppingDistance);
+
+
+                    if (apprPars.UnitType == "Archer")
+                    {
+                        stoppDistance = 20f;
+                    }
 
                     // counting increased distances (failure to approch) between attacker and target
                     // if counter failedR becomes bigger than critFailedR, preparing for new target search
@@ -583,7 +589,7 @@ public class BattleSystemCust : MonoBehaviour
 
             UnitParsCust attPars = allUnits[iAttackPhase];
 
-            if (attPars.isAttacking && attPars.tag != null && attPars.target != null)
+            if (attPars.isAttacking && attPars.tag != null && attPars.target != null && attPars.UnitType != "Archer")
             {
                 UnitParsCust targPars = attPars.target;
 
@@ -597,8 +603,14 @@ public class BattleSystemCust : MonoBehaviour
                 float rTarget = (attPars.transform.position - targPars.transform.position).magnitude;
                 float stoppDistance = (2.5f + attPars.transform.localScale.x * targPars.transform.localScale.x * attNav.stoppingDistance);
 
-                // if target moves away, reset back to approach target phase
+                //archer
+                if (attPars.UnitType == "Archer")
+                {
+                    stoppDistance =  20f;
+                }
 
+
+                // if target moves away, reset back to approach target phase
                 if (rTarget > stoppDistance)
                 {
                     attPars.isApproaching = true;
@@ -627,7 +639,14 @@ public class BattleSystemCust : MonoBehaviour
 
                         if (Random.value > (strength / (strength + defence)))
                         {
-                            attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
+                            if (attPars.UnitType == "Archer")
+                            {
+                                attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Shoot, attPars.direction, default);
+                            }
+                            else
+                            {
+                                attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
+                            }
                             targPars.health = targPars.health - (10f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
                         }
                     }
@@ -839,7 +858,10 @@ public class BattleSystemCust : MonoBehaviour
                 //}
 
                 UnitParsCust prepSheetUnitPars = allUnits[i];
+                if (prepSheetUnitPars.IsEnemy)
+                {
 
+                }
                 //play animations
                 if (prepSheetUnitPars.playAnimationCust.forced)
                 {
@@ -853,7 +875,7 @@ public class BattleSystemCust : MonoBehaviour
                     SpriteSheetAnimationDataCust currSpriteSheetData = prepSheetUnitPars.spriteSheetData;
                     //TODO: add idle logic
                     SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete
-                                                                                                  , playerUnitPars.UnitType, playerUnitPars.IsEnemy);
+                                                                                                  , prepSheetUnitPars.UnitType, prepSheetUnitPars.IsEnemy);
 
                     // if changes
                     if (newSpriteSheetData != null)
@@ -933,11 +955,6 @@ public class BattleSystemCust : MonoBehaviour
                 //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
                 var spriteSheetAnimationData = renderAnimationParsCust.spriteSheetData;
 
-                if (renderAnimationParsCust.spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
-                {
-
-                }
-
 
                 renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
                 while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
@@ -952,14 +969,14 @@ public class BattleSystemCust : MonoBehaviour
 
 
 
-                    if (renderAnimationParsCust.IsEnemy)
-                    {
-                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
-                    }
-                    else
-                    {
+                    //if (renderAnimationParsCust.IsEnemy)
+                    //{
+                    //    springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
+                    //}
+                    //else
+                    //{
                         springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
-                    }
+                    //}
 
 
                     //UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
@@ -1044,14 +1061,14 @@ public class BattleSystemCust : MonoBehaviour
                     //springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
 
 
-                    if (renderAnimationParsCust.IsEnemy)
-                    {
-                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
-                    }
-                    else
-                    {
+                    //if (renderAnimationParsCust.IsEnemy)
+                    //{
+                    //    springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
+                    //}
+                    //else
+                    //{
                         springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
-                    }
+                    //}
 
 
                     Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };

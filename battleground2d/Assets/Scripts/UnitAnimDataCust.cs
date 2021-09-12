@@ -131,7 +131,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 0,
-                    Materials = IdleRightMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.IdleRight, unitType, isEnemy),//IdleRightMaterials,
                     MaterialsEnemy = IdleRightMaterialsEnemy
                 };
                 break;
@@ -143,7 +143,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 2,
-                    Materials = IdleLeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.IdleLeft, unitType, isEnemy),//IdleLeftMaterials,
                     MaterialsEnemy = IdleLeftMaterialsEnemy
                 };
                 break;
@@ -155,7 +155,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 4,
-                    Materials = IdleUpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.IdleUp, unitType, isEnemy),//IdleUpMaterials,
                     MaterialsEnemy = IdleUpMaterialsEnemy
                 };
                 break;
@@ -167,7 +167,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 0,
                     HorizontalCount = 6,
-                    Materials = IdleDownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.IdleDown, unitType, isEnemy),//IdleDownMaterials,
                     MaterialsEnemy = IdleDownMaterialsEnemy
                 };
                 break;
@@ -237,7 +237,7 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    Materials = RunLeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.RunLeft, unitType, isEnemy),//RunLeftMaterials,
                     MaterialsEnemy = RunLeftMaterialsEnemy
                 };
                 break;
@@ -249,7 +249,7 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    Materials = RunUpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.RunUp, unitType, isEnemy),//RunUpMaterials,
                     MaterialsEnemy = RunUpMaterialsEnemy
                 };
                 break;
@@ -261,7 +261,7 @@ public class UnitAnimDataCust
                     FrameRate = .14f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    Materials = RunDownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.RunDown, unitType, isEnemy),//RunDownMaterials,
                     MaterialsEnemy = RunDownMaterialsEnemy
                 };
                 break;
@@ -300,7 +300,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieRightMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.DieRight, unitType, isEnemy),//DieRightMaterials,
                     MaterialsEnemy = DieRightMaterialsEnemy
                 };
                 break;
@@ -312,7 +312,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieLeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.DieLeft, unitType, isEnemy),//DieLeftMaterials,
                     MaterialsEnemy = DieLeftMaterialsEnemy
                 };
                 break;
@@ -324,7 +324,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieUpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.DieUp, unitType, isEnemy),//DieUpMaterials,
                     MaterialsEnemy = DieUpMaterialsEnemy
                 };
                 break;
@@ -336,7 +336,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = DieDownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.DieDown, unitType, isEnemy),//DieDownMaterials,
                     MaterialsEnemy = DieDownMaterialsEnemy
                 };
                 break;
@@ -351,7 +351,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    Materials = AttackRightMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.AttackRight, unitType, isEnemy),//AttackRightMaterials,
                     MaterialsEnemy = AttackRightMaterialsEnemy
                 };
                 break;
@@ -363,7 +363,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    Materials = AttackLeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.AttackLeft, unitType, isEnemy),//AttackLeftMaterials,
                     MaterialsEnemy = AttackLeftMaterialsEnemy
                 };
                 break;
@@ -375,7 +375,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    Materials = AttackUpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.AttackUp, unitType, isEnemy),//AttackUpMaterials,
                     MaterialsEnemy = AttackUpMaterialsEnemy
                 };
                 break;
@@ -387,7 +387,7 @@ public class UnitAnimDataCust
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    Materials = AttackDownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.AttackDown, unitType, isEnemy),//AttackDownMaterials,
                     MaterialsEnemy = AttackDownMaterialsEnemy
                 };
                 break;
@@ -398,11 +398,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    //Materials = /*ShootRightMaterials*/,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.ShootRight, unitType, isEnemy),///*ShootRightMaterials*/,
                     MaterialsEnemy = ShootRightMaterialsEnemyArcher
                 };
                 break;
@@ -410,11 +410,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    //Materials = ShootLeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.ShootLeft, unitType, isEnemy),//ShootLeftMaterials,
                     MaterialsEnemy = ShootLeftMaterialsEnemyArcher
                 };
                 break;
@@ -422,11 +422,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    //Materials = ShootUpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.ShootUp, unitType, isEnemy),//ShootUpMaterials,
                     MaterialsEnemy = ShootUpMaterialsEnemyArcher
                 };
                 break;
@@ -434,11 +434,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    //Materials = ShootDownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.ShootDown, unitType, isEnemy),//ShootDownMaterials,
                     MaterialsEnemy = ShootDownMaterialsEnemyArcher
                 };
                 break;
@@ -451,11 +451,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
-                    //Materials = /*Shoot45RightMaterials*/,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.Shoot45Right, unitType, isEnemy),///*Shoot45RightMaterials*/,
                     MaterialsEnemy = Shoot45RightMaterialsEnemyArcher
                 };
                 break;
@@ -463,11 +463,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
-                    //Materials = Shoot45LeftMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.Shoot45Left, unitType, isEnemy),//Shoot45LeftMaterials,
                     MaterialsEnemy = Shoot45LeftMaterialsEnemyArcher
                 };
                 break;
@@ -475,11 +475,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
-                    //Materials = Shoot45UpMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.Shoot45Up, unitType, isEnemy),//Shoot45UpMaterials,
                     MaterialsEnemy = Shoot45UpMaterialsEnemyArcher
                 };
                 break;
@@ -487,11 +487,11 @@ public class UnitAnimDataCust
                 return new UnitAnimDataCust()
                 {
                     CurrentFrame = 0,
-                    FrameCount = 6,
+                    FrameCount = 5,
                     FrameRate = .1f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
-                    //Materials = Shoot45DownMaterials,
+                    Materials = GetMaterials(AnimMaterialTypeEnum.Shoot45Down, unitType, isEnemy),//Shoot45DownMaterials,
                     MaterialsEnemy = Shoot45DownMaterialsEnemyArcher
                 };
                 break;
@@ -500,6 +500,10 @@ public class UnitAnimDataCust
 
     private static List<Material> GetMaterials(AnimMaterialTypeEnum typeEnum, string unitType, bool isEnemy)
     {
+        if (isEnemy)
+        {
+
+        }
         return GetPropValue(typeEnum.ToString() + "Materials" + (isEnemy ? "Enemy" : "") + unitType);
     }
 
