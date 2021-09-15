@@ -141,10 +141,10 @@ public class BattleSystemCust : MonoBehaviour
 
                 if (instanceUp.IsEnemy == true)
                 {
-                    //if (i % 3 == 0)
-                    //{
+                    if (i % 3 == 0)
+                    {
                         instanceUp.UnitType = "Archer";
-                    //}
+                    }
                 }
 
                 instanceUp.UniqueID = i;
@@ -477,10 +477,17 @@ public class BattleSystemCust : MonoBehaviour
                     float stoppDistance = (apprPars.transform.localScale.x * targ.transform.localScale.x * apprNav.stoppingDistance);
 
 
-                    if (apprPars.UnitType == "Archer")
-                    {
-                        stoppDistance = 20f;
-                    }
+                    //if (apprPars.UnitType == "Archer")
+                    //{
+                    //    if (CanHitCoordinate(apprPars.transform.position, targ.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
+                    //    {
+                    //        stoppDistance = 1.5f * rTarget;
+                    //    }
+                    //    else
+                    //    {
+                    //        stoppDistance = 0f;
+                    //    }
+                    //}
 
                     // counting increased distances (failure to approch) between attacker and target
                     // if counter failedR becomes bigger than critFailedR, preparing for new target search
@@ -514,10 +521,27 @@ public class BattleSystemCust : MonoBehaviour
                     }
                     else
                     {
+
+
+
+                        if (apprPars.UnitType == "Archer")
+                        {
+                            if (CanHitCoordinate(apprPars.transform.position, targ.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
+                            {
+                                stoppDistance = 1.5f * rTarget;
+                            }
+                            else
+                            {
+                                stoppDistance = rTarget;
+                            }
+                        }
+
                         // if approachers already close to their targets
                         if (rTarget < stoppDistance)
                         {
-                            apprNav.SetDestination(new Vector3(targ.transform.position.x, targ.transform.position.y, 0f));
+                            apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
+
+                            //TODO: get coorect direction for arhcers
                             var direction = apprNav.destination - apprPars.transform.position;
                             apprPars.direction = direction;
                             // pre-setting for attacking
@@ -532,7 +556,9 @@ public class BattleSystemCust : MonoBehaviour
                             if (apprPars.isMovable)
                             {
                                 Vector3 destination = apprNav.destination;
-                                if ((destination - targ.transform.position).sqrMagnitude > .125f)
+                                if ((destination - targ.transform.position).sqrMagnitude > .125f && apprPars.UnitType != "Archer"
+                                    || (apprPars.UnitType == "Archer" && (destination - targ.transform.position).sqrMagnitude > .125f &&
+                                    CanHitCoordinate(apprPars.transform.position, targ.transform.position, Vector3.zero, 20.0f, 0.4f) != true))
                                 {
                                     apprNav.SetDestination(new Vector3(targ.transform.position.x, targ.transform.position.y, 0f));
                                     var direction = targ.transform.position - apprPars.transform.position;
@@ -589,7 +615,7 @@ public class BattleSystemCust : MonoBehaviour
 
             UnitParsCust attPars = allUnits[iAttackPhase];
 
-            if (attPars.isAttacking && attPars.tag != null && attPars.target != null && attPars.UnitType != "Archer")
+            if (attPars.isAttacking && attPars.tag != null && attPars.target != null )
             {
                 UnitParsCust targPars = attPars.target;
 
@@ -606,7 +632,14 @@ public class BattleSystemCust : MonoBehaviour
                 //archer
                 if (attPars.UnitType == "Archer")
                 {
-                    stoppDistance =  20f;
+                    if (CanHitCoordinate(attPars.transform.position, targPars.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
+                    {
+                        stoppDistance = 1.5f * rTarget;
+                    }
+                    else
+                    {
+                        stoppDistance = rTarget;
+                    }
                 }
 
 
@@ -1164,4 +1197,29 @@ public class BattleSystemCust : MonoBehaviour
         targetRefreshTimes.Add(-1f);
         targetKD.Add(null);
     }
+
+
+    public bool CanHitCoordinate(Vector3 shooterPosition, Vector3 targetPosition, Vector3 targetVolocity, float launchSpeed, float distanceIncrement)
+    {
+        bool canHit = false;
+
+        float vini = launchSpeed;
+        float g = 9.81f;
+
+
+        Vector3 shootPosition2d = new Vector3(shooterPosition.x, shooterPosition.y, 0);
+        Vector3 targetPosition2d = new Vector3(targetPosition.x, targetPosition.y, 0);
+
+        float rTarget2d = (targetPosition2d - shootPosition2d).magnitude;
+        rTarget2d = rTarget2d + distanceIncrement * rTarget2d;
+        float sqrt = (vini * vini * vini * vini) - (g * (g * (rTarget2d * rTarget2d) + 2 * (targetPosition.y - shooterPosition.y) * (vini * vini)));
+
+        if (sqrt >= 0)
+        {
+            canHit = true;
+        }
+
+        return canHit;
+    }
+
 }
