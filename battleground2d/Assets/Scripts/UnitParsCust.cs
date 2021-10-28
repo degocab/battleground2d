@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class UnitParsCust : MonoBehaviour
@@ -10,6 +11,7 @@ public class UnitParsCust : MonoBehaviour
     public bool IsEnemy { get; set; }
 
 
+    [HideInInspector]public UnitParsTypeCust unitParsTypeCust;
     public string UnitType { get; set; }
 
     public bool isMovable = true;
@@ -74,12 +76,17 @@ public class UnitParsCust : MonoBehaviour
     public float attackRate { get; set; }
 
     public UnityEngine.AI.NavMeshAgent nma;
+    public Vector3 velocityVector = Vector3.zero;
 
     public string CurrentCommand { get; set; }
     public string PreviousCommand { get; set; }
-
+    
     void Start()
     {
+
+        unitParsTypeCust = BattleSystemCust.active.allUnits.FirstOrDefault(x => x.UniqueID == UniqueID).GetComponent<UnitParsTypeCust>();
+
+
         spriteSheetData = new SpriteSheetAnimationDataCust
         {
             currentFrame = UnityEngine.Random.Range(0, 5),
@@ -102,7 +109,7 @@ public class UnitParsCust : MonoBehaviour
 
         playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Walk, transform.forward, default);
         randomAttackRange = UnityEngine.Random.Range(0f, 2f);
-        attackRate = 3;
+        attackRate = 15;
         nextAttack = 0;
     }
 
@@ -118,31 +125,7 @@ public class UnitParsCust : MonoBehaviour
         //transform.position = new Vector3(childTransform.position.x, childTransform.position.y, 0f);
 
         springAttractScreenRend.sortingOrder = Mathf.RoundToInt(transform.position.y * 100f) * -1;
-        //    if (isMovable && isApproaching)
-        //    {
-        //        //childAnimator.SetFloat("Speed", 1f);
 
-        //        if (target != null)
-        //        {
-        //            float horizontal = target.transform.position.x - childTransform.position.x;
-        //            float vertical = target.transform.position.x - childTransform.position.y;
-
-        //            //int direction = SetMovementDirection(horizontal, vertical);
-
-
-        //            //childAnimator.SetFloat("Horiztonal", horizontal);
-        //            //childAnimator.SetFloat("Vertical", vertical);
-        //            //childAnimator.SetInteger("Direction", direction);
-
-        //        }
-
-        //    }
-
-        //    if (isAttacking)
-        //    {
-        //        //childAnimator.SetInteger("AttackComboSeq", 1);
-        //    }
-        //}
 
 
     }
@@ -206,6 +189,18 @@ public class UnitParsCust : MonoBehaviour
     }
 
 
+
+    public void LaunchArrowDelay(UnitParsCust targPars, Vector3 launchPoint)
+    {
+        BattleSystemCust.active.LaunchArrow(this, targPars, launchPoint);
+        //StartCoroutine(LaunchArrowDelayCor(targPars, launchPoint));
+    }
+
+    IEnumerator LaunchArrowDelayCor(UnitParsCust targPars, Vector3 launchPoint)
+    {
+        yield return new WaitForSeconds(1.25f);
+        BattleSystemCust.active.LaunchArrow(this, targPars, launchPoint);
+    }
 
 }
 

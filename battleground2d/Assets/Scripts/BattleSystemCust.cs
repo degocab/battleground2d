@@ -1,8 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using RTSToolkit;
+using System;
 
 public class BattleSystemCust : MonoBehaviour
 {
+
+    /// <summary>
+    /// sample t for arrow time
+    /// </summary>
+    [SerializeField]
+    public float t = 1f;
+
     public static BattleSystemCust active;
 
     public List<UnitParsCust> allUnits = new List<UnitParsCust>();
@@ -39,7 +49,7 @@ public class BattleSystemCust : MonoBehaviour
     void Awake()
     {
         active = this;
-        Random.InitState(randomSeed); // not sure why this needs to be initialized
+        UnityEngine.Random.InitState(randomSeed); // not sure why this needs to be initialized
 
         playerControl = player.GetComponent<PlayerControl>();
         aiControl = this.GetComponent<AIControl>();
@@ -47,11 +57,11 @@ public class BattleSystemCust : MonoBehaviour
 
     }
 
-    public GameObject objectToSpawn;
-    public GameObject objectToSpawn2;
+    public GameObject allyGameObjectToSpawn;
+    public GameObject enemyGameObjectToSpawn;
 
     //enemy archer
-    public GameObject objectToSpawn3;
+    //public GameObject objectToSpawn3;
 
 
     public int unitCount = 1000;
@@ -60,6 +70,15 @@ public class BattleSystemCust : MonoBehaviour
     public PlayerControl playerControl { get; set; }
 
     private AIControl aiControl { get; set; }
+
+    public class SpawnLoc
+    {
+        public int Index { get; set; }
+        public Vector3 Location { get; set; }
+        public GameObject  ObjectToSpawn{ get; set; }
+        public bool IsArcher { get; set; }
+        public bool IsEnemy { get; set; }
+    }
 
     void Start()
     {
@@ -72,42 +91,34 @@ public class BattleSystemCust : MonoBehaviour
         //maximum amount of nodes processed each frame in pathfinding process
         UnityEngine.AI.NavMesh.pathfindingIterationsPerFrame = 10000;
 
+        List<SpawnLoc> locations = new List<SpawnLoc>();// new Tuple<int, Vector3, bool>();
 
-        float xAlly = -2;
+        float xAlly = -12;
         float xEnemy = 2;
         for (int i = 0; i < unitCount; i++)
         {
-            Vector2 randPos = new Vector2(Random.Range(-10f, 10f), Random.Range(-20f, 20f));//Random.insideUnitCircle * 10;
+            Vector2 randPos = new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-5f, 5f));//Random.insideUnitCircle * 10;
             Vector3 pos = new Vector3(0, randPos.y, 0f);
-
 
             GameObject currentGameObject;
             bool isEnemy = false;
+            bool isArcher = false;
             if (i % 2 == 0)
             {
-                currentGameObject = objectToSpawn;
-                isEnemy = false;
+                currentGameObject = enemyGameObjectToSpawn;
+                isEnemy = true;
                 if (i % 25 == 0)
                 {
                     xEnemy++;
                 }
+
+
                 pos.x = xEnemy;
             }
             else
             {
-
-                //if (i % 3 == 0)
-                //{
-
-                //    currentGameObject = objectToSpawn2;
-                //}
-                //else
-                //{
-                    currentGameObject = objectToSpawn2;
-
-                //}
-                isEnemy = true;
-
+                currentGameObject = allyGameObjectToSpawn;
+                isEnemy = false;
 
                 if (i % 25 == 0)
                 {
@@ -117,12 +128,21 @@ public class BattleSystemCust : MonoBehaviour
                 pos.x = xAlly;
             }
 
+            if (i % 3 == 0)
+            {
+                isArcher = true;
+            }
 
-            GameObject go = Instantiate(currentGameObject, pos, Quaternion.identity);
+
+            locations.Add(new SpawnLoc() { Index = i, Location = pos, ObjectToSpawn = currentGameObject, IsArcher = isArcher, IsEnemy = isEnemy});
+        }
+
+
+        foreach (SpawnLoc loc in locations)
+        {
+
+            GameObject go = Instantiate(loc.ObjectToSpawn, loc.Location, Quaternion.identity);
             UnitParsCust instanceUp = go.GetComponent<UnitParsCust>();
-
-            //freeze rotation
-            //var transf = go.GetComponentInChildren<Transform>();
 
 
             if (instanceUp != null)
@@ -133,21 +153,17 @@ public class BattleSystemCust : MonoBehaviour
                 }
                 instanceUp.isReady = true;
 
-                if (isEnemy == true)
-                {
-
-                }
-                instanceUp.IsEnemy = isEnemy;
+                instanceUp.IsEnemy = loc.IsEnemy;
 
                 if (instanceUp.IsEnemy == true)
                 {
-                    if (i % 3 == 0)
+                    if (loc.IsArcher)
                     {
                         instanceUp.UnitType = "Archer";
                     }
                 }
 
-                instanceUp.UniqueID = i;
+                instanceUp.UniqueID = loc.Index;
                 allUnits.Add(instanceUp);
                 //instanceUp.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, instanceUp.transform.forward, default);
 
@@ -257,7 +273,6 @@ public class BattleSystemCust : MonoBehaviour
             }
         }
     }
-
 
 
 
@@ -481,7 +496,7 @@ public class BattleSystemCust : MonoBehaviour
                     //{
                     //    if (CanHitCoordinate(apprPars.transform.position, targ.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
                     //    {
-                    //        stoppDistance = 1.5f * rTarget;
+                    //        stoppDistance = 1.25f*rTarget;
                     //    }
                     //    else
                     //    {
@@ -528,7 +543,7 @@ public class BattleSystemCust : MonoBehaviour
                         {
                             if (CanHitCoordinate(apprPars.transform.position, targ.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
                             {
-                                stoppDistance = 1.5f * rTarget;
+                                stoppDistance = 1.25f * rTarget;
                             }
                             else
                             {
@@ -563,7 +578,10 @@ public class BattleSystemCust : MonoBehaviour
                                     apprNav.SetDestination(new Vector3(targ.transform.position.x, targ.transform.position.y, 0f));
                                     var direction = targ.transform.position - apprPars.transform.position;
                                     apprPars.direction = direction;
-                                    apprNav.speed = 1f;
+
+                                    var rand = UnityEngine.Random.Range(0f, .25f);
+
+                                    apprNav.speed = 1f + rand;
                                     apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                                 }
                             }
@@ -615,7 +633,7 @@ public class BattleSystemCust : MonoBehaviour
 
             UnitParsCust attPars = allUnits[iAttackPhase];
 
-            if (attPars.isAttacking && attPars.tag != null && attPars.target != null )
+            if (attPars.isAttacking && attPars.tag != null && attPars.target != null)
             {
                 UnitParsCust targPars = attPars.target;
 
@@ -634,7 +652,7 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     if (CanHitCoordinate(attPars.transform.position, targPars.transform.position, Vector3.zero, 20.0f, 0.4f) == true)
                     {
-                        stoppDistance = 1.5f * rTarget;
+                        stoppDistance = 1.25f * rTarget;
                     }
                     else
                     {
@@ -670,17 +688,21 @@ public class BattleSystemCust : MonoBehaviour
                     {
                         attPars.nextAttack = Time.time + (attPars.attackRate - attPars.randomAttackRange);
 
-                        if (Random.value > (strength / (strength + defence)))
+                        if (UnityEngine.Random.value > (strength / (strength + defence)))
                         {
                             if (attPars.UnitType == "Archer")
                             {
-                                attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Shoot, attPars.direction, default);
+                                attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Shoot45, attPars.direction, default);
+                                attPars.LaunchArrowDelay(targPars, attPars.transform.position);
                             }
                             else
                             {
                                 attPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Attack, attPars.direction, default);
+
+                                //move to target script?
+                                targPars.health = targPars.health - (10f + UnityEngine.Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
+
                             }
-                            targPars.health = targPars.health - (10f + Random.Range(0f, 15f));// targPars.health - 2.0f * strength * Random.value;
                         }
                     }
                     //else
@@ -898,7 +920,6 @@ public class BattleSystemCust : MonoBehaviour
                 //play animations
                 if (prepSheetUnitPars.playAnimationCust.forced)
                 {
-                    //TODO add walking/run logic
                     prepSheetUnitPars.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete
                                                                                          , prepSheetUnitPars.UnitType, prepSheetUnitPars.IsEnemy);
 
@@ -906,7 +927,6 @@ public class BattleSystemCust : MonoBehaviour
                 else
                 {
                     SpriteSheetAnimationDataCust currSpriteSheetData = prepSheetUnitPars.spriteSheetData;
-                    //TODO: add idle logic
                     SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */prepSheetUnitPars.playAnimationCust.baseAnimType, currSpriteSheetData, prepSheetUnitPars.playAnimationCust.animDir, prepSheetUnitPars.playAnimationCust.onComplete
                                                                                                   , prepSheetUnitPars.UnitType, prepSheetUnitPars.IsEnemy);
 
@@ -948,10 +968,10 @@ public class BattleSystemCust : MonoBehaviour
         #endregion
     }
 
-    public List<Material> springAttractFrames;
+    //public List<Material> springAttractFrames;
 
-    int iRenderAnimationPhase = 0;
-    float fRenderAnimationPhase = 0f;
+    //int iRenderAnimationPhase = 0;
+    //float fRenderAnimationPhase = 0f;
 
     public float renderAnimationFraction = 1f;
 
@@ -982,7 +1002,7 @@ public class BattleSystemCust : MonoBehaviour
 
                 UnitParsCust renderAnimationParsCust = allUnits[i];
 
-
+                List<Material> springAttractFrames = new List<Material>();
 
                 MeshRenderer springAttractScreenRend = renderAnimationParsCust.springAttractScreenRend;
                 //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
@@ -992,7 +1012,7 @@ public class BattleSystemCust : MonoBehaviour
                 renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
                 while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
                 {
-                    renderAnimationParsCust.spriteSheetData.frameTimer += .1f;// renderAnimationParsCust.spriteSheetData.frameRate;
+                    renderAnimationParsCust.spriteSheetData.frameTimer += renderAnimationParsCust.spriteSheetData.frameRate;
                     renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);// + renderAnimationParsCust.spriteSheetData.horizontalCount;
 
                     if (renderAnimationParsCust.spriteSheetData.currentFrame >= (renderAnimationParsCust.spriteSheetData.frameCount))
@@ -1008,7 +1028,7 @@ public class BattleSystemCust : MonoBehaviour
                     //}
                     //else
                     //{
-                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
+                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
                     //}
 
 
@@ -1051,7 +1071,7 @@ public class BattleSystemCust : MonoBehaviour
 
                 UnitParsCust renderAnimationParsCust = deadUnits[i];
 
-
+                List<Material> springAttractFrames = new List<Material>();
 
                 MeshRenderer springAttractScreenRend = renderAnimationParsCust.springAttractScreenRend;
                 //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
@@ -1074,9 +1094,9 @@ public class BattleSystemCust : MonoBehaviour
                     renderAnimationParsCust.gameObject.transform.localPosition = new Vector3(renderAnimationParsCust.gameObject.transform.position.x, renderAnimationParsCust.gameObject.transform.position.y, 0);
                     renderAnimationParsCust.gameObject.transform.SetParent(deadUnitHolder.transform);
                     //Object.Destroy(renderAnimationParsCust.springAttractScreenRend);
-                    Object.Destroy(renderAnimationParsCust.nma);
+                    UnityEngine.Object.Destroy(renderAnimationParsCust.nma);
                     //Object.Destroy(renderAnimationParsCust.GetComponent<MeshFilter>());
-                    Object.Destroy(renderAnimationParsCust);
+                    UnityEngine.Object.Destroy(renderAnimationParsCust);
                     return;
                 }
 
@@ -1084,7 +1104,7 @@ public class BattleSystemCust : MonoBehaviour
                 renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
                 while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
                 {
-                    renderAnimationParsCust.spriteSheetData.frameTimer += .1f;// renderAnimationParsCust.spriteSheetData.frameRate;
+                    renderAnimationParsCust.spriteSheetData.frameTimer += renderAnimationParsCust.spriteSheetData.frameRate;
                     renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);// + renderAnimationParsCust.spriteSheetData.horizontalCount;
 
                     if (renderAnimationParsCust.spriteSheetData.currentFrame >= (renderAnimationParsCust.spriteSheetData.frameCount))
@@ -1100,7 +1120,7 @@ public class BattleSystemCust : MonoBehaviour
                     //}
                     //else
                     //{
-                        springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
+                    springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
                     //}
 
 
@@ -1147,7 +1167,7 @@ public class BattleSystemCust : MonoBehaviour
         //    Object.Destroy(playerUnitPars);
         //    return;
         //}
-
+        List<Material> springAttractFramesPlayer = new List<Material>();
         var deltaTime2 = Time.deltaTime;
         playerUnitPars.spriteSheetData.frameTimer -= deltaTime2;
         while (playerUnitPars.spriteSheetData.frameTimer < 0)
@@ -1164,15 +1184,15 @@ public class BattleSystemCust : MonoBehaviour
 
             if (playerUnitPars.IsEnemy)
             {
-                springAttractFrames = playerUnitPars.spriteSheetData.materialsEnemy;
+                springAttractFramesPlayer = playerUnitPars.spriteSheetData.materialsEnemy;
             }
             else
             {
-                springAttractFrames = playerUnitPars.spriteSheetData.materials;
+                springAttractFramesPlayer = playerUnitPars.spriteSheetData.materials;
             }
 
 
-            Material[] newMats = { springAttractFrames[playerUnitPars.spriteSheetData.currentFrame] };
+            Material[] newMats = { springAttractFramesPlayer[playerUnitPars.spriteSheetData.currentFrame] };
             playerUnitPars.springAttractScreenRend.materials = newMats;
             //if (playerUnitPars.IsEnemy)
             //{
@@ -1198,9 +1218,13 @@ public class BattleSystemCust : MonoBehaviour
         targetKD.Add(null);
     }
 
-
+    //TODO change this
     public bool CanHitCoordinate(Vector3 shooterPosition, Vector3 targetPosition, Vector3 targetVolocity, float launchSpeed, float distanceIncrement)
     {
+
+
+        //TODO: DO A  CHECK ON WETHER WE ARE PERPENDICULAR OR NOT
+
         bool canHit = false;
 
         float vini = launchSpeed;
@@ -1214,7 +1238,9 @@ public class BattleSystemCust : MonoBehaviour
         rTarget2d = rTarget2d + distanceIncrement * rTarget2d;
         float sqrt = (vini * vini * vini * vini) - (g * (g * (rTarget2d * rTarget2d) + 2 * (targetPosition.y - shooterPosition.y) * (vini * vini)));
 
-        if (sqrt >= 0)
+        if (/*sqrt >= 0 &&*/
+            ((shootPosition2d.x <= targetPosition.x + 1 &&  shootPosition2d.x >= targetPosition2d.x - 1) 
+             || (shootPosition2d.y <= targetPosition2d.y + 1 && shootPosition2d.y >= targetPosition2d.y -1)))
         {
             canHit = true;
         }
@@ -1222,4 +1248,129 @@ public class BattleSystemCust : MonoBehaviour
         return canHit;
     }
 
+
+
+    public void LaunchArrow(UnitParsCust attPars, UnitParsCust targPars, Vector3 launchPoint)
+    {
+        if ((attPars != null) && (targPars != null))
+        {
+            LaunchArrowInner(attPars, targPars, launchPoint, false);
+
+        }
+    }
+
+    public void LaunchArrowInner(UnitParsCust attPars, UnitParsCust targPars, Vector3 launchPoint1, bool isCosmetic)
+    {
+        Quaternion rot = new Quaternion(0f, 0.0f, 0.0f, 0.0f);
+        Vector3 launchPoint = launchPoint1 + Vector3.zero;
+
+
+        if (attPars != null && targPars != null)
+        {
+            Vector3 arrForce2 = LaunchDirection(launchPoint, targPars.transform.position, targPars.velocityVector, attPars.unitParsTypeCust.velArrow);
+            float failureError = 0f;
+
+            if (attPars.unitParsTypeCust.arrow != null)
+            {
+                ArrowParsCust arp = attPars.unitParsTypeCust.arrow.GetComponent<ArrowParsCust>();
+                if (arp != null)
+                {
+
+                }
+            }
+
+
+
+            float magBeforeError = arrForce2.magnitude;
+
+
+            var rand = UnityEngine.Random.insideUnitSphere;
+            arrForce2 = arrForce2 + new Vector3(rand.x, rand.y, 0) * arrForce2.magnitude * failureError;
+            arrForce2 = arrForce2.normalized * magBeforeError;
+
+            arrForce2.z = 0f;
+            if ((arrForce2.sqrMagnitude > 0.0f) && (arrForce2.y != -Mathf.Infinity) && (arrForce2.y != Mathf.Infinity))
+            {
+                if (attPars.unitParsTypeCust.arrow != null)
+                {
+                    GameObject arroww = (GameObject)Instantiate(attPars.unitParsTypeCust.arrow, launchPoint, rot);
+                    //arroww.GetComponent<>
+
+                    ArrowParsCust arrPars = arroww.GetComponent<ArrowParsCust>();
+
+                    if (arrPars != null)
+                    {
+                        arrPars.attPars = attPars;
+                        arrPars.targPars = targPars;
+
+
+
+                        //set random tolerance
+                        Vector3 posWithTolerance = targPars.transform.position;
+                        posWithTolerance.x = posWithTolerance.x + UnityEngine.Random.Range(-.2f, .2f);
+                        posWithTolerance.y = posWithTolerance.y + UnityEngine.Random.Range(-.2f, .2f);
+
+                        arrPars.targetPos = posWithTolerance;
+                        arrPars.Init(1.5f, arrForce2);
+
+                    }
+                }
+            }
+
+        }
+
+
+    }
+
+    public Vector3 LaunchDirection(Vector3 shooterPosition, Vector3 targetPosition, Vector3 targetVelocity, float launchSpeed)
+    {
+        float vini = launchSpeed;
+
+
+        // horizontal plane projections	
+        Vector3 shooterPosition2d = new Vector3(shooterPosition.x, 0f, shooterPosition.z);
+        Vector3 targetPosition2d = new Vector3(targetPosition.x, 0f, targetPosition.z);
+
+        float Rtarget2d = (targetPosition2d - shooterPosition2d).magnitude;
+
+        //shooter and target coordinates
+        float ax = shooterPosition.x;
+        float ay = shooterPosition.y;
+        float az = 0;
+
+        float tx = targetPosition.x;
+        float ty = targetPosition.y;
+        float tz = 0;
+
+        float g = 9.81f;
+
+        float sqrt = (vini * vini * vini * vini) - (g * (g * (Rtarget2d * Rtarget2d) + 2 * (ty - ay) * (vini * vini)));
+        sqrt = Mathf.Sqrt(sqrt);
+
+        float angleInRadians = Mathf.Atan((vini * vini + sqrt) / (g * Rtarget2d));
+        float angleInDegrees = angleInRadians * Mathf.Rad2Deg;
+
+        if (angleInDegrees > 45f)
+        {
+            angleInDegrees = 90f - angleInDegrees;
+        }
+
+        if (angleInDegrees < 0f)
+        {
+            angleInDegrees = -angleInDegrees;
+        }
+
+        Vector3 rotAxis = Vector3.Cross((targetPosition - shooterPosition), new Vector3(0f, 1f, 0f));
+        Vector3 arrForce = (GenericMath.RotAround(-angleInDegrees, (targetPosition - shooterPosition), rotAxis)).normalized;
+
+        // shoting time
+        float shTime = Mathf.Sqrt(
+            ((tx - ax) * (tx - ax) + (tz - az) * (tz - az)) /
+            ((vini * arrForce.x) * (vini * arrForce.x) + (vini * arrForce.z) * (vini * arrForce.z))
+        );
+
+        Vector3 finalDirection = vini * arrForce + 0.5f * shTime * targetVelocity;
+        return finalDirection;
+    }
 }
+

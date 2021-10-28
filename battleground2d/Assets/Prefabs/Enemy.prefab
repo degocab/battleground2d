@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7421421371445201865}
   - component: {fileID: 7421421371445201867}
+  - component: {fileID: 6780733654625638576}
   - component: {fileID: 7421421371445201460}
   - component: {fileID: 7421421371445201461}
   - component: {fileID: 7421421371445201462}
@@ -54,6 +55,20 @@ MonoBehaviour:
   failedDist: 0
   critFailedDist: 10
   manualDestination: {x: 0, y: 0, z: 0}
+--- !u!114 &6780733654625638576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7421421371445201456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e380542cbf32b340bcf735df5a8f18a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  arrow: {fileID: 6904814357149107869, guid: c3f7bfa1a0db41a429f3d034370c514d, type: 3}
+  velArrow: 20
 --- !u!114 &7421421371445201460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67,6 +82,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UniqueID: 0
+  unitParsTypeCust: {fileID: 0}
   isMovable: 1
   isReady: 0
   isApproaching: 0
@@ -98,6 +114,8 @@ MonoBehaviour:
   walkingSpriteSheetMaterial: {fileID: 0}
   springAttractScreenRend: {fileID: 0}
   direction: {x: 0, y: 0, z: 0}
+  nma: {fileID: 0}
+  velocityVector: {x: 0, y: 0, z: 0}
 --- !u!23 &7421421371445201461
 MeshRenderer:
   m_ObjectHideFlags: 0
