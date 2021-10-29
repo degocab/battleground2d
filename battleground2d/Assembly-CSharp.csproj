@@ -293,6 +293,7 @@
     <Compile Include="Assets\Scripts\CameraFollow.cs" />
     <Compile Include="Assets\Scripts\DiplomacyCust.cs" />
     <Compile Include="Assets\Scripts\General.cs" />
+    <Compile Include="Assets\Scripts\GenericMath.cs" />
     <Compile Include="Assets\Scripts\KDTreeCust.cs" />
     <Compile Include="Assets\Scripts\ManualControlCust.cs" />
     <Compile Include="Assets\Scripts\PlayerControl.cs" />
