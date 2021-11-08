@@ -117,9 +117,11 @@ public class BattleSystemCust : MonoBehaviour
             }
             else
             {
+
+
+
                 currentGameObject = allyGameObjectToSpawn;
                 isEnemy = false;
-
                 if (i % 25 == 0)
                 {
                     xAlly--;
@@ -155,13 +157,10 @@ public class BattleSystemCust : MonoBehaviour
 
                 instanceUp.IsEnemy = loc.IsEnemy;
 
-                if (instanceUp.IsEnemy == true)
-                {
                     if (loc.IsArcher)
                     {
                         instanceUp.UnitType = "Archer";
                     }
-                }
 
                 instanceUp.UniqueID = loc.Index;
                 allUnits.Add(instanceUp);
@@ -579,10 +578,24 @@ public class BattleSystemCust : MonoBehaviour
                                     var direction = targ.transform.position - apprPars.transform.position;
                                     apprPars.direction = direction;
 
-                                    var rand = UnityEngine.Random.Range(0f, .25f);
+
+                                    //store last known movement direction for dying ?
+                                    apprPars.lastDirection = direction;
+
+                                    var rand = UnityEngine.Random.Range(0f, .55f);
+
+
+                                    //random frame start on run
+                                    if (apprPars.playAnimationCust.baseAnimType != UnitAnimDataCust.BaseAnimMaterialType.Run)
+                                    {
+                                        apprPars.randomFrame = true;
+                                    }
+
 
                                     apprNav.speed = 1f + rand;
                                     apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
+
+
                                 }
                             }
                         }
@@ -849,7 +862,7 @@ public class BattleSystemCust : MonoBehaviour
                 else
                 {
 
-                    deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.direction, default);
+                    deadPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Die, deadPars.lastDirection, default);
                     deadPars.isMovable = false;
                     deadPars.isReady = false;
                     deadPars.isApproaching = false;
@@ -968,10 +981,6 @@ public class BattleSystemCust : MonoBehaviour
         #endregion
     }
 
-    //public List<Material> springAttractFrames;
-
-    //int iRenderAnimationPhase = 0;
-    //float fRenderAnimationPhase = 0f;
 
     public float renderAnimationFraction = 1f;
 
@@ -983,9 +992,6 @@ public class BattleSystemCust : MonoBehaviour
         //int nToLoop = (int)fRenderAnimationPhase;
         //fRenderAnimationPhase -= nToLoop;
 
-
-
-
         if (allUnits.Count > 0)
         {
             var deltaTime = Time.deltaTime;
@@ -993,46 +999,38 @@ public class BattleSystemCust : MonoBehaviour
             for (int i = 0; i < allUnits.Count; i++)
             {
 
-                //iRenderAnimationPhase++;
-
-                //if (iRenderAnimationPhase >= allUnits.Count)
-                //{
-                //    iRenderAnimationPhase = 0;
-                //}
 
                 UnitParsCust renderAnimationParsCust = allUnits[i];
 
                 List<Material> springAttractFrames = new List<Material>();
 
                 MeshRenderer springAttractScreenRend = renderAnimationParsCust.springAttractScreenRend;
-                //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
+
                 var spriteSheetAnimationData = renderAnimationParsCust.spriteSheetData;
+
+
+
+                //random frame
+                if (renderAnimationParsCust.randomFrame == true)
+                {
+                    renderAnimationParsCust.spriteSheetData.currentFrame = UnityEngine.Random.Range(0, renderAnimationParsCust.spriteSheetData.frameCount);
+                    renderAnimationParsCust.randomFrame = false;
+                }
 
 
                 renderAnimationParsCust.spriteSheetData.frameTimer -= deltaTime;
                 while (renderAnimationParsCust.spriteSheetData.frameTimer < 0)
                 {
                     renderAnimationParsCust.spriteSheetData.frameTimer += renderAnimationParsCust.spriteSheetData.frameRate;
-                    renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);// + renderAnimationParsCust.spriteSheetData.horizontalCount;
+                    renderAnimationParsCust.spriteSheetData.currentFrame = ((renderAnimationParsCust.spriteSheetData.currentFrame + 1) % renderAnimationParsCust.spriteSheetData.frameCount);
 
                     if (renderAnimationParsCust.spriteSheetData.currentFrame >= (renderAnimationParsCust.spriteSheetData.frameCount))
                     {
                         renderAnimationParsCust.spriteSheetData.loopCount++;
                     }
 
-
-
-                    //if (renderAnimationParsCust.IsEnemy)
-                    //{
-                    //    springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
-                    //}
-                    //else
-                    //{
                     springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
-                    //}
 
-
-                    //UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
                     Material[] newMats = null;
                     try
                     {
@@ -1044,10 +1042,7 @@ public class BattleSystemCust : MonoBehaviour
                         throw;
                     }
                     renderAnimationParsCust.springAttractScreenRend.materials = newMats;
-                    //if (renderAnimationParsCust.IsEnemy)
-                    //{
-                    //    renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
-                    //}
+
                 }
 
             }
@@ -1089,7 +1084,7 @@ public class BattleSystemCust : MonoBehaviour
                     deadUnits.Remove(renderAnimationParsCust);
                     renderAnimationParsCust.springAttractScreenRend.materials[0].color =
                                             Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.black, .25f);
-                    renderAnimationParsCust.springAttractScreenRend.sortingOrder = 9999999;
+                    renderAnimationParsCust.springAttractScreenRend.sortingOrder = 9999997;
                     renderAnimationParsCust.transform.position = new Vector3(renderAnimationParsCust.transform.position.x, renderAnimationParsCust.transform.position.y, .01f);
                     renderAnimationParsCust.gameObject.transform.localPosition = new Vector3(renderAnimationParsCust.gameObject.transform.position.x, renderAnimationParsCust.gameObject.transform.position.y, 0);
                     renderAnimationParsCust.gameObject.transform.SetParent(deadUnitHolder.transform);

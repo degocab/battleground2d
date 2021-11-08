@@ -24,33 +24,67 @@ public class UnitAnimDataCust
     public static List<UnitAnimDataCust> unitAnimTypeList;
     public static Dictionary<AnimMaterialTypeEnum, UnitAnimDataCust> unitAnimTypeDic;
 
-    public static List<Material> RunRightMaterials = Resources.LoadAll("Material/RunRight", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> RunLeftMaterials = Resources.LoadAll("Material/RunLeft", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> RunUpMaterials = Resources.LoadAll("Material/RunUp", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> RunDownMaterials = Resources.LoadAll("Material/RunDown", typeof(Material)).Cast<Material>().ToList();
+    #region DefaulUnitMaterials
+    public static List<Material> RunRightMaterialsDefault = Resources.LoadAll("Material/Default/RunRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunLeftMaterialsDefault = Resources.LoadAll("Material/Default/RunLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunUpMaterialsDefault = Resources.LoadAll("Material/Default/RunUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunDownMaterialsDefault = Resources.LoadAll("Material/Default/RunDown", typeof(Material)).Cast<Material>().ToList();
 
-    public static List<Material> IdleRightMaterials = Resources.LoadAll("Material/IdleRight", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> IdleLeftMaterials = Resources.LoadAll("Material/IdleLeft", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> IdleUpMaterials = Resources.LoadAll("Material/IdleUp", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> IdleDownMaterials = Resources.LoadAll("Material/IdleDown", typeof(Material)).Cast<Material>().ToList();
-
-
-    public static List<Material> AttackRightMaterials = Resources.LoadAll("Material/AttackRight", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> AttackLeftMaterials = Resources.LoadAll("Material/AttackLeft", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> AttackUpMaterials = Resources.LoadAll("Material/AttackUp", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> AttackDownMaterials = Resources.LoadAll("Material/AttackDown", typeof(Material)).Cast<Material>().ToList();
-
-    public static List<Material> DieRightMaterials = Resources.LoadAll("Material/DieRight", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> DieLeftMaterials = Resources.LoadAll("Material/DieLeft", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> DieUpMaterials = Resources.LoadAll("Material/DieUp", typeof(Material)).Cast<Material>().ToList();
-    public static List<Material> DieDownMaterials = Resources.LoadAll("Material/DieDown", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleRightMaterialsDefault = Resources.LoadAll("Material/Default/IdleRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleLeftMaterialsDefault = Resources.LoadAll("Material/Default/IdleLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleUpMaterialsDefault = Resources.LoadAll("Material/Default/IdleUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleDownMaterialsDefault = Resources.LoadAll("Material/Default/IdleDown", typeof(Material)).Cast<Material>().ToList();
 
 
+    public static List<Material> AttackRightMaterialsDefault = Resources.LoadAll("Material/Default/AttackRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackLeftMaterialsDefault = Resources.LoadAll("Material/Default/AttackLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackUpMaterialsDefault = Resources.LoadAll("Material/Default/AttackUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> AttackDownMaterialsDefault = Resources.LoadAll("Material/Default/AttackDown", typeof(Material)).Cast<Material>().ToList();
 
+    public static List<Material> DieRightMaterialsDefault = Resources.LoadAll("Material/Default/DieRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieLeftMaterialsDefault = Resources.LoadAll("Material/Default/DieLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieUpMaterialsDefault = Resources.LoadAll("Material/Default/DieUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieDownMaterialsDefault = Resources.LoadAll("Material/Default/DieDown", typeof(Material)).Cast<Material>().ToList();
 
 
 
 
+
+    public static List<Material> RunRightMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/RunRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunLeftMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/RunLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunUpMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/RunUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> RunDownMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/RunDown", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> IdleRightMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/IdleRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleLeftMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/IdleLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleUpMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/IdleUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> IdleDownMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/IdleDown", typeof(Material)).Cast<Material>().ToList();
+
+
+    public static List<Material> ShootRightMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/ShootRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootLeftMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/ShootLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootUpMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/ShootUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> ShootDownMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/ShootDown", typeof(Material)).Cast<Material>().ToList();
+
+
+    public static List<Material> Shoot45RightMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/Shoot45Right", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45LeftMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/Shoot45Left", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45UpMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/Shoot45Up", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> Shoot45DownMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/Shoot45Down", typeof(Material)).Cast<Material>().ToList();
+
+    public static List<Material> DieRightMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/DieRight", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieLeftMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/DieLeft", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieUpMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/DieUp", typeof(Material)).Cast<Material>().ToList();
+    public static List<Material> DieDownMaterialsDefaultArcher = Resources.LoadAll("Material/Default/Archer/DieDown", typeof(Material)).Cast<Material>().ToList();
+
+
+
+
+
+
+    #endregion
+
+    #region EnemyUnitMaterials
 
     public static List<Material> RunRightMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunRight", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> RunLeftMaterialsEnemy = Resources.LoadAll("Material/Enemy/RunLeft", typeof(Material)).Cast<Material>().ToList();
@@ -104,6 +138,7 @@ public class UnitAnimDataCust
     public static List<Material> DieUpMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieUp", typeof(Material)).Cast<Material>().ToList();
     public static List<Material> DieDownMaterialsEnemyArcher = Resources.LoadAll("Material/Enemy/Archer/DieDown", typeof(Material)).Cast<Material>().ToList();
 
+    #endregion
     public static void Init()
     {
         // I DONT THINK THIS IS USED AT ALL????
@@ -504,7 +539,7 @@ public class UnitAnimDataCust
         {
 
         }
-        return GetPropValue(typeEnum.ToString() + "Materials" + (isEnemy ? "Enemy" : "") + unitType);
+        return GetPropValue(typeEnum.ToString() + "Materials" + (isEnemy ? "Enemy" : "Default") + unitType);
     }
 
     public static List<Material> GetPropValue( string propName)

@@ -11,7 +11,7 @@ public class AIControl : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        CurrentCommand = "Attack";
+        CurrentCommand = "Hold";
     }
 
     // Update is called once per frame

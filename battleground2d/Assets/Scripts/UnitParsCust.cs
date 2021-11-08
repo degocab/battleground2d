@@ -77,6 +77,8 @@ public class UnitParsCust : MonoBehaviour
 
     public UnityEngine.AI.NavMeshAgent nma;
     public Vector3 velocityVector = Vector3.zero;
+    internal bool randomFrame;
+    internal Vector3 lastDirection;
 
     public string CurrentCommand { get; set; }
     public string PreviousCommand { get; set; }
@@ -109,7 +111,7 @@ public class UnitParsCust : MonoBehaviour
 
         playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Walk, transform.forward, default);
         randomAttackRange = UnityEngine.Random.Range(0f, 2f);
-        attackRate = 15;
+        attackRate = 6;
         nextAttack = 0;
     }
 

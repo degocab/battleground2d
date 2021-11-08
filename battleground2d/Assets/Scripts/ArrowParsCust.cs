@@ -23,6 +23,7 @@ public class ArrowParsCust : MonoBehaviour
     private bool moving = false;
     float lifteTime, force;
     public float gravDivider = 4;
+    [SerializeField]
     private Vector3 previousPos;
 
 
@@ -36,6 +37,7 @@ public class ArrowParsCust : MonoBehaviour
     private MeshRenderer mesh;
 
     public bool HasDamaged { get; set; }
+    public float maxDirectionValue { get; private set; }
 
     public float gravity2 = 9.8f;
 
@@ -65,12 +67,25 @@ public class ArrowParsCust : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         //store previous pos to rotate towards
         if (!previousPos.Equals(transform.position))
         {
-            previousPos = transform.position; 
+            previousPos = transform.position;
+
+            //store max value of movement direection so it wont flip 
+            if (math.abs(transform.position.x) > math.abs(transform.position.y))
+            {
+                maxDirectionValue = transform.position.x;
+                previousPos.x = maxDirectionValue;
+            }
+            else
+            {
+                maxDirectionValue = transform.position.y;
+            }
+            previousPos.x = maxDirectionValue;
         }
+
+
 
         //doesnt hit but should stop
         if (((targetPos.x + .75f > transform.position.x) && (targetPos.x - .75f < transform.position.x)) 
@@ -87,7 +102,7 @@ public class ArrowParsCust : MonoBehaviour
 
                     if (!HasDamaged)
                     {
-                        targPars.health = targPars.health - (10f + UnityEngine.Random.Range(0f, 15f));
+                        targPars.health = targPars.health - (30f + UnityEngine.Random.Range(0f, 15f));
                         HasDamaged = true; 
                     }
                 }
@@ -95,12 +110,12 @@ public class ArrowParsCust : MonoBehaviour
                 if (targetPos.y + .25f > transform.position.y && targetPos.y - .25f < transform.position.y)
                 {
                     moving = false;
-                    var currPos = transform.position;
                 }
             }
 
         }
 
+        float meshMultiplyer = 0;
 
         if (moving)
         {
@@ -140,7 +155,27 @@ public class ArrowParsCust : MonoBehaviour
             var deg = rad * (180 / math.PI);
             transform.eulerAngles = new Vector3(0f, 0.0f, deg);
 
+
+            meshMultiplyer = 10f;
+            mesh.sortingOrder = 10;
+
+
+
+
         }
+        else
+        {
+            meshMultiplyer = 10000f;
+            mesh.sortingOrder = 9999998;
+
+
+
+            mesh.materials[0].color = Color.Lerp(Color.white, Color.black, .45f);
+            mesh.material = mesh.materials[1];
+
+        }
+
+        // mesh.sortingOrder = 9999998;// Mathf.RoundToInt(transform.position.y * meshMultiplyer) * -1;
 
 
 
