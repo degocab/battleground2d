@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerControl : MonoBehaviour
@@ -12,7 +13,10 @@ public class PlayerControl : MonoBehaviour
     public Vector2 lastDirection { get; private set; }
 
     public PlayAnimationCust playAnimationCust;
+    public List<UnitParsCust> selectedUnits;
 
+    [SerializeField]
+    public List<Material> selectionRings;
 
     // Start is called before the first frame update
     void Start()
@@ -21,23 +25,79 @@ public class PlayerControl : MonoBehaviour
 
 
         apprPars.isReady = true;
+
+        selectedUnits = new List<UnitParsCust>();
+        //selectionRings = new List<Material>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+
+        //TODO: fix units just attacking instead of waiting on hold 
+
+        if (Input.GetKey(KeyCode.Alpha1) || Input.GetKey(KeyCode.Alpha2) || Input.GetKey(KeyCode.Alpha3) || Input.GetKey(KeyCode.Alpha4))
+        {
+
+            //draw selection
+
+            if (BattleSystemCust.active != null && BattleSystemCust.active.allUnits != null && BattleSystemCust.active.allUnits.Count(x => !x.IsEnemy) > 0)
+            {
+
+                selectedUnits = new List<UnitParsCust>();
+
+                UnitParsCust[] units = BattleSystemCust.active.allUnits.Where(x => !x.IsEnemy).ToArray();
+                var curPos = this.transform.position;
+
+                for (int i = 0; i < units.Count(); i++)
+                {
+                    UnitParsCust pos = units[i];
+                    if ((pos.transform.position.x < curPos.x + 2 && pos.transform.position.x > curPos.x - 2)
+                                                                               && (pos.transform.position.y < curPos.y + 2 && pos.transform.position.y > curPos.y - 2)
+
+                                                                               )
+                    {
+                        Material selectionRing;
+                        
+                        //horizontal dir
+                        if (new int[]{ 1,2 }.Contains( pos.playAnimationCust.animDir))
+                        {
+                            selectionRing = selectionRings[0];
+                        }
+                        else
+                        {
+                            selectionRing = selectionRings[1];
+                        }
+                        Material curMat = pos.springAttractScreenRend.material;
+
+                        pos.springAttractScreenRend.materials = new Material[2] { curMat, selectionRing };
+
+                        selectedUnits.Add(pos);
+
+                    }
+                }
+            }
+
+        }
+
+
+        if (Input.GetKeyUp(KeyCode.Alpha1))
         {
             PlayerCommand = "Hold";
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        else if (Input.GetKeyUp(KeyCode.Alpha2))
         {
             PlayerCommand = "Move";
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        else if (Input.GetKeyUp(KeyCode.Alpha3))
         {
             PlayerCommand = "Attack";
         }
+        else if (Input.GetKeyUp(KeyCode.Alpha4))
+        {
+            PlayerCommand = "Follow";
+        }
+
 
         HandleMovement();
     }

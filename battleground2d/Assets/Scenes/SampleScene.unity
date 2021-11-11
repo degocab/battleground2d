@@ -713,6 +713,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movementSpeed: 1
+  selectedUnits: []
+  selectionRings:
+  - {fileID: 2100000, guid: ae7535ac2966ac045ad3a8aa5af33f83, type: 2}
+  - {fileID: 2100000, guid: 72620298f22108646bfa5b89605ccb57, type: 2}
 --- !u!4 &7989803096806798838
 Transform:
   m_ObjectHideFlags: 0
@@ -721,7 +725,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7989803096806798732}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.05, y: 1.58, z: 0}
+  m_LocalPosition: {x: -9.15, y: 0.78, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

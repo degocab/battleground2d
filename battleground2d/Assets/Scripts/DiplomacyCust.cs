@@ -24,7 +24,7 @@ public class DiplomacyCust : MonoBehaviour
         SetAllWar();
     }
 
-    private void SetAllWar()
+    public void SetAllWar()
     {
         for (int i = 0; i < numberNations; i++)
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RTSToolkit;
 using System;
+using System.Linq;
 
 public class BattleSystemCust : MonoBehaviour
 {
@@ -75,7 +76,7 @@ public class BattleSystemCust : MonoBehaviour
     {
         public int Index { get; set; }
         public Vector3 Location { get; set; }
-        public GameObject  ObjectToSpawn{ get; set; }
+        public GameObject ObjectToSpawn { get; set; }
         public bool IsArcher { get; set; }
         public bool IsEnemy { get; set; }
     }
@@ -94,7 +95,7 @@ public class BattleSystemCust : MonoBehaviour
         List<SpawnLoc> locations = new List<SpawnLoc>();// new Tuple<int, Vector3, bool>();
 
         float xAlly = -12;
-        float xEnemy = 2;
+        float xEnemy = 16;
         for (int i = 0; i < unitCount; i++)
         {
             Vector2 randPos = new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-5f, 5f));//Random.insideUnitCircle * 10;
@@ -130,13 +131,13 @@ public class BattleSystemCust : MonoBehaviour
                 pos.x = xAlly;
             }
 
-            if (i % 3 == 0)
+            if (i % 3 == 0 && isEnemy)
             {
                 isArcher = true;
             }
 
 
-            locations.Add(new SpawnLoc() { Index = i, Location = pos, ObjectToSpawn = currentGameObject, IsArcher = isArcher, IsEnemy = isEnemy});
+            locations.Add(new SpawnLoc() { Index = i, Location = pos, ObjectToSpawn = currentGameObject, IsArcher = isArcher, IsEnemy = isEnemy });
         }
 
 
@@ -157,10 +158,10 @@ public class BattleSystemCust : MonoBehaviour
 
                 instanceUp.IsEnemy = loc.IsEnemy;
 
-                    if (loc.IsArcher)
-                    {
-                        instanceUp.UnitType = "Archer";
-                    }
+                if (loc.IsArcher)
+                {
+                    instanceUp.UnitType = "Archer";
+                }
 
                 instanceUp.UniqueID = loc.Index;
                 allUnits.Add(instanceUp);
@@ -173,8 +174,8 @@ public class BattleSystemCust : MonoBehaviour
 
 
 
-
-
+        aiControl.selectedUnits = allUnits.Where(x => x.IsEnemy).ToList();
+        aiControl.CurrentCommand = "Attack";
 
     }
 
@@ -226,49 +227,65 @@ public class BattleSystemCust : MonoBehaviour
     /// </summary>
     void CommandPhase()
     {
-        if (allUnits.Count > 0)
+        List<UnitParsCust> unitsToCommand = new List<UnitParsCust>();
+
+        //TODO add logic for AI
+
+
+        var unitsToCommandList = new List<List<UnitParsCust>>();
+        unitsToCommandList.Add(playerControl.selectedUnits);
+        unitsToCommandList.Add(aiControl.selectedUnits);
+
+        //TODO: find a better way to do commands between player/ai?
+        foreach (var units in unitsToCommandList)
         {
-            for (int i = 0; i < allUnits.Count; i++)
+            //unitsToCommand = playerControl.selectedUnits;
+            unitsToCommand = units;
+
+            if (unitsToCommand != null && unitsToCommand.Count > 0)
             {
-                UnitParsCust unit = allUnits[i];
-
-                string commandToFollow = "";
-
-                if (unit.nation == PlayerNation)
+                for (int i = 0; i < unitsToCommand.Count; i++)
                 {
-                    commandToFollow = playerControl.PlayerCommand;
-                }
-                else
-                {
-                    commandToFollow = aiControl.CurrentCommand;
-                }
+                    UnitParsCust unit = unitsToCommand[i];
 
-                if (unit.CurrentCommand != commandToFollow)
-                {
-                    unit.CurrentCommand = commandToFollow;
-                    unit.PreviousCommand = commandToFollow;
-                    switch (commandToFollow)
+                    string commandToFollow = "";
+
+                    if (unit.nation == PlayerNation)
                     {
-                        default:
-                        case "Hold":
-
-                            break;
-                        case "Move":
-                            //get player location to move to?
-                            unit.nma.isStopped = false;
-                            break;
-                        case "Attack":
-                            unit.nma.isStopped = false;
-                            break;
-                        case "Retreat":
-                            break;
+                        commandToFollow = playerControl.PlayerCommand;
                     }
-                }
-                else
-                {
-                    unit.CurrentCommand = unit.PreviousCommand;
-                }
+                    else
+                    {
+                        commandToFollow = aiControl.CurrentCommand;
+                    }
 
+                    if (unit.CurrentCommand != commandToFollow)
+                    {
+                        unit.CurrentCommand = commandToFollow;
+                        unit.PreviousCommand = commandToFollow;
+                        switch (commandToFollow)
+                        {
+                            default:
+                            case "Hold":
+
+                                break;
+                            case "Move":
+                                //get player location to move to?
+                                unit.nma.isStopped = false;
+                                break;
+                            case "Attack":
+                                unit.nma.isStopped = false;
+                                break;
+                            case "Retreat":
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        unit.CurrentCommand = unit.PreviousCommand;
+                    }
+
+                }
             }
         }
     }
@@ -331,6 +348,15 @@ public class BattleSystemCust : MonoBehaviour
                 {
                     UnitParsCust up = allUnits[j];
 
+
+                    //TODO: fix diplomcy being null
+
+                    if (DiplomacyCust.active == null)
+                    {
+                        DiplomacyCust.active = new DiplomacyCust();
+                    }
+
+
                     if (
                         up.nation != i && // not sure why this is checking against the target refresh time
                         up.isApproachable &&
@@ -389,6 +415,7 @@ public class BattleSystemCust : MonoBehaviour
                     up.isApproaching = true;
                 }
             }
+
         }
     }
 
@@ -614,9 +641,27 @@ public class BattleSystemCust : MonoBehaviour
                     //apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Run, direction, default);
                 }
             }
+
+
             else
             {
-                apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, apprPars.direction, default);
+
+                //TODO: retarget?
+                //TODO: this should be rewritten?
+
+
+                //check if should be idle
+                //if there are any units still alive, then keep moving else set to idle
+                bool beIdle = (apprPars.IsEnemy && allUnits.Any(x => !x.IsEnemy)) || (!apprPars.IsEnemy && allUnits.Any(x => x.IsEnemy)) ? false : true;
+
+
+                if (!beIdle)
+                {
+                    apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, apprPars.direction, default);
+                        
+                    UnityEngine.AI.NavMeshAgent apprNav = apprPars.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                    apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
+                }                                                                                                                                                                                                   
             }
 
         }
@@ -625,7 +670,7 @@ public class BattleSystemCust : MonoBehaviour
     int iAttackPhase = 0;
     float fAttackPhase = 0f;
 
-    // attacking phase set attackers to attack their targets and cause damage when they alreayd approached their targets
+    // attacking phase set attackers to attack their targets and cause damage when they alreayd appr    oached their targets
 
     public void AttackPhase()
     {
@@ -1057,12 +1102,6 @@ public class BattleSystemCust : MonoBehaviour
             for (int i = 0; i < deadUnits.Count; i++)
             {
 
-                //iRenderAnimationPhase++;
-
-                //if (iRenderAnimationPhase >= allUnits.Count)
-                //{
-                //    iRenderAnimationPhase = 0;
-                //}
 
                 UnitParsCust renderAnimationParsCust = deadUnits[i];
 
@@ -1106,25 +1145,12 @@ public class BattleSystemCust : MonoBehaviour
                     {
                         renderAnimationParsCust.spriteSheetData.loopCount++;
                     }
-                    //springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
 
-
-                    //if (renderAnimationParsCust.IsEnemy)
-                    //{
-                    //    springAttractFrames = renderAnimationParsCust.spriteSheetData.materialsEnemy;
-                    //}
-                    //else
-                    //{
                     springAttractFrames = renderAnimationParsCust.spriteSheetData.materials;
-                    //}
-
 
                     Material[] newMats = { springAttractFrames[renderAnimationParsCust.spriteSheetData.currentFrame] };
                     renderAnimationParsCust.springAttractScreenRend.materials = newMats;
-                    //if (renderAnimationParsCust.IsEnemy)
-                    //{
-                    //    renderAnimationParsCust.springAttractScreenRend.materials[0].color = Color.red;
-                    //}
+
                 }
 
             }
@@ -1132,36 +1158,8 @@ public class BattleSystemCust : MonoBehaviour
 
 
 
-
-        //player animations
-
-
-
-
-
-        //MeshRenderer springAttractScreenRendPlayer = playerUnitPars.springAttractScreenRend;
-        ////float springAttractFrameRefTime = playerUnitPars.springAttractFrameRefTime;
-        //var spriteSheetAnimationData = playerUnitPars.spriteSheetData;
-
-
-
         #region PLayer
-        //cancel if deadtimer ?
-        //if (playerUnitPars.spriteSheetData.currentFrame == playerUnitPars.spriteSheetData.frameCount - 1)
-        //{
-        //    deadUnits.Remove(playerUnitPars);
-        //    playerUnitPars.springAttractScreenRend.materials[0].color =
-        //                            Color.Lerp(playerUnitPars.springAttractScreenRend.materials[0].color, Color.black, .25f);
-        //    playerUnitPars.springAttractScreenRend.sortingOrder = 9999999;
-        //    playerUnitPars.transform.position = new Vector3(playerUnitPars.transform.position.x, playerUnitPars.transform.position.y, .01f);
-        //    playerUnitPars.gameObject.transform.localPosition = new Vector3(playerUnitPars.gameObject.transform.position.x, playerUnitPars.gameObject.transform.position.y, 0);
-        //    playerUnitPars.gameObject.transform.SetParent(deadUnitHolder.transform);
-        //    //Object.Destroy(playerUnitPars.springAttractScreenRend);
-        //    Object.Destroy(playerUnitPars.nma);
-        //    //Object.Destroy(playerUnitPars.GetComponent<MeshFilter>());
-        //    Object.Destroy(playerUnitPars);
-        //    return;
-        //}
+
         List<Material> springAttractFramesPlayer = new List<Material>();
         var deltaTime2 = Time.deltaTime;
         playerUnitPars.spriteSheetData.frameTimer -= deltaTime2;
@@ -1174,25 +1172,17 @@ public class BattleSystemCust : MonoBehaviour
             {
                 playerUnitPars.spriteSheetData.loopCount++;
             }
-            //springAttractFrames = playerUnitPars.spriteSheetData.materials;//UnitAnimDataCust.GetAnimTypeData(UnitAnimDataCust.AnimMaterialTypeEnum.RunRight).Materials;
 
 
-            if (playerUnitPars.IsEnemy)
-            {
-                springAttractFramesPlayer = playerUnitPars.spriteSheetData.materialsEnemy;
-            }
-            else
-            {
-                springAttractFramesPlayer = playerUnitPars.spriteSheetData.materials;
-            }
+
+
+            springAttractFramesPlayer = playerUnitPars.spriteSheetData.materials;
+
 
 
             Material[] newMats = { springAttractFramesPlayer[playerUnitPars.spriteSheetData.currentFrame] };
             playerUnitPars.springAttractScreenRend.materials = newMats;
-            //if (playerUnitPars.IsEnemy)
-            //{
-            //    playerUnitPars.springAttractScreenRend.materials[0].color = Color.red;
-            //}
+
         }
         #endregion
 
@@ -1234,8 +1224,8 @@ public class BattleSystemCust : MonoBehaviour
         float sqrt = (vini * vini * vini * vini) - (g * (g * (rTarget2d * rTarget2d) + 2 * (targetPosition.y - shooterPosition.y) * (vini * vini)));
 
         if (/*sqrt >= 0 &&*/
-            ((shootPosition2d.x <= targetPosition.x + 1 &&  shootPosition2d.x >= targetPosition2d.x - 1) 
-             || (shootPosition2d.y <= targetPosition2d.y + 1 && shootPosition2d.y >= targetPosition2d.y -1)))
+            ((shootPosition2d.x <= targetPosition.x + 1 && shootPosition2d.x >= targetPosition2d.x - 1)
+             || (shootPosition2d.y <= targetPosition2d.y + 1 && shootPosition2d.y >= targetPosition2d.y - 1)))
         {
             canHit = true;
         }
