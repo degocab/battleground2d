@@ -79,11 +79,18 @@ public class BattleSystemCust : MonoBehaviour
         public GameObject ObjectToSpawn { get; set; }
         public bool IsArcher { get; set; }
         public bool IsEnemy { get; set; }
+        public int UnitRank = 2;
+        public int[] UnitsToCommad { get; internal set; }
     }
 
     void Start()
     {
 
+
+        //increment to 10 for group of units, then set tenth unit the commander
+        int allyUnitCountAtRankTwo = 0;
+        int enemyUnitCountAtRankTwo = 0;
+        int unitRank = 2;
 
         //load resources
         UnitAnimDataCust.Init();
@@ -96,6 +103,11 @@ public class BattleSystemCust : MonoBehaviour
 
         float xAlly = -12;
         float xEnemy = 16;
+
+
+
+        List<int> unitsToCommad = new List<int>();
+        List<int> unitsToCommadEnemy = new List<int>();
         for (int i = 0; i < unitCount; i++)
         {
             Vector2 randPos = new Vector2(UnityEngine.Random.Range(-10f, 10f), UnityEngine.Random.Range(-5f, 5f));//Random.insideUnitCircle * 10;
@@ -136,10 +148,93 @@ public class BattleSystemCust : MonoBehaviour
                 isArcher = true;
             }
 
+            //calculate how many remain troops are left to assign
+            //if there are 5 or ess, then assign them to cuurent commander - making this last commanders unit have 5 extra units
+            if (i == 397) 
+            { };
+            int remainingUnits = (unitCount - i) % 2 == 0  ? (unitCount - i) / 2 : (unitCount - i + 1 ) /2; // divide by two for splitting ally/enemies
 
-            locations.Add(new SpawnLoc() { Index = i, Location = pos, ObjectToSpawn = currentGameObject, IsArcher = isArcher, IsEnemy = isEnemy });
+            int maxUnitsToCommand;
+            if (remainingUnits < 5)
+            {
+                if (remainingUnits == 0)
+                {
+                    maxUnitsToCommand = isEnemy ? enemyUnitCountAtRankTwo : allyUnitCountAtRankTwo;
+                }
+                else
+                {
+                    maxUnitsToCommand = 10 + remainingUnits;
+
+                }
+            }
+            else
+            {
+                maxUnitsToCommand = 10;
+            }
+
+            //count to 10 and set last unit as unit commander,
+            //TODO: add logic to make sure this is only grabbing ally or enemy and not both
+            //if ((!isEnemy && (allyUnitCountAtRankTwo == maxUnitsToCommand || (unitCount - i == 0 && allyUnitCountAtRankTwo != 1)))
+            //    || (isEnemy && (enemyUnitCountAtRankTwo == maxUnitsToCommand || (unitCount - i == 0 && enemyUnitCountAtRankTwo != 1))))
+            if ((!isEnemy && (allyUnitCountAtRankTwo == maxUnitsToCommand ))
+                    || (isEnemy && (enemyUnitCountAtRankTwo == maxUnitsToCommand )))
+            {
+                unitRank = 1;
+                if (isEnemy)
+                    enemyUnitCountAtRankTwo = 0;
+                else
+                    allyUnitCountAtRankTwo = 0;
+
+            }
+            else
+            {
+                unitRank = 2;
+
+               
+                if (isEnemy)
+                {
+                    unitsToCommadEnemy.Add(i);
+                    enemyUnitCountAtRankTwo++;
+                }
+                else
+                {
+                    unitsToCommad.Add(i);
+                    allyUnitCountAtRankTwo++;
+                }
+            }
+
+
+
+
+            locations.Add(new SpawnLoc()
+            {
+                Index = i,
+                Location = pos,
+                ObjectToSpawn = currentGameObject,
+                IsArcher = isArcher,
+                IsEnemy = isEnemy,
+                UnitRank = unitRank,
+                UnitsToCommad = (unitRank == 1 && ((unitsToCommad.Count > 0 && isEnemy == false) || (unitsToCommadEnemy.Count > 0 && isEnemy))
+                                    ? (isEnemy ? unitsToCommadEnemy.ToArray() : unitsToCommad.ToArray()) : null)
+            });
+
+            if (unitRank == 1)
+            {
+                if (isEnemy)
+                {
+                    unitsToCommadEnemy.Clear();
+                }
+                else
+                {
+                    unitsToCommad.Clear();
+                }
+
+
+            }
+
         }
-
+        List<UnitParsCust> unitComanders = new List<UnitParsCust>();
+        List<UnitParsCust> units = new List<UnitParsCust>();
 
         foreach (SpawnLoc loc in locations)
         {
@@ -164,6 +259,16 @@ public class BattleSystemCust : MonoBehaviour
                 }
 
                 instanceUp.UniqueID = loc.Index;
+                instanceUp.UnitRank = loc.UnitRank;
+                if (instanceUp.UnitRank == 1)
+                {
+                    instanceUp.UnitsToCommand = loc.UnitsToCommad;
+                    unitComanders.Add(instanceUp);
+                }
+                else
+                {
+                    units.Add(instanceUp);
+                }
                 allUnits.Add(instanceUp);
                 //instanceUp.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, instanceUp.transform.forward, default);
 
@@ -171,11 +276,25 @@ public class BattleSystemCust : MonoBehaviour
         }
 
 
+        //assign units to their unit commander
+        foreach (var unitCommander in unitComanders)
+        {
+            for (int i = 0; i < units.Count; i++)
+            {
+                UnitParsCust unit = units[i];
+
+                if (unitCommander.UnitsToCommand.Contains(unit.UniqueID))
+                {
+                    unitCommander.SelectedUnitPars.Add(unit);
+                }
+            }
+        }
 
 
 
-        aiControl.selectedUnits = allUnits.Where(x => x.IsEnemy).ToList();
-        aiControl.CurrentCommand = "Attack";
+
+        //aiControl.selectedUnits = allUnits.Where(x => x.IsEnemy).ToList();
+        //aiControl.CurrentCommand = "Attack";
 
     }
 
@@ -189,7 +308,10 @@ public class BattleSystemCust : MonoBehaviour
     {
         float deltaTime = Time.deltaTime;
 
-        //commnad system?
+        //refind closes units?
+        UnitCommanderReSelectUnits();
+
+        //command system?
         CommandPhase();
 
         //hold phase?
@@ -222,6 +344,66 @@ public class BattleSystemCust : MonoBehaviour
     }
 
 
+    void UnitCommanderReSelectUnits()
+    {
+        //List<UnitParsCust> unitCommanders = allUnits.Where(x => x.UnitRank == 1).ToList();
+        List<UnitParsCust> unitCommanders = new List<UnitParsCust>();
+        List<UnitParsCust> unitList = new List<UnitParsCust>();
+        for (int i = 0; i < allUnits.Count; i++)
+        {
+            UnitParsCust unit = allUnits[i];
+            if (unit.UnitRank == 1)
+            {
+                unitCommanders.Add(unit);
+            }
+            else //rank == 2 
+            {
+                unitList.Add(unit);
+            }
+        }
+
+
+
+        for (int i = 0; i < unitCommanders.Count(); i++)
+        {
+            if (unitCommanders[i].UnitsToCommand.Length != unitCommanders[i].SelectedUnitPars.Count)
+            {
+                UnitParsCust unitCommander = unitCommanders[i];
+
+                List<UnitParsCust> units = new List<UnitParsCust>();
+
+                for (int c = 0; c < unitList.Count; c++)
+                {
+                    UnitParsCust currUnit = unitList[i];
+                    if (currUnit.IsEnemy == unitCommander.IsEnemy)
+                    {
+                        if (unitCommander.UnitsToCommand.Contains(currUnit.UniqueID))
+                        {
+                            units.Add(currUnit);
+                        }
+                    }
+                }
+                // BattleSystemCust.active.allUnits.Where(x => x.IsEnemy == unitCommander.IsEnemy).ToArray();
+                var curPos = unitCommander.transform.position;
+
+                for (int j = 0; j < units.Count(); j++)
+                {
+                    UnitParsCust pos = units[j];
+                    //if ((pos.transform.position.x < curPos.x + 2 && pos.transform.position.x > curPos.x - 2)
+                    //                               && (pos.transform.position.y < curPos.y + 2 && pos.transform.position.y > curPos.y - 2)
+
+                    //                               )
+                    //{
+
+                    unitCommander.SelectedUnitPars.Add(pos);
+
+                    //}
+                }
+            }
+        }
+    }
+
+
     /// <summary>
     /// command system to set units to listen to commands
     /// </summary>
@@ -229,19 +411,80 @@ public class BattleSystemCust : MonoBehaviour
     {
         List<UnitParsCust> unitsToCommand = new List<UnitParsCust>();
 
-        //TODO add logic for AI
-
-
         var unitsToCommandList = new List<List<UnitParsCust>>();
+
+
+
+        //get group commander commands
+        //if unit is selected by player => follow player command => if unit commander find unit and has different command then unit should follow unit command?
+        //if unit selected by player is unit commander => find all surrounding units in command and issue
+        //if unit and unit commander selected => all follow player & set unit commander to player command => unit commander should look for any surrounding units in group
+
+
+
+
+        //list of unit commanders
+        List<UnitParsCust> unitCommanders = new List<UnitParsCust>();
+        for (int i = 0; i < allUnits.Count; i++)
+        {
+            /*= allUnits.Where(x => x.UnitRank == 1).ToList();*/
+            if (allUnits[i].UnitRank == 1)
+            {
+                unitCommanders.Add(allUnits[i]);
+            }
+        }
+
+        //foreach (var unitCommander in unitCommanders)
+        //{
+        //    unitsToCommandList.Add(allUnits.Where(x => unitCommander.UnitsToCommand.Contains( x.UniqueID)).ToList());
+        //}
+        for (int i = 0; i < unitCommanders.Count; i++)
+        {
+
+            var unitCommander = unitCommanders[i];
+
+            //if (unitCommander.SelectedUnitPars.Count != unitCommander.UnitsToCommand.Length)
+            if (unitCommander.CurrentCommand != unitCommander.PreviousCommand)
+            {
+                var listOfUnitsToAdd = new List<UnitParsCust>();
+                for (int j = 0; j < allUnits.Count; j++)
+                {
+
+                    if (unitCommander.UnitsToCommand.Contains(allUnits[j].UniqueID))
+                    {
+                        listOfUnitsToAdd.Add(allUnits[j]);
+                    }
+
+                }
+                unitsToCommandList.Add(listOfUnitsToAdd);
+                unitCommander.PreviousCommand = unitCommander.CurrentCommand;
+            }
+        }
+
+
+        //TODO add logic for AI
         unitsToCommandList.Add(playerControl.selectedUnits);
         unitsToCommandList.Add(aiControl.selectedUnits);
 
-        //TODO: find a better way to do commands between player/ai?
-        foreach (var units in unitsToCommandList)
-        {
-            //unitsToCommand = playerControl.selectedUnits;
-            unitsToCommand = units;
 
+
+
+
+        //TODO: find a better way to do commands between player/ai?
+        //foreach (var units in unitsToCommandList)
+        for (int j = 0; j < unitsToCommandList.Count; j++)
+        {
+            UnitParsCust unitCommander = null;
+            if (j < unitCommanders.Count)
+            {
+                //unitsToCommand = playerControl.selectedUnits;
+                unitsToCommand = unitsToCommandList[j];
+
+                //unit commander
+                //should be in the same order as above where we add list of units
+                unitCommander = unitCommanders[j];
+
+            }
             if (unitsToCommand != null && unitsToCommand.Count > 0)
             {
                 for (int i = 0; i < unitsToCommand.Count; i++)
@@ -250,11 +493,23 @@ public class BattleSystemCust : MonoBehaviour
 
                     string commandToFollow = "";
 
+
+
+
+
+                    //TODO: see if this is where the unit commander commands should go
+                    if (unitCommander != null)
+                    {
+                        commandToFollow = "Attack";//unitCommander.CurrentCommand; 
+                    }
+
+
+
                     if (unit.nation == PlayerNation)
                     {
                         commandToFollow = playerControl.PlayerCommand;
                     }
-                    else
+                    else if (unit.nation == 1)
                     {
                         commandToFollow = aiControl.CurrentCommand;
                     }
@@ -267,7 +522,11 @@ public class BattleSystemCust : MonoBehaviour
                         {
                             default:
                             case "Hold":
-
+                                unit.isApproachable = true;
+                                unit.isApproaching = false;
+                                unit.isAttacking = false;
+                                unit.isReady = true;
+                                unit.nma.isStopped = true;
                                 break;
                             case "Move":
                                 //get player location to move to?
@@ -658,10 +917,10 @@ public class BattleSystemCust : MonoBehaviour
                 if (!beIdle)
                 {
                     apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, apprPars.direction, default);
-                        
+
                     UnityEngine.AI.NavMeshAgent apprNav = apprPars.GetComponent<UnityEngine.AI.NavMeshAgent>();
                     apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
-                }                                                                                                                                                                                                   
+                }
             }
 
         }
@@ -1086,6 +1345,21 @@ public class BattleSystemCust : MonoBehaviour
 
                         throw;
                     }
+
+                    //if (renderAnimationParsCust.UnitRank == 1)
+                    //{
+                    //    newMats[0].color = Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.red, .25f);
+                    //    //}
+                    //    //else
+                    //    //{
+                    //    //    newMats[0].color = Color.Lerp(renderAnimationParsCust.springAttractScreenRend.materials[0].color, Color.yellow, .25f);
+                    //    //Debug.Log(newMats[0].color);
+
+                    //}
+                    //else
+                    //{
+                    //  newMats[0].color = new Color(1.000f, 1.000f, 1.000f, 1.000f);
+                    //}
                     renderAnimationParsCust.springAttractScreenRend.materials = newMats;
 
                 }
@@ -1111,10 +1385,6 @@ public class BattleSystemCust : MonoBehaviour
                 //float springAttractFrameRefTime = renderAnimationParsCust.springAttractFrameRefTime;
                 var spriteSheetAnimationData = renderAnimationParsCust.spriteSheetData;
 
-                if (renderAnimationParsCust.spriteSheetData.activeBaseAnimTypeEnum == UnitAnimDataCust.BaseAnimMaterialType.Die)
-                {
-
-                }
 
 
                 //cancel if deadtimer ?

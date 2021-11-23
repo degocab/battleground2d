@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 public class UnitParsCust : MonoBehaviour
@@ -11,7 +12,7 @@ public class UnitParsCust : MonoBehaviour
     public bool IsEnemy { get; set; }
 
 
-    [HideInInspector]public UnitParsTypeCust unitParsTypeCust;
+    [HideInInspector] public UnitParsTypeCust unitParsTypeCust;
     public string UnitType { get; set; }
 
     public bool isMovable = true;
@@ -71,6 +72,8 @@ public class UnitParsCust : MonoBehaviour
 
 
     public float nextAttack { get; set; }
+
+
     public float randomAttackRange { get; set; }
 
     public float attackRate { get; set; }
@@ -79,12 +82,40 @@ public class UnitParsCust : MonoBehaviour
     public Vector3 velocityVector = Vector3.zero;
     internal bool randomFrame;
     internal Vector3 lastDirection;
+    private string _currentCommand = "";
+    public string CurrentCommand
+    {
+        get; set;
+    }
+    public string PreviousCommand
+    {
+        get; set;
+    }
+    /// <summary>
+    /// Unit Commander(1) vs unit(2)
+    /// </summary>
+    public int UnitRank { get; set; }
+    public List<UnitParsCust> SelectedUnitPars = new List<UnitParsCust>();
 
-    public string CurrentCommand { get; set; }
-    public string PreviousCommand { get; set; }
-    
+    /// <summary>
+    /// If UnitRank = 1 then this will be used.
+    /// </summary>
+    [SerializeField]
+    public int[] UnitsToCommand;
+
+
+
+
+    [SerializeField]
+    public List<Material> selectionRings;
+
     void Start()
     {
+        Material selectRing1 = (Material)AssetDatabase.LoadAssetAtPath("Assets/Animations/2D/HorizontalRingCommander.mat", typeof(Material));
+        Material selectRing2 = (Material)AssetDatabase.LoadAssetAtPath("Assets/Animations/2D/VerticalRingCommander.mat", typeof(Material));
+
+        selectionRings.Add(selectRing1);
+        selectionRings.Add(selectRing2);
 
         unitParsTypeCust = BattleSystemCust.active.allUnits.FirstOrDefault(x => x.UniqueID == UniqueID).GetComponent<UnitParsTypeCust>();
 
@@ -104,7 +135,7 @@ public class UnitParsCust : MonoBehaviour
             nma.enabled = true;
         }
         childTransform = this.GetComponentInChildren<Transform>();
-       // childAnimator = this.GetComponentInChildren<Animator>();
+        // childAnimator = this.GetComponentInChildren<Animator>();
         ///childSpriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
 
         springAttractScreenRend = this.GetComponent<MeshRenderer>();
@@ -113,6 +144,7 @@ public class UnitParsCust : MonoBehaviour
         randomAttackRange = UnityEngine.Random.Range(0f, 2f);
         attackRate = 6;
         nextAttack = 0;
+
     }
 
     void Update()
@@ -129,7 +161,24 @@ public class UnitParsCust : MonoBehaviour
         springAttractScreenRend.sortingOrder = Mathf.RoundToInt(transform.position.y * 100f) * -1;
 
 
+        if (UnitRank == 1)
+        {
+            Material selectionRing;
 
+            //horizontal dir
+            if (new int[] { 1, 2 }.Contains(playAnimationCust.animDir))
+            {
+                selectionRing = selectionRings[0];
+            }
+            else
+            {
+                selectionRing = selectionRings[1];
+            }
+            Material curMat = springAttractScreenRend.material;
+
+            springAttractScreenRend.materials = new Material[2] { curMat, selectionRing };
+
+        }
     }
 
     private void FixedUpdate()
