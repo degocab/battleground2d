@@ -17,7 +17,7 @@ public class AIControl : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        CurrentCommand = "Attack";
+        CurrentCommand = "Hold";
         //selectedUnits = new List<UnitParsCust>();
 
         battleManager = GameObject.Find("BattleManager");
@@ -49,7 +49,7 @@ public class AIControl : MonoBehaviour
         {
             for (int i = 0; i < selectedCommanders.Count; i++)
             {
-                selectedCommanders[i].CurrentCommand = "Attack";
+                selectedCommanders[i].CurrentCommand = CurrentCommand;
             }
             firstRun = false;
         }

@@ -498,10 +498,10 @@ public class BattleSystemCust : MonoBehaviour
 
 
                     //TODO: see if this is where the unit commander commands should go
-                    if (unitCommander != null)
-                    {
-                        commandToFollow = "Attack";//unitCommander.CurrentCommand; 
-                    }
+                    //if (unitCommander != null)
+                    //{
+                    //    commandToFollow = "Attack";//unitCommander.CurrentCommand; 
+                    //}
 
 
 
@@ -535,7 +535,20 @@ public class BattleSystemCust : MonoBehaviour
                             case "Attack":
                                 unit.nma.isStopped = false;
                                 break;
-                            case "Retreat":
+                            case "Follow":
+                                unit.nma.isStopped = false;
+                                unit.isApproaching = true;
+                                //if (unitCommander != null)
+                                //{
+                                //    unit.target = unitCommander;
+                                //}
+                                //else
+                                //{
+                                    if (!unit.IsEnemy)
+                                    {
+                                        unit.target = player.GetComponent<UnitParsCust>();
+                                    }
+                                //}
                                 break;
                         }
                     }
@@ -701,7 +714,7 @@ public class BattleSystemCust : MonoBehaviour
             UnitParsCust up = allUnits[iRetargetPhase];
             int nation = up.nation;
 
-            if (up.isApproaching && up.target != null && targets[nation].Count > 0)
+            if (up.isApproaching && up.target != null && targets[nation].Count > 0 && up.CurrentCommand != "Follow")
             {
                 int targetId = targetKD[nation].FindNearest(up.transform.position);
                 UnitParsCust targetUp = targets[nation][targetId];
@@ -812,9 +825,16 @@ public class BattleSystemCust : MonoBehaviour
                             //if target reset target to find new targvet
                             if (apprPars.target != null)
                             {
-                                apprPars.target.attackers.Remove(apprPars);
-                                apprPars.target.noAttackers = apprPars.target.attackers.Count;
-                                apprPars.target = null;
+                                if (apprPars.CurrentCommand == "Follow")
+                                {
+                                    apprPars.isApproaching = true;
+                                }
+                                else
+                                {
+                                    apprPars.target.attackers.Remove(apprPars);
+                                    apprPars.target.noAttackers = apprPars.target.attackers.Count;
+                                    apprPars.target = null;
+                                }
                             }
 
                         }
@@ -839,15 +859,28 @@ public class BattleSystemCust : MonoBehaviour
                         // if approachers already close to their targets
                         if (rTarget < stoppDistance)
                         {
-                            apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
+                            if (apprPars.CurrentCommand == "Attack")
+                            {
+                                apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
 
-                            //TODO: get coorect direction for arhcers
-                            var direction = apprNav.destination - apprPars.transform.position;
-                            apprPars.direction = direction;
-                            // pre-setting for attacking
-                            apprPars.isApproaching = false;
-                            apprPars.isAttacking = true;
-                            apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
+                                //TODO: get coorect direction for arhcers
+                                var direction = apprNav.destination - apprPars.transform.position;
+                                apprPars.direction = direction;
+                                // pre-setting for attacking
+                                apprPars.isApproaching = false;
+                                apprPars.isAttacking = true;
+                                apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
+                            }
+                            else //if following
+                            {
+                                apprNav.SetDestination(new Vector3(apprPars.transform.position.x, apprPars.transform.position.y, 0f));
+
+                                //TODO: get coorect direction for arhcers
+                                var direction = apprNav.destination - apprPars.transform.position;
+                                apprPars.direction = direction;
+                                // pre-setting for attacking
+                                apprPars.playAnimationCust.PlayAnim(UnitAnimDataCust.BaseAnimMaterialType.Idle, direction, default);
+                            }
                         }
                         else
                         {
