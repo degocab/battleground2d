@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class PlayerControl : MonoBehaviour
 {
-    public string PlayerCommand { get; set; }
+    public string PlayerCommand { get; set; } = "Attack";
     public string PreviousCommand { get; set; }
     public float movementSpeed = 0.1f;
     private UnitParsCust apprPars { get; set; }
@@ -17,6 +17,21 @@ public class PlayerControl : MonoBehaviour
 
     [SerializeField]
     public List<Material> selectionRings;
+
+
+    public Transform childTransform;
+    public Animator childAnimator;
+    public SpriteRenderer childSpriteRenderer;
+    bool change = true;
+    public SpriteSheetAnimationDataCust spriteSheetData;
+    public Mesh quadMesh;
+    public Material walkingSpriteSheetMaterial;
+    internal int curSpringAttractFrameIndex;
+    public MeshRenderer springAttractScreenRend;
+    internal float frameTimer;
+    internal int currentFrame;
+    internal int loopCount;
+
 
     // Start is called before the first frame update
     void Start()
@@ -35,7 +50,22 @@ public class PlayerControl : MonoBehaviour
     {
 
         //TODO: fix units just attacking instead of waiting on hold 
-
+        if (Input.GetKeyUp(KeyCode.Alpha1))
+        {
+            PlayerCommand = "Hold";
+        }
+        else if (Input.GetKeyUp(KeyCode.Alpha2))
+        {
+            PlayerCommand = "Move";
+        }
+        else if (Input.GetKeyUp(KeyCode.Alpha3))
+        {
+            PlayerCommand = "Attack";
+        }
+        else if (Input.GetKeyUp(KeyCode.Alpha4))
+        {
+            PlayerCommand = "Follow";
+        }
         if (Input.GetKey(KeyCode.Alpha1) || Input.GetKey(KeyCode.Alpha2) || Input.GetKey(KeyCode.Alpha3) || Input.GetKey(KeyCode.Alpha4))
         {
 
@@ -81,25 +111,11 @@ public class PlayerControl : MonoBehaviour
         }
 
 
-        if (Input.GetKeyUp(KeyCode.Alpha1))
-        {
-            PlayerCommand = "Hold";
-        }
-        else if (Input.GetKeyUp(KeyCode.Alpha2))
-        {
-            PlayerCommand = "Move";
-        }
-        else if (Input.GetKeyUp(KeyCode.Alpha3))
-        {
-            PlayerCommand = "Attack";
-        }
-        else if (Input.GetKeyUp(KeyCode.Alpha4))
-        {
-            PlayerCommand = "Follow";
-        }
 
 
+        float deltaTime = Time.deltaTime;
         HandleMovement();
+        //UpdateAnimation(deltaTime);
     }
 
     private void HandleMovement()
@@ -142,5 +158,58 @@ public class PlayerControl : MonoBehaviour
         }
 
 
+    }
+    internal void UpdateAnimation(float deltaTime)
+    {
+
+        //play animations
+        if (this.playAnimationCust.forced)
+        {
+            this.spriteSheetData = UnitAnimationCust.PlayAnimForced(/*ref prepSheetUnitPars, */this.playAnimationCust.baseAnimType, this.playAnimationCust.animDir, this.playAnimationCust.onComplete
+                                                                                 , apprPars.UnitType, apprPars.IsEnemy);
+
+        }
+        else
+        {
+            SpriteSheetAnimationDataCust currSpriteSheetData = this.spriteSheetData;
+            SpriteSheetAnimationDataCust? newSpriteSheetData = UnitAnimationCust.PlayAnim(/*ref prepSheetUnitPars, */this.playAnimationCust.baseAnimType, currSpriteSheetData, this.playAnimationCust.animDir, this.playAnimationCust.onComplete
+                                                                                          , apprPars.UnitType, apprPars.IsEnemy);
+
+            // if changes
+            if (newSpriteSheetData != null)
+            {
+                this.spriteSheetData = newSpriteSheetData.Value;
+            }
+        }
+
+
+
+
+        //if (IsDead) return; // Skip animation update if unit is dead
+
+        //// Random frame logic
+        //if (randomFrame)
+        //{
+        //    currentFrame = UnityEngine.Random.Range(0, spriteSheetData.frameCount);
+        //    randomFrame = false;
+        //}
+
+        // Update frame timer
+        frameTimer -= deltaTime;
+        while (frameTimer < 0)
+        {
+            frameTimer += spriteSheetData.frameRate;
+            currentFrame = (currentFrame + 1) % spriteSheetData.frameCount;
+
+            // If the frame count is exceeded, increment loop count
+            if (currentFrame >= spriteSheetData.frameCount)
+            {
+                loopCount++;
+            }
+
+            // Update the material with the current frame
+            var frameMaterial = spriteSheetData.materials[currentFrame];
+            springAttractScreenRend.materials = new Material[] { frameMaterial };
+        }
     }
 }

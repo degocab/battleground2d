@@ -383,7 +383,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .15f,
                     VerticalCount = 8,
                     HorizontalCount = 0,
                     Materials = GetMaterials(AnimMaterialTypeEnum.AttackRight, unitType, isEnemy),//AttackRightMaterials,
@@ -395,7 +395,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .15f,
                     VerticalCount = 8,
                     HorizontalCount = 6,
                     Materials = GetMaterials(AnimMaterialTypeEnum.AttackLeft, unitType, isEnemy),//AttackLeftMaterials,
@@ -407,7 +407,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .15f,
                     VerticalCount = 7,
                     HorizontalCount = 0,
                     Materials = GetMaterials(AnimMaterialTypeEnum.AttackUp, unitType, isEnemy),//AttackUpMaterials,
@@ -419,7 +419,7 @@ public class UnitAnimDataCust
                 {
                     CurrentFrame = 0,
                     FrameCount = 6,
-                    FrameRate = .1f,
+                    FrameRate = .15f,
                     VerticalCount = 7,
                     HorizontalCount = 6,
                     Materials = GetMaterials(AnimMaterialTypeEnum.AttackDown, unitType, isEnemy),//AttackDownMaterials,

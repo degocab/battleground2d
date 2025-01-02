@@ -45,7 +45,7 @@ public class ArrowParsCust : MonoBehaviour
     private void Start()
     {
 
-        test_t = GameObject.Find("BattleManager").GetComponent<BattleSystemCust>().t;
+        //test_t = GameObject.Find("BattleManager").GetComponent<BattleSystemCust>().t;
         mesh = this.GetComponent<MeshRenderer>();
     }
 
