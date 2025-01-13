@@ -34,7 +34,7 @@
 //    private void Awake() {
 //        instance = this;
 
-//        EntityManager entityManager = World.Active.EntityManager;
+//        EntityManager entityManager = null;// World.Active.EntityManager;
 //        EntityArchetype entityArchetype = entityManager.CreateArchetype(
 //            typeof(Translation),
 //            typeof(SpriteSheetAnimation_Data)
