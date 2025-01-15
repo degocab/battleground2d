@@ -1,6 +1,9 @@
 ﻿using Unity.Entities;
+using Unity.Mathematics;
 
 public struct MovementSpeedComponent : IComponentData
 {
-    public float speed;
+    public float3 value;
+    public float randomSpeed;
+
 }

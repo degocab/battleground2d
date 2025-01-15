@@ -11,8 +11,8 @@ public class PlayerControlSystem : SystemBase
         var time = Time.DeltaTime;
         Entities.WithAll<CommanderComponent>().ForEach((ref PositionComponent position, in PlayerInputComponent input) => 
         {
-            position.position.x += moveX * time * 5f;
-            position.position.y += moveY * time * 5f;
+            position.value.x += moveX * time * 5f;
+            position.value.y += moveY * time * 5f;
 
         }).Schedule();
     }
