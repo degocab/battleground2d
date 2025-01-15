@@ -39,13 +39,21 @@ public class AnimationSystem : SystemBase
 [UpdateAfter(typeof(AnimationSystem))]
 public class RenderSystem : SystemBase
 {
+
+    public static EntitySpawner entitySpawner;
+
+    protected override void OnStartRunning()
+    {
+        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
+        //Debug.Log(entitySpawner);
+    }
     protected override void OnUpdate()
     {
         MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
         Vector4[] uv = new Vector4[1];
         Camera camera = Camera.main;
-        Mesh quadMesh = EntitySpawner.GetInstance().quadMesh;
-        Material[] materials = EntitySpawner.GetInstance().defaultRunDownMaterials;
+        Mesh quadMesh = entitySpawner.quadMesh;
+        Material[] materials = entitySpawner.defaultRunDownMaterials;
         Entities.ForEach((ref Translation translation, ref AnimationComponent spriteSheetAnimationData) => {
 
             uv[0] = spriteSheetAnimationData.uv;
@@ -54,7 +62,7 @@ public class RenderSystem : SystemBase
             Graphics.DrawMesh(
                 quadMesh,
                 spriteSheetAnimationData.matrix,
-                materials[spriteSheetAnimationData.currentFrame],
+                GetMaterials(EntitySpawner.UnitType.Enemy, EntitySpawner.Direction.Down, EntitySpawner.AnimationType.Attack)[spriteSheetAnimationData.currentFrame],
                 0, // Layer
                 camera,
                 0, // Submesh index
@@ -62,4 +70,19 @@ public class RenderSystem : SystemBase
             );
         }).WithoutBurst().Run();
     }
+
+    public Material[] GetMaterials(EntitySpawner.UnitType unitType, EntitySpawner.Direction direction, EntitySpawner.AnimationType animationType)
+    {
+        var key = (unitType, direction, animationType);  // Tuple as key
+        if (entitySpawner.materialDictionary.TryGetValue(key, out Material[] materials))
+        {
+            return materials; // Return the materials if found
+        }
+        else
+        {
+            Debug.LogError("Materials not found for " + key);
+            return null; // Return null or handle the missing case
+        }
+    }
 }
+

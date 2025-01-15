@@ -8,11 +8,17 @@ using UnityEngine;
 
 public class EntitySpawner : MonoBehaviour
 {
-    private static EntitySpawner instance;
+    public EntitySpawner instanceMain;
+    public EntitySpawner instance;
 
-    public static EntitySpawner GetInstance()
+    public  EntitySpawner GetInstance()
     {
-        return instance;
+        //if (instance == null)
+        //{
+        //    GameObject go = new GameObject();
+        //    instance = instanceMain;
+        //}
+        return instanceMain;
     }
 
 
@@ -24,16 +30,142 @@ public class EntitySpawner : MonoBehaviour
 
     public Mesh quadMesh;      // Assign your quad mesh here
     public Material[] defaultIdleDownMaterials;  // Assign the material here
+    public Material[] defaultIdleLeftMaterials;  // Assign the material here
+    public Material[] defaultIdleRightMaterials;  // Assign the material here
+    public Material[] defaultIdleUpMaterials;  // Assign the material here
+
+    public Material[] defaultDieDownMaterials;  // Assign the material here
+    public Material[] defaultDieLeftMaterials;  // Assign the material here
+    public Material[] defaultDieRightMaterials;  // Assign the material here
+    public Material[] defaultDieUpMaterials;  // Assign the material here
+
     public Material[] defaultRunDownMaterials;  // Assign the material here
+    public Material[] defaultRunLeftMaterials;  // Assign the material here
+    public Material[] defaultRunRightMaterials;  // Assign the material here
+    public Material[] defaultRunUpMaterials;  // Assign the material here
+
+
+    public Material[] defaultAttackDownMaterials;  // Assign the material here
+    public Material[] defaultAttackLeftMaterials;  // Assign the material here
+    public Material[] defaultAttackRightMaterials;  // Assign the material here
+    public Material[] defaultAttackUpMaterials;  // Assign the material here
+
+
+    public Material[] enemyIdleDownMaterials;  // Assign the material here
+    public Material[] enemyIdleLeftMaterials;  // Assign the material here
+    public Material[] enemyIdleRightMaterials;  // Assign the material here
+    public Material[] enemyIdleUpMaterials;  // Assign the material here
+
+    public Material[] enemyDieDownMaterials;  // Assign the material here
+    public Material[] enemyDieLeftMaterials;  // Assign the material here
+    public Material[] enemyDieRightMaterials;  // Assign the material here
+    public Material[] enemyDieUpMaterials;  // Assign the material here
+
+    public Material[] enemyRunDownMaterials;  // Assign the material here
+    public Material[] enemyRunLeftMaterials;  // Assign the material here
+    public Material[] enemyRunRightMaterials;  // Assign the material here
+    public Material[] enemyRunUpMaterials;  // Assign the material here
+
+
+    public Material[] enemyAttackDownMaterials;  // Assign the material here
+    public Material[] enemyAttackLeftMaterials;  // Assign the material here
+    public Material[] enemyAttackRightMaterials;  // Assign the material here
+    public Material[] enemyAttackUpMaterials;  // Assign the material here
 
     public GameObject unitPrefab;  // Drag your prefab with MeshRenderer in Unity editor
 
+    string GetPathForUnitType(string UnitType)
+    {
+        return "Material/" + UnitType;
+    }
+
+    public enum Direction { Up, Down, Left, Right}
+    public enum AnimationType { Idle, Run, Die, Attack }
+    public enum UnitType { Default, Enemy }
+
+    public Dictionary<(UnitType, Direction, AnimationType), Material[]> materialDictionary; 
+    //    new KeyValuePair<(UnitType, Direction, AnimationType), Material[]>((UnitType.Enemy, Direction.Down, AnimationType.Attack), enemyAttackDownMaterials), 
+    ////    materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Attack)] = enemyAttackDownMaterials;
+    ////materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Attack)] = enemyAttackUpMaterials;
+    ////    materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Attack)] = enemyAttackLeftMaterials;
+    ////        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Attack)] = enemyAttackRightMaterials;
+    //};
+
+
+    //public  Dictionary<(UnitType, Direction, AnimationType), Material[]> MaterialDictionary
+    //{
+    //    get
+    //    {
+    //        if (materialDictionary == null)
+    //        {
+    //            LoadMaterials();
+    //        }
+    //        return materialDictionary;
+    //    }
+    //}
+        
+        
+
+
+
+    // Load all materials into the dictionary
+    public  void LoadMaterials()
+    {
+            // Initialize the dictionary for Default and Enemy materials
+            materialDictionary = new Dictionary<(UnitType, Direction, AnimationType), Material[]>();
+
+            //// Default unit type materials
+            //materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Default/IdleDown");
+            //materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Default/IdleUp");
+            //materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Default/IdleLeft");
+            //materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Default/IdleRight");
+
+            //materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Default/RunDown");
+            //materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Default/RunUp");
+            //materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Default/RunLeft");
+            //materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Default/RunRight");
+
+            //materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Default/DieDown");
+            //materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Default/DieUp");
+            //materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Default/DieLeft");
+            //materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Default/DieRight");
+
+            //materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Attack)] = Resources.LoadAll<Material>("Material/Default/AttackDown");
+            //materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Attack)] = Resources.LoadAll<Material>("Material/Default/AttackUp");
+            //materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Attack)] = Resources.LoadAll<Material>("Material/Default/AttackLeft");
+            //materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Attack)] = Resources.LoadAll<Material>("Material/Default/AttackRight");
+
+            //// Enemy unit type materials
+            //materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Enemy/IdleDown");
+            //materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Enemy/IdleUp");
+            //materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Enemy/IdleLeft");
+            //materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Idle)] = Resources.LoadAll<Material>("Material/Enemy/IdleRight");
+
+            //materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Enemy/RunDown");
+            //materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Enemy/RunUp");
+            //materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Enemy/RunLeft");
+            //materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Run)] = Resources.LoadAll<Material>("Material/Enemy/RunRight");
+
+            //materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Enemy/DieDown");
+            //materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Enemy/DieUp");
+            //materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Enemy/DieLeft");
+            //materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Die)] = Resources.LoadAll<Material>("Material/Enemy/DieRight");
+
+            materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Attack)] = enemyAttackDownMaterials;
+            materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Attack)] = enemyAttackUpMaterials;
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Attack)] = enemyAttackLeftMaterials;
+            materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Attack)] = enemyAttackRightMaterials;
+
+    }
+
+    // Retrieve materials based on unit type, direction, and animation type
+
     // Start is called before the first frame update
-    void Start()
+      void Start()
     {
         instance = this;
-        defaultIdleDownMaterials = Resources.LoadAll<Material>("Material/Default/IdleDown");
-        defaultRunDownMaterials = Resources.LoadAll<Material>("Material/Default/RunDown");
+
+        LoadMaterials();
 
         Entity unitEntityPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(unitPrefab, GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null));
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
