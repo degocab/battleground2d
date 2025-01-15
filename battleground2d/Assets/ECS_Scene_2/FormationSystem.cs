@@ -12,7 +12,7 @@ public class FormationSystem : SystemBase
             //exmaple of line formatoin
             if (formation.formationType == 0)
             {
-                position.position.x += 2f;
+                position.value.x += 2f;
             }
         }).Schedule();
     }
