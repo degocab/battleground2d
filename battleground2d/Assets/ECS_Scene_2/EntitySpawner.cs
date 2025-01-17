@@ -141,11 +141,12 @@ public class EntitySpawner : MonoBehaviour
             typeof(MovementSpeedComponent),
             typeof(HealthComponent),
             typeof(AttackComponent),
+            typeof(AttackCooldownComponent),
             typeof(TargetComponent),
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
-            typeof(Translation)
+            typeof(Translation) 
             );
 
 
@@ -156,6 +157,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(MovementSpeedComponent),
             typeof(HealthComponent),
             typeof(AttackComponent),
+            typeof(AttackCooldownComponent),
             typeof(CommanderComponent),
             typeof(AnimationComponent),
             typeof(PlayerInputComponent),
@@ -165,7 +167,7 @@ public class EntitySpawner : MonoBehaviour
 
         //SpawnCommander(unitEntityPrefab);
 
-        SpawnUnits(5000, unitEntityPrefab);
+        SpawnUnits(10000, unitEntityPrefab);
     }
 
     private void SpawnUnits(int count, Entity unitEntityPrefab)
@@ -175,9 +177,11 @@ public class EntitySpawner : MonoBehaviour
             Entity unit = entityManager.CreateEntity(unitArchetype);
             float x = i % 4 * 2f;
             float y = i / 4 * 2f;
-            entityManager.SetComponentData(unit, new PositionComponent { value = new float3(UnityEngine.Random.Range(-50f, 50f), UnityEngine.Random.Range(-30f, 30f), 0) });
+            entityManager.SetComponentData(unit, new PositionComponent { value = new float3(UnityEngine.Random.Range(-50f, 50f), UnityEngine.Random.Range(-20f, 20f), 0) });
             entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
             entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
+            entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
+            entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = 1f, timeRemaining = 0f });
             entityManager.SetComponentData(unit,
                 new AnimationComponent
                 {
@@ -189,7 +193,8 @@ public class EntitySpawner : MonoBehaviour
                     unitType = UnitType.Enemy,
                     direction = Direction.Right,
                     animationType = AnimationType.Run,
-                    prevAnimationType = AnimationType.Run
+                    prevAnimationType = AnimationType.Run,
+                    finishAnimation = false
                 }
             );
         }

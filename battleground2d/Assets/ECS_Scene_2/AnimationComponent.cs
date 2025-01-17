@@ -17,4 +17,11 @@ public struct AnimationComponent : IComponentData
 
     public EntitySpawner.Direction prevDirection;
     public EntitySpawner.AnimationType prevAnimationType;
+
+    /// <summary>
+    /// Bool to set for animation that needs to continue after value resets
+    /// Ex: spacebarPressedThisFrame = Input.GetKeyDown(KeyCode.Space);
+    /// This resets on each frame, so it could finish the animation early.
+    /// </summary>
+    public bool finishAnimation;
 }

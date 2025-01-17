@@ -88,15 +88,15 @@ public class RenderSystem : SystemBase
 
 
 [UpdateBefore(typeof(AnimationSystem))]
-//[BurstCompile]
+[BurstCompile]
 public class MovementSystem : SystemBase
 {
-    public static EntitySpawner entitySpawner;
+    //public static EntitySpawner entitySpawner;
 
-    protected override void OnStartRunning()
-    {
-        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
-    }
+    //protected override void OnStartRunning()
+    //{
+    //    entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
+    //}
 
     protected override void OnUpdate()
     {
@@ -112,36 +112,41 @@ public class MovementSystem : SystemBase
 
         Entities.ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
         {
-            if (moveX == 0f && moveY == 0f) //not moving
+            if (animationComponent.finishAnimation == false)
             {
-                animationComponent.animationType = EntitySpawner.AnimationType.Idle;
-                movementSpeedComponent.randomSpeed = 0f;
-            }
-            else
-            {
-                animationComponent.animationType = EntitySpawner.AnimationType.Run;
-            }
-
-            if (animationComponent.prevAnimationType != animationComponent.animationType)
-            {
-                if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
+                if (moveX == 0f && moveY == 0f) //not moving
                 {
-                    animationComponent.frameCount = 2;
-                    animationComponent.currentFrame = 0;
-                    animationComponent.frameTimerMax = .1f;
+                    animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+                    movementSpeedComponent.randomSpeed = 0f;
                 }
-                else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
+                else
                 {
-
-                    Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-
-                    // Generate a random float between 1f and 1.25f
-                    animationComponent.currentFrame = random.NextInt(0,6);
-                    //animationComponent.currentFrame = 0;
-                    animationComponent.frameCount = 6;
-                    animationComponent.frameTimerMax = entitySpawner != null ? entitySpawner.speedVar : .95f;
+                    animationComponent.animationType = EntitySpawner.AnimationType.Run;
                 }
-                animationComponent.prevAnimationType = animationComponent.animationType;
+
+                if (animationComponent.prevAnimationType != animationComponent.animationType)
+                {
+                    if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
+                    {
+                        animationComponent.frameCount = 2;
+                        animationComponent.currentFrame = 0;
+                        animationComponent.frameTimerMax = .1f;
+                    }
+                    else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
+                    {
+
+                        Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
+
+                        // Generate a random float between 1f and 1.25f
+                        animationComponent.currentFrame = random.NextInt(0, 6);
+                        //animationComponent.currentFrame = 0;
+                        animationComponent.frameCount = 6;
+                        animationComponent.frameTimerMax =
+                        //entitySpawner != null ? entitySpawner.speedVar : 
+                        .12f;
+                    }
+                    animationComponent.prevAnimationType = animationComponent.animationType;
+                }
             }
 
         }).ScheduleParallel();
@@ -161,10 +166,10 @@ public class MovementSystem : SystemBase
 
             }
 
-            //velocity.randomSpeed
 
             float3 vel = (new float3(moveX, moveY, 0) *
-                                    (entitySpawner != null ? entitySpawner.mainSpeedVar : 2f)
+                                    //(entitySpawner != null ? entitySpawner.mainSpeedVar : 2f)d
+                                    velocity.randomSpeed
                                     );
             vel.z = 0;
             velocity.value = vel;
@@ -172,16 +177,6 @@ public class MovementSystem : SystemBase
 
 
 
-        //set animation
-        Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity) =>
-        {
-            // Update position based on velocity (movement calculations)
-            position.value += velocity.value * deltaTime;
-
-            // Apply the new position to the entity's translation (moving in the scene)
-            translation.Value = position.value;
-
-        }).ScheduleParallel();
 
         //get direction
         Entities.ForEach((ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
@@ -207,13 +202,146 @@ public class MovementSystem : SystemBase
             else
             {
                 // In case of the entity being at the origin (0, 0)
-                animationComponent.direction = animationComponent.prevDirection; // Or some default direction
+                if (!animationComponent.finishAnimation)
+                {
+                    animationComponent.direction = animationComponent.prevDirection; // Or some default direction 
+                }
             }
 
             animationComponent.prevDirection = animationComponent.direction;
 
         }).ScheduleParallel();
 
+        //bool attack = false;
+        //if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
+        //{
+        //    attack = true;
+        //}
 
+        //Entities.ForEach((ref MovementSpeedComponent velocity, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref Translation translation, ref AnimationComponent animationComponent) =>
+        //{
+        //    if (attack || animationComponent.finishAnimation)
+        //    {
+        //        animationComponent.animationType = EntitySpawner.AnimationType.Attack;
+        //        animationComponent.direction = animationComponent.prevDirection;
+        //    }
+        //    // If the attack button is pressed and cooldown is finished
+        //    if (attack && attackCooldown.timeRemaining <= 0f && !animationComponent.finishAnimation)
+        //    {
+        //        // Start the attack animation
+        //        animationComponent.animationType = EntitySpawner.AnimationType.Attack;
+
+        //        // Initialize animation parameters only once (on first attack)
+        //        if (!animationComponent.finishAnimation)
+        //        {
+        //            animationComponent.finishAnimation = true;
+        //            animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
+        //            animationComponent.currentFrame = 0; // Start at the first frame
+        //            animationComponent.frameTimerMax = 0.2f; // Example: 0.2 seconds per frame
+        //            animationComponent.frameTimer = 0f; // Reset the frame timer
+        //            attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration
+        //            animationComponent.prevAnimationType = animationComponent.animationType; // Set previous animation type to attack
+        //        }
+
+        //        // Optionally: Apply damage to nearby entities within attack range
+        //        float attackRange = attackComponent.range;
+        //        float attackDamage = attackComponent.damage;
+        //        // You can use your existing logic here to apply damage based on range
+        //    }
+
+        //    // Handle cooldown timer
+        //    if (attackCooldown.timeRemaining > 0f)
+        //    {
+        //        attackCooldown.timeRemaining -= deltaTime; // Reduce cooldown
+        //    }
+
+        //    // Once the animation is complete, reset the animation and allow the next attack
+        //    if (animationComponent.currentFrame >= animationComponent.frameCount)
+        //    {
+        //        animationComponent.finishAnimation = false; // Reset finish flag after animation is done
+        //        animationComponent.animationType = EntitySpawner.AnimationType.Idle; // Switch to idle animation (or another animation type)
+        //    }
+
+        //    // Animation logic (frame updates, etc.)
+        //    //if (animationComponent.finishAnimation)
+        //    //{
+        //    //    // Handle frame updates here based on your frame timing system
+        //    //    // Increment `currentFrame` based on time (use `frameTimer` for frame timing)
+        //    //    animationComponent.frameTimer += deltaTime;
+
+        //    //    if (animationComponent.frameTimer >= animationComponent.frameTimerMax)
+        //    //    {
+        //    //        animationComponent.frameTimer = 0f;
+        //    //        animationComponent.currentFrame++;
+        //    //    }
+        //    //}
+
+        //}).ScheduleParallel();
+
+
+
+
+        Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
+        {
+            //stop moving on attack
+            if (animationComponent.animationType == EntitySpawner.AnimationType.Run)//walk || animationComponent.animationType != EntitySpawner.AnimationType.Run)
+            {
+                // Update position based on velocity (movement calculations)
+                position.value += velocity.value * deltaTime;
+
+                // Apply the new position to the entity's translation (moving in the scene)
+                translation.Value = position.value;
+            }
+
+        }).ScheduleParallel();
+    }
+}
+
+[UpdateAfter(typeof(MovementSystem))]
+public class CombatSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        var deltaTime = Time.DeltaTime;
+        bool attack = false;
+        if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
+        {
+            attack = true;
+        }
+
+        Entities.ForEach((ref MovementSpeedComponent velocity, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref Translation translation, ref AnimationComponent animationComponent) =>
+        {
+            // If the attack button is pressed and cooldown is finished
+            if (attack)
+            {
+                if (attackCooldown.timeRemaining <= 0f)
+                {
+                    animationComponent.animationType = EntitySpawner.AnimationType.Attack;
+
+                    animationComponent.finishAnimation = true;
+                    animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
+                    animationComponent.currentFrame = 0; // Start at the first frame
+                    animationComponent.frameTimerMax = 0.1f; // Example: 0.2 seconds per frame
+                    animationComponent.frameTimer = 0f; // Reset the frame timer
+                    attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration
+
+                }
+                else
+                {
+                    attackCooldown.timeRemaining -= deltaTime; // Reduce cooldown
+                }
+            }
+
+
+
+            // Once the animation is complete, reset the animation and allow the next attack
+            if (animationComponent.currentFrame >= animationComponent.frameCount)
+            {
+                animationComponent.finishAnimation = false; // Reset finish flag after animation is done
+                animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+
+            }
+
+        }).ScheduleParallel();
     }
 }
