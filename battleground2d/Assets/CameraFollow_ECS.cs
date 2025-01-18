@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class CameraFollow_ECS : MonoBehaviour
 {
-    public float moveSpeed = 5f;  // Movement speed for the camera
+    public float moveSpeed = 3f;  // Movement speed for the camera
     public Vector2 offset = new Vector2(0, 0);  // Optional offset to adjust the camera's starting position relative to the player
 
-    private Vector3 targetPosition;  // The target position the camera should move to
+    public Vector3 targetPosition;  // The target position the camera should move to
 
     // Start is called before the first frame update
     void Start()
@@ -32,6 +32,7 @@ public class CameraFollow_ECS : MonoBehaviour
         //targetPosition += new Vector3(offset.x, offset.y, -13);
 
         // Smoothly move the camera to the target position
-        transform.position = Vector3.Lerp(transform.position, targetPosition, -13f);
+        //Debug.Log(targetPosition);
+        //transform.position = targetPosition;// Vector3.Lerp(transform.position, targetPosition, -13f);
     }
 }

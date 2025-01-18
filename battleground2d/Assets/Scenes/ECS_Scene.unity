@@ -164,7 +164,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &881106032
 GameObject:
@@ -264,6 +264,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 5
   offset: {x: 0, y: 0}
+  targetPosition: {x: 0, y: 0, z: 0}
 --- !u!1 &910295580
 GameObject:
   m_ObjectHideFlags: 0
@@ -370,7 +371,7 @@ RectTransform:
   m_Children:
   - {fileID: 1299382297}
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -422,7 +423,7 @@ PrefabInstance:
     - target: {fileID: 381998812018035557, guid: 7f024a5a1c04be3478e22a00b4126b85,
         type: 3}
       propertyPath: m_RootOrder
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 381998812018035557, guid: 7f024a5a1c04be3478e22a00b4126b85,
         type: 3}
@@ -1240,7 +1241,7 @@ PrefabInstance:
     - target: {fileID: 4798128359525817538, guid: 4db452d207e4b13469927205ad0e8b61,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4798128359525817538, guid: 4db452d207e4b13469927205ad0e8b61,
         type: 3}

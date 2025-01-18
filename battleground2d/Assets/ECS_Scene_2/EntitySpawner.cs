@@ -143,29 +143,32 @@ public class EntitySpawner : MonoBehaviour
             typeof(AttackComponent),
             typeof(AttackCooldownComponent),
             typeof(TargetComponent),
+            typeof(TargetPositionComponent),
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
-            typeof(Translation) 
+            typeof(Translation)
             );
 
 
         //define commander archetype
         commanderArchetype = entityManager.CreateArchetype(
+            typeof(CommanderComponent),
+            typeof(PlayerInputComponent),
             typeof(PositionComponent),
             typeof(VelocityComponent),
             typeof(MovementSpeedComponent),
             typeof(HealthComponent),
             typeof(AttackComponent),
             typeof(AttackCooldownComponent),
-            typeof(CommanderComponent),
+            typeof(TargetComponent),
             typeof(AnimationComponent),
-            typeof(PlayerInputComponent),
+            typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
             typeof(Translation)
             );
 
-        //SpawnCommander(unitEntityPrefab);
+        SpawnCommander();
 
         SpawnUnits(10000, unitEntityPrefab);
     }
@@ -177,23 +180,25 @@ public class EntitySpawner : MonoBehaviour
             Entity unit = entityManager.CreateEntity(unitArchetype);
             float x = i % 4 * 2f;
             float y = i / 4 * 2f;
-            entityManager.SetComponentData(unit, new PositionComponent { value = new float3(UnityEngine.Random.Range(-50f, 50f), UnityEngine.Random.Range(-20f, 20f), 0) });
+            float3 randomPos = new float3(UnityEngine.Random.Range(-50f, 50f), UnityEngine.Random.Range(-20f, 20f), 0);
+            entityManager.SetComponentData(unit, new PositionComponent { value = randomPos });
+            entityManager.SetComponentData(unit, new Translation { Value = randomPos });
             entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
             entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
             entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
             entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
+            entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(randomPos.x + 50f, randomPos.y,0f) });
             entityManager.SetComponentData(unit,
                 new AnimationComponent
                 {
-                    currentFrame = UnityEngine.Random.Range(0, 5),
-                    frameCount = 6,
-                    frameTimer = UnityEngine.Random.Range(0f, 1f),
-                    frameTimerMax = .1f,
-
+                    frameCount = 2,
+                    currentFrame = 0,
+                    frameTimerMax = .0875f,
+                    frameTimer = 0f,
                     unitType = UnitType.Enemy,
                     direction = Direction.Right,
-                    animationType = AnimationType.Run,
-                    prevAnimationType = AnimationType.Run,
+                    animationType = AnimationType.Idle,
+                    prevAnimationType = AnimationType.Idle,
                     finishAnimation = false
                 }
             );
@@ -214,29 +219,54 @@ public class EntitySpawner : MonoBehaviour
                 return 0; // Default to Infantry if not found
         }
     }
-    private void SpawnCommander(Entity unitEntityPrefab)
+    private void SpawnCommander()
     {
         commanderEntity = entityManager.CreateEntity(commanderArchetype);
-
-        //set intial data
-        entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0f) });
-        entityManager.SetComponentData(commanderEntity, new VelocityComponent { velocity = new float3(0f, 0f, 0f) });
+        entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0) });
         entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 100f, maxHealth = 100f });
-        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 5f });
-        entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
+        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f });
+        entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f });
+        entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
+        entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true});
+        entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {
-                currentFrame = UnityEngine.Random.Range(0, 1),
-                frameCount = 2,
+                currentFrame = UnityEngine.Random.Range(0, 5),
+                frameCount = 6,
                 frameTimer = UnityEngine.Random.Range(0f, 1f),
-                frameTimerMax = .1f
+                frameTimerMax = .1f,
+
+                unitType = UnitType.Default,
+                direction = Direction.Right,
+                animationType = AnimationType.Run,
+                prevAnimationType = AnimationType.Run,
+                finishAnimation = false
             }
         );
 
-        // Set the material index based on the unit type
-        int materialIndex = GetMaterialIndex("");
-        entityManager.SetComponentData(commanderEntity, new UnitMaterialComponent { materialIndex = materialIndex });
+
+
+
+        ////set intial data
+        //entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0f) });
+        //entityManager.SetComponentData(commanderEntity, new VelocityComponent { velocity = new float3(0f, 0f, 0f) });
+        //entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 100f, maxHealth = 100f });
+        //entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 5f });
+        //entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
+        //entityManager.SetComponentData(commanderEntity,
+        //    new AnimationComponent
+        //    {
+        //        currentFrame = UnityEngine.Random.Range(0, 1),
+        //        frameCount = 2,
+        //        frameTimer = UnityEngine.Random.Range(0f, 1f),
+        //        frameTimerMax = .1f
+        //    }
+        ////);
+
+        //// Set the material index based on the unit type
+        //int materialIndex = GetMaterialIndex("");
+        //entityManager.SetComponentData(commanderEntity, new UnitMaterialComponent { materialIndex = materialIndex });
 
     }
     // Update is called once per frame
@@ -259,7 +289,7 @@ public class EntitySpawner : MonoBehaviour
             case EntitySpawner.AnimationType.Run:
                 animationComponent.currentFrame = random.Value.NextInt(0, 6);
                 animationComponent.frameCount = 6;
-                animationComponent.frameTimerMax = .12f;
+                animationComponent.frameTimerMax = .1f;
                 break;
             case EntitySpawner.AnimationType.Idle:
                 animationComponent.frameCount = 2;

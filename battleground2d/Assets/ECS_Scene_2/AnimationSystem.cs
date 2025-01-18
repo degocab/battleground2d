@@ -85,19 +85,10 @@ public class RenderSystem : SystemBase
     }
 }
 
-
-
 [UpdateBefore(typeof(AnimationSystem))]
 [BurstCompile]
 public class MovementSystem : SystemBase
 {
-    //public static EntitySpawner entitySpawner;
-
-    //protected override void OnStartRunning()
-    //{
-    //    entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
-    //}
-
     protected override void OnUpdate()
     {
         var deltaTime = Time.DeltaTime;
@@ -109,21 +100,60 @@ public class MovementSystem : SystemBase
         if (Input.GetKey(KeyCode.A)) moveX = -1f;
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
 
+        //update movement x and y
+        Entities
+        .WithAll<CommanderComponent>()// remove to let all units update
+        .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+        {
+            movementSpeedComponent.moveX = moveX;
+            movementSpeedComponent.moveY = moveY;
+        }).ScheduleParallel();
 
-        Entities.ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, ref AttackComponent attackComponent, in Entity entity) =>
+
+        //move all units?
+        Entities
+        .ForEach((ref MovementSpeedComponent movementSpeedComponent,ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
+        {
+            float3 targetPosition = targetLocationComponent.targetPosition;
+            float3 direction = targetPosition - translation.Value;
+            direction.z = 0;
+            if (math.length(direction) < 0.1f)
+            {
+                float newX = translation.Value.x;
+                newX -= 50f;
+                targetPosition = new float3(newX, translation.Value.y, 0f);
+                targetLocationComponent.targetPosition = targetPosition;
+                direction = targetPosition - translation.Value;
+                //direction = float3.zero;
+            }
+            else
+            {
+                direction = math.normalize(direction);
+                movementSpeedComponent.direction = direction;
+            }
+
+
+            //movementSpeedComponent.normalizedDirection = math.normalize(direction);
+            movementSpeedComponent.moveX = direction.x;
+            movementSpeedComponent.moveY = direction.y;
+        }).ScheduleParallel();
+
+        Entities
+        //.WithAll<CommanderComponent>()// remove to let all units update
+        .ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, ref AttackComponent attackComponent, in Entity entity) =>
         {
             if (!attackComponent.isAttacking)
             {
-                if (moveX == 0f && moveY == 0f) //not moving
+                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f) //not moving
                 {
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+                    EntitySpawner.UpdateAnimationFields(ref animationComponent);
                     movementSpeedComponent.randomSpeed = 0f;
                 }
                 else
                 {
                     animationComponent.animationType = EntitySpawner.AnimationType.Run;
                 }
-
                 if (animationComponent.prevAnimationType != animationComponent.animationType)
                 {
                     if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
@@ -132,9 +162,7 @@ public class MovementSystem : SystemBase
                     }
                     else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
                     {
-
                         Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-
                         EntitySpawner.UpdateAnimationFields(ref animationComponent, random);
                     }
                     animationComponent.prevAnimationType = animationComponent.animationType;
@@ -144,9 +172,11 @@ public class MovementSystem : SystemBase
         }).ScheduleParallel();
 
         // Movement speed randomizer
-        float minRange = 2f;
-        float maxRange = 2.5f;
-        Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
+        float minRange = 3f;
+        float maxRange = 3.5f;
+        Entities
+            //.WithAll<CommanderComponent>()// remove to let all units update
+            .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
         {
             if (velocity.randomSpeed == 0f)
             {
@@ -155,26 +185,18 @@ public class MovementSystem : SystemBase
 
                 // Generate a random float between 1f and 1.25f
                 velocity.randomSpeed = random.NextFloat(minRange, maxRange);
-
             }
 
-
-            float3 vel = (new float3(moveX, moveY, 0) *
-                                    //(entitySpawner != null ? entitySpawner.mainSpeedVar : 2f)d
-                                    velocity.randomSpeed
-                                    );
+            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
             vel.z = 0;
             velocity.value = vel;
         }).ScheduleParallel();
 
-
-
-
         //get direction
-        Entities.ForEach((ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
+        Entities
+            //.WithAll<CommanderComponent>()//remove to allow all units to move from wasd
+            .ForEach((ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
         {
-            //Debug.Log("x: " + translation.Value.x);
-            //Debug.Log("y: " + translation.Value.y);
             if (velocity.value.x > 0)
             {
                 animationComponent.direction = EntitySpawner.Direction.Right;
@@ -199,81 +221,13 @@ public class MovementSystem : SystemBase
                     animationComponent.direction = animationComponent.prevDirection; // Or some default direction 
                 }
             }
-
             animationComponent.prevDirection = animationComponent.direction;
 
         }).ScheduleParallel();
 
-        //bool attack = false;
-        //if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
-        //{
-        //    attack = true;
-        //}
-
-        //Entities.ForEach((ref MovementSpeedComponent velocity, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref Translation translation, ref AnimationComponent animationComponent) =>
-        //{
-        //    if (attack || animationComponent.finishAnimation)
-        //    {
-        //        animationComponent.animationType = EntitySpawner.AnimationType.Attack;
-        //        animationComponent.direction = animationComponent.prevDirection;
-        //    }
-        //    // If the attack button is pressed and cooldown is finished
-        //    if (attack && attackCooldown.timeRemaining <= 0f && !animationComponent.finishAnimation)
-        //    {
-        //        // Start the attack animation
-        //        animationComponent.animationType = EntitySpawner.AnimationType.Attack;
-
-        //        // Initialize animation parameters only once (on first attack)
-        //        if (!animationComponent.finishAnimation)
-        //        {
-        //            animationComponent.finishAnimation = true;
-        //            animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
-        //            animationComponent.currentFrame = 0; // Start at the first frame
-        //            animationComponent.frameTimerMax = 0.2f; // Example: 0.2 seconds per frame
-        //            animationComponent.frameTimer = 0f; // Reset the frame timer
-        //            attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration
-        //            animationComponent.prevAnimationType = animationComponent.animationType; // Set previous animation type to attack
-        //        }
-
-        //        // Optionally: Apply damage to nearby entities within attack range
-        //        float attackRange = attackComponent.range;
-        //        float attackDamage = attackComponent.damage;
-        //        // You can use your existing logic here to apply damage based on range
-        //    }
-
-        //    // Handle cooldown timer
-        //    if (attackCooldown.timeRemaining > 0f)
-        //    {
-        //        attackCooldown.timeRemaining -= deltaTime; // Reduce cooldown
-        //    }
-
-        //    // Once the animation is complete, reset the animation and allow the next attack
-        //    if (animationComponent.currentFrame >= animationComponent.frameCount)
-        //    {
-        //        animationComponent.finishAnimation = false; // Reset finish flag after animation is done
-        //        animationComponent.animationType = EntitySpawner.AnimationType.Idle; // Switch to idle animation (or another animation type)
-        //    }
-
-        //    // Animation logic (frame updates, etc.)
-        //    //if (animationComponent.finishAnimation)
-        //    //{
-        //    //    // Handle frame updates here based on your frame timing system
-        //    //    // Increment `currentFrame` based on time (use `frameTimer` for frame timing)
-        //    //    animationComponent.frameTimer += deltaTime;
-
-        //    //    if (animationComponent.frameTimer >= animationComponent.frameTimerMax)
-        //    //    {
-        //    //        animationComponent.frameTimer = 0f;
-        //    //        animationComponent.currentFrame++;
-        //    //    }
-        //    //}
-
-        //}).ScheduleParallel();
-
-
-
         //actual movement system
-        Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
+        Entities
+        .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
         {
             //stop moving on attack
             if (animationComponent.animationType == EntitySpawner.AnimationType.Run)//walk || animationComponent.animationType != EntitySpawner.AnimationType.Run)
@@ -284,7 +238,6 @@ public class MovementSystem : SystemBase
                 // Apply the new position to the entity's translation (moving in the scene)
                 translation.Value = position.value;
             }
-
         }).ScheduleParallel();
     }
 }
@@ -308,11 +261,6 @@ public class CombatSystem : SystemBase
                     attackComponent.isAttacking = true;
                     animationComponent.animationType = EntitySpawner.AnimationType.Attack;
                     EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                    //animationComponent.finishAnimation = true;
-                    //animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
-                    //animationComponent.currentFrame = 0; // Start at the first frame
-                    //animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
-                    //animationComponent.frameTimer = 0f; // Reset the frame timer
                     attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration 
                 }
             }
@@ -334,21 +282,8 @@ public class CombatSystem : SystemBase
 
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
                     EntitySpawner.UpdateAnimationFields(ref animationComponent);
-
-                } 
+                }
             }
-
-
-
-            //// Once the animation is complete, reset the animation and allow the next attack
-            //if (attackCooldown.timeRemaining <= 0f)
-            //{
-            //    animationComponent.finishAnimation = false; // Reset finish flag after animation is done
-            //    attackComponent.isAttacking = false; // Reset finish flag after animation is done
-
-
-            //}
-
         }).ScheduleParallel();
     }
 }
