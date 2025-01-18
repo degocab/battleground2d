@@ -244,4 +244,31 @@ public class EntitySpawner : MonoBehaviour
     {
 
     }
+    public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? random = null)
+    {
+        // Depending on the animationType, set the specific frame-related values
+        switch (animationComponent.animationType)
+        {
+            case EntitySpawner.AnimationType.Attack:
+                animationComponent.finishAnimation = true;
+                animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
+                animationComponent.currentFrame = 0; // Start at the first frame
+                animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
+                animationComponent.frameTimer = 0f; // Reset the frame timer
+                break;
+            case EntitySpawner.AnimationType.Run:
+                animationComponent.currentFrame = random.Value.NextInt(0, 6);
+                animationComponent.frameCount = 6;
+                animationComponent.frameTimerMax = .12f;
+                break;
+            case EntitySpawner.AnimationType.Idle:
+                animationComponent.frameCount = 2;
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = .0875f;
+                animationComponent.frameTimer = 0f; // Reset the frame timer
+
+                break;
+                // Add other cases as necessary
+        }
+    }
 }

@@ -128,22 +128,14 @@ public class MovementSystem : SystemBase
                 {
                     if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
                     {
-                        animationComponent.frameCount = 2;
-                        animationComponent.currentFrame = 0;
-                        animationComponent.frameTimerMax = .1f;
+                        EntitySpawner.UpdateAnimationFields(ref animationComponent);
                     }
                     else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
                     {
 
                         Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
 
-                        //Generate a random float between 1f and 1.25f
-                        animationComponent.currentFrame = random.NextInt(0, 6);
-                        animationComponent.currentFrame = 0;
-                        animationComponent.frameCount = 6;
-                        animationComponent.frameTimerMax =
-                        //entitySpawner != null ? entitySpawner.speedVar :
-                        .12f;
+                        EntitySpawner.UpdateAnimationFields(ref animationComponent, random);
                     }
                     animationComponent.prevAnimationType = animationComponent.animationType;
                 }
@@ -151,7 +143,7 @@ public class MovementSystem : SystemBase
 
         }).ScheduleParallel();
 
-        // Movement speed
+        // Movement speed randomizer
         float minRange = 2f;
         float maxRange = 2.5f;
         Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
@@ -280,7 +272,7 @@ public class MovementSystem : SystemBase
 
 
 
-
+        //actual movement system
         Entities.ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
         {
             //stop moving on attack
@@ -300,19 +292,12 @@ public class MovementSystem : SystemBase
 [UpdateAfter(typeof(MovementSystem))]
 public class CombatSystem : SystemBase
 {
-
-    private EntityManager entityManager;
-
     protected override void OnUpdate()
     {
         var deltaTime = Time.DeltaTime;
         bool attack = false;
         if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
-        {
             attack = true;
-        }
-
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         Entities.ForEach((ref Entity entity, ref Translation translation, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref AnimationComponent animationComponent) =>
         {
@@ -322,12 +307,12 @@ public class CombatSystem : SystemBase
                 {
                     attackComponent.isAttacking = true;
                     animationComponent.animationType = EntitySpawner.AnimationType.Attack;
-
-                    animationComponent.finishAnimation = true;
-                    animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
-                    animationComponent.currentFrame = 0; // Start at the first frame
-                    animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
-                    animationComponent.frameTimer = 0f; // Reset the frame timer
+                    EntitySpawner.UpdateAnimationFields(ref animationComponent);
+                    //animationComponent.finishAnimation = true;
+                    //animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
+                    //animationComponent.currentFrame = 0; // Start at the first frame
+                    //animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
+                    //animationComponent.frameTimer = 0f; // Reset the frame timer
                     attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration 
                 }
             }
@@ -348,10 +333,8 @@ public class CombatSystem : SystemBase
                     attackComponent.isAttacking = false; // Reset finish flag after animation is done
 
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
-                    animationComponent.frameCount = 2;
-                    animationComponent.currentFrame = 0;
-                    animationComponent.frameTimerMax = .0875f;
-                    animationComponent.frameTimer = 0f; // Reset the frame timer
+                    EntitySpawner.UpdateAnimationFields(ref animationComponent);
+
                 } 
             }
 
