@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(MovementSystem))]
+[UpdateAfter(typeof(CombatSystem))]
 public class AnimationSystem : SystemBase
 {
     protected override void OnUpdate()
@@ -110,9 +110,9 @@ public class MovementSystem : SystemBase
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
 
 
-        Entities.ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
+        Entities.ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, ref AttackComponent attackComponent, in Entity entity) =>
         {
-            if (animationComponent.finishAnimation == false)
+            if (!attackComponent.isAttacking)
             {
                 if (moveX == 0f && moveY == 0f) //not moving
                 {
@@ -137,12 +137,12 @@ public class MovementSystem : SystemBase
 
                         Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
 
-                        // Generate a random float between 1f and 1.25f
+                        //Generate a random float between 1f and 1.25f
                         animationComponent.currentFrame = random.NextInt(0, 6);
-                        //animationComponent.currentFrame = 0;
+                        animationComponent.currentFrame = 0;
                         animationComponent.frameCount = 6;
                         animationComponent.frameTimerMax =
-                        //entitySpawner != null ? entitySpawner.speedVar : 
+                        //entitySpawner != null ? entitySpawner.speedVar :
                         .12f;
                     }
                     animationComponent.prevAnimationType = animationComponent.animationType;
@@ -300,6 +300,9 @@ public class MovementSystem : SystemBase
 [UpdateAfter(typeof(MovementSystem))]
 public class CombatSystem : SystemBase
 {
+
+    private EntityManager entityManager;
+
     protected override void OnUpdate()
     {
         var deltaTime = Time.DeltaTime;
@@ -309,38 +312,59 @@ public class CombatSystem : SystemBase
             attack = true;
         }
 
-        Entities.ForEach((ref MovementSpeedComponent velocity, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref Translation translation, ref AnimationComponent animationComponent) =>
+        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+        Entities.ForEach((ref Entity entity, ref Translation translation, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref AnimationComponent animationComponent) =>
         {
-            // If the attack button is pressed and cooldown is finished
             if (attack)
             {
-                if (attackCooldown.timeRemaining <= 0f)
+                if (!attackComponent.isAttacking) //dont reset until we are done
                 {
+                    attackComponent.isAttacking = true;
                     animationComponent.animationType = EntitySpawner.AnimationType.Attack;
 
                     animationComponent.finishAnimation = true;
                     animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
                     animationComponent.currentFrame = 0; // Start at the first frame
-                    animationComponent.frameTimerMax = 0.1f; // Example: 0.2 seconds per frame
+                    animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
                     animationComponent.frameTimer = 0f; // Reset the frame timer
-                    attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration
-
+                    attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration 
                 }
-                else
+            }
+        }).ScheduleParallel();
+
+        Entities.ForEach((ref Entity entity, ref MovementSpeedComponent velocity, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref Translation translation, ref AnimationComponent animationComponent) =>
+        {
+            // If the attack button is pressed and cooldown is finished
+            if (attackComponent.isAttacking)
+            {
+                if (attackCooldown.timeRemaining > 0f)
                 {
                     attackCooldown.timeRemaining -= deltaTime; // Reduce cooldown
                 }
+                else
+                {
+                    animationComponent.finishAnimation = false; // Reset finish flag after animation is done
+                    attackComponent.isAttacking = false; // Reset finish flag after animation is done
+
+                    animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+                    animationComponent.frameCount = 2;
+                    animationComponent.currentFrame = 0;
+                    animationComponent.frameTimerMax = .0875f;
+                    animationComponent.frameTimer = 0f; // Reset the frame timer
+                } 
             }
 
 
 
-            // Once the animation is complete, reset the animation and allow the next attack
-            if (animationComponent.currentFrame >= animationComponent.frameCount)
-            {
-                animationComponent.finishAnimation = false; // Reset finish flag after animation is done
-                animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+            //// Once the animation is complete, reset the animation and allow the next attack
+            //if (attackCooldown.timeRemaining <= 0f)
+            //{
+            //    animationComponent.finishAnimation = false; // Reset finish flag after animation is done
+            //    attackComponent.isAttacking = false; // Reset finish flag after animation is done
 
-            }
+
+            //}
 
         }).ScheduleParallel();
     }

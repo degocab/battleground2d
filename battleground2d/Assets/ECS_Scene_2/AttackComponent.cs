@@ -5,6 +5,8 @@ public struct AttackComponent : IComponentData
     public float damage;
     public float range;
 
+    public bool isAttacking;
+
 }
 
 public struct AttackCooldownComponent : IComponentData

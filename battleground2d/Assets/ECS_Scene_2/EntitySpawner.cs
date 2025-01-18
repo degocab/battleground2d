@@ -181,7 +181,7 @@ public class EntitySpawner : MonoBehaviour
             entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
             entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
             entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
-            entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = 1f, timeRemaining = 0f });
+            entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
             entityManager.SetComponentData(unit,
                 new AnimationComponent
                 {
