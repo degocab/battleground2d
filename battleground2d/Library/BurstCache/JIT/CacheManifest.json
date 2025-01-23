@@ -14,8 +14,8 @@
       "LastWriteTime": "2025-01-16T08:28:16.5285158Z"
     },
     {
-      "FullName": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "LastWriteTime": "2025-01-18T23:28:07.5993042Z"
+      "FullName": "Unity.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "LastWriteTime": "2025-01-16T08:27:58.3964864Z"
     },
     {
       "FullName": "UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
@@ -26,16 +26,8 @@
       "LastWriteTime": "2020-07-28T20:12:40Z"
     },
     {
-      "FullName": "Unity.Transforms, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "LastWriteTime": "2025-01-16T08:28:14.3510254Z"
-    },
-    {
       "FullName": "Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
       "LastWriteTime": "2025-01-16T08:27:57.0375877Z"
-    },
-    {
-      "FullName": "Unity.Collections, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "LastWriteTime": "2025-01-16T08:27:58.3964864Z"
     },
     {
       "FullName": "Unity.Burst.Unsafe, Version=4.0.5.0, Culture=neutral, PublicKeyToken=null",
@@ -72,22 +64,6 @@
       ]
     },
     {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<CombatSystem/<>c__DisplayClass_OnUpdate_LambdaJob0>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "946fb959f3f7d5f04724d2e8c748bb05",
-      "LinkName": "967ADA86587D4D7E",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        6,
-        7,
-        8
-      ]
-    },
-    {
       "FullName": "System.Void Unity.Entities.StructuralChange::_mono_to_burst_AddComponentEntitiesBatch(System.IntPtr,System.IntPtr,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
       "ModuleHash": "8009fe9635b692d1117d0c38e4038163",
@@ -95,13 +71,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -112,13 +88,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -129,13 +105,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -146,13 +122,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -163,13 +139,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -180,13 +156,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -197,13 +173,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -214,13 +190,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -231,13 +207,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -248,13 +224,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -265,7 +241,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5
       ]
@@ -278,13 +254,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -295,13 +271,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -312,13 +288,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
         0,
+        6,
         7,
-        9,
-        10
+        8
       ]
     },
     {
@@ -329,8 +305,8 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
-        7,
+        3,
+        6,
         4,
         5
       ]
@@ -343,7 +319,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -364,7 +340,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -375,7 +351,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -398,10 +374,10 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7
+        6
       ]
     },
     {
@@ -412,10 +388,10 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7
+        6
       ]
     },
     {
@@ -426,10 +402,10 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7
+        6
       ]
     },
     {
@@ -440,7 +416,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -451,7 +427,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -462,7 +438,7 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8
+        3
       ]
     },
     {
@@ -473,13 +449,13 @@
       "AssemblyDependencyIndices": [
         2,
         1,
-        8,
+        3,
         4,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -491,12 +467,12 @@
         2,
         1,
         4,
-        8,
+        3,
         5,
-        7,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -509,11 +485,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -526,11 +502,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -543,11 +519,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -560,11 +536,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -577,11 +553,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -594,11 +570,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -611,11 +587,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -627,7 +603,7 @@
         2,
         1,
         4,
-        8
+        3
       ]
     },
     {
@@ -639,7 +615,7 @@
         2,
         1,
         4,
-        8,
+        3,
         5
       ]
     },
@@ -652,8 +628,8 @@
         2,
         1,
         4,
-        8,
-        7
+        3,
+        6
       ]
     },
     {
@@ -666,7 +642,7 @@
         1,
         4,
         5,
-        8
+        3
       ]
     },
     {
@@ -679,7 +655,7 @@
         1,
         4,
         5,
-        8
+        3
       ]
     },
     {
@@ -692,11 +668,11 @@
         1,
         4,
         5,
-        8,
-        7,
+        3,
+        6,
         0,
-        9,
-        10
+        7,
+        8
       ]
     },
     {
@@ -709,7 +685,7 @@
         1,
         4,
         5,
-        8
+        3
       ]
     },
     {
@@ -722,7 +698,7 @@
         1,
         4,
         5,
-        8
+        3
       ]
     },
     {
@@ -735,86 +711,8 @@
         1,
         4,
         5,
-        8,
+        3,
         0,
-        9,
-        10
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob0>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "d27277d1c94f9a4091041226ec060597",
-      "LinkName": "FF91928A409B865F",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob1>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "447c4ae2796b25c8ad06d7dd76fcc516",
-      "LinkName": "8567EAF3320D4D75",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        6,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob2>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "a82f3af2cd629484efe3f4afa01ae0d2",
-      "LinkName": "558B95F0771C0E57",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob3>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "dd3e22cd4896ba0e35841193f9aecb70",
-      "LinkName": "CA75256E3F6CB9FE",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        6,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<AnimationSystem/<>c__DisplayClass_OnUpdate_LambdaJob0>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "26e90815db0fe891aa0048df733f415f",
-      "LinkName": "252137F4415ACBEE",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        6,
         7,
         8
       ]
@@ -826,103 +724,11 @@
       "LinkName": "2FF0DB635BB12BB0",
       "AssemblyDependencyIndices": [
         4,
-        11,
+        9,
         5,
         2,
         1,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<CombatSystem/<>c__DisplayClass_OnUpdate_LambdaJob1>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "d7e21cafc8e8b2dbf98d8a45ece62e03",
-      "LinkName": "45D35B6180249FB7",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        6,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<PlayerControlSystem/<>c__DisplayClass_OnUpdate_LambdaJob0>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "2e6b07354033addb29c73e1769220418",
-      "LinkName": "B680644D89FA47E0",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<PlayerControlSystem/<>c__DisplayClass_OnUpdate_LambdaJob1>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "b7ce2aee9395004530a65366fe27f2e5",
-      "LinkName": "2A204CA42B71802B",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<PlayerControlSystem/<>c__DisplayClass_OnUpdate_LambdaJob3>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "cb611b37ac2f2bea050b4ba6367ca712",
-      "LinkName": "1CD96E81E868ACA7",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob4>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "7415808a31ed83b027299a4120f6f5ca",
-      "LinkName": "FA645103E8E85192",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        7,
-        8
-      ]
-    },
-    {
-      "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob5>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
-      "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "8f723b54832756f96b5eeab337f1ef1f",
-      "LinkName": "47BDCE48BAD128C5",
-      "AssemblyDependencyIndices": [
-        2,
-        3,
-        1,
-        4,
-        5,
-        6,
-        7,
-        8
+        3
       ]
     }
   ]

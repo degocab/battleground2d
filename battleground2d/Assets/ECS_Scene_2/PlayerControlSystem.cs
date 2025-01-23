@@ -24,7 +24,7 @@ public class PlayerControlSystem : SystemBase
         //zoom camera
         //will be needed for riding horse
         // should give you more zoomed out vision!
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (Input.GetKey(KeyCode.Tab))
             Camera.main.orthographicSize = 6;
         else
             Camera.main.orthographicSize = 4f;

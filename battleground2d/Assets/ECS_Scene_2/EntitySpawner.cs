@@ -68,7 +68,7 @@ public class EntitySpawner : MonoBehaviour
 
     public GameObject unitPrefab;  // Drag your prefab with MeshRenderer in Unity editor
     public enum Direction { Up, Down, Left, Right }
-    public enum AnimationType { Idle, Run, Die, Attack }
+    public enum AnimationType { Idle, Run, Die, Attack, Walk, Defend, Block, TakeDamage }
     public enum UnitType { Default, Enemy }
 
     public Dictionary<(UnitType, Direction, AnimationType), Material[]> materialDictionary;
@@ -82,49 +82,93 @@ public class EntitySpawner : MonoBehaviour
         materialDictionary = new Dictionary<(UnitType, Direction, AnimationType), Material[]>();
 
         //// Default unit type materials
-        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Idle)] = defaultIdleDownMaterials;
-        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Idle)] = defaultIdleUpMaterials;
-        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Idle)] = defaultIdleLeftMaterials;
-        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Idle)] = defaultIdleRightMaterials;
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Idle)] = LoadMaterialArray("Material/Default/IdleDown"); //defaultIdleDownMaterials;
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Idle)] = LoadMaterialArray("Material/Default/IdleUp"); //defaultIdleUpMaterials;
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Idle)] = LoadMaterialArray("Material/Default/IdleLeft"); //defaultIdleLeftMaterials;
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Idle)] = LoadMaterialArray("Material/Default/IdleRight"); //defaultIdleRightMaterials;
 
-        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Run)] = defaultRunDownMaterials;
-        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Run)] = defaultRunUpMaterials;
-        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Run)] = defaultRunLeftMaterials;
-        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Run)] = defaultRunRightMaterials;
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Run)] = LoadMaterialArray("Material/Default/RunDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Run)] = LoadMaterialArray("Material/Default/RunDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Run)] = LoadMaterialArray("Material/Default/RunLeft"); //defaultRunLeftMaterials;
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Run)] = LoadMaterialArray("Material/Default/RunRight"); //defaultRunRightMaterials;
 
-        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Die)] = defaultDieDownMaterials;
-        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Die)] = defaultDieUpMaterials;
-        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Die)] = defaultDieLeftMaterials;
-        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Die)] = defaultDieRightMaterials;
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieRight");
+        
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackRight");
+        
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkRight");
+        
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendRight");
+        
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockRight");
+        
+        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageDown");
+        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageDown");
+        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageLeft");
+        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageRight");
 
-        materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Attack)] = defaultAttackDownMaterials;
-        materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Attack)] = defaultAttackUpMaterials;
-        materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Attack)] = defaultAttackLeftMaterials;
-        materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Attack)] = defaultAttackRightMaterials;
 
         //// Enemy unit type materials
-        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Idle)] = enemyIdleDownMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Idle)] = enemyIdleUpMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Idle)] = enemyIdleLeftMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Idle)] = enemyIdleRightMaterials;
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Idle)] = LoadMaterialArray("Material/Enemy/IdleDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Idle)] = LoadMaterialArray("Material/Enemy/IdleUp");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Idle)] = LoadMaterialArray("Material/Enemy/IdleLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Idle)] = LoadMaterialArray("Material/Enemy/IdleRight");
 
-        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Run)] = enemyRunDownMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Run)] = enemyRunUpMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Run)] = enemyRunLeftMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Run)] = enemyRunRightMaterials;
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Run)] = LoadMaterialArray("Material/Enemy/RunDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Run)] = LoadMaterialArray("Material/Enemy/RunDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Run)] = LoadMaterialArray("Material/Enemy/RunLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Run)] = LoadMaterialArray("Material/Enemy/RunRight");
 
-        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Die)] = enemyDieDownMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Die)] = enemyDieUpMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Die)] = enemyDieLeftMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Die)] = enemyDieRightMaterials;
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Die)] = LoadMaterialArray("Material/Enemy/DieDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Die)] = LoadMaterialArray("Material/Enemy/DieDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Die)] = LoadMaterialArray("Material/Enemy/DieLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Die)] = LoadMaterialArray("Material/Enemy/DieRight");
 
-        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Attack)] = enemyAttackDownMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Attack)] = enemyAttackUpMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Attack)] = enemyAttackLeftMaterials;
-        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Attack)] = enemyAttackRightMaterials;
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Attack)] = LoadMaterialArray("Material/Enemy/AttackDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Attack)] = LoadMaterialArray("Material/Enemy/AttackDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Attack)] = LoadMaterialArray("Material/Enemy/AttackLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Attack)] = LoadMaterialArray("Material/Enemy/AttackRight");
+
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Walk)] = LoadMaterialArray("Material/Enemy/WalkDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Walk)] = LoadMaterialArray("Material/Enemy/WalkDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Walk)] = LoadMaterialArray("Material/Enemy/WalkLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Walk)] = LoadMaterialArray("Material/Enemy/WalkRight");
+
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Defend)] = LoadMaterialArray("Material/Enemy/DefendDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Defend)] = LoadMaterialArray("Material/Enemy/DefendDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Defend)] = LoadMaterialArray("Material/Enemy/DefendLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Defend)] = LoadMaterialArray("Material/Enemy/DefendRight");
+
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.Block)] = LoadMaterialArray("Material/Enemy/BlockDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.Block)] = LoadMaterialArray("Material/Enemy/BlockDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.Block)] = LoadMaterialArray("Material/Enemy/BlockLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.Block)] = LoadMaterialArray("Material/Enemy/BlockRight");
+
+        materialDictionary[(UnitType.Enemy, Direction.Down, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Enemy/TakeDamageDown");
+        materialDictionary[(UnitType.Enemy, Direction.Up, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Enemy/TakeDamageDown");
+        materialDictionary[(UnitType.Enemy, Direction.Left, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Enemy/TakeDamageLeft");
+        materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Enemy/TakeDamageRight");
 
     }
-
+    Material[] LoadMaterialArray(string path)
+    {
+        return Resources.LoadAll<Material>(path);
+    }
     // Start is called before the first frame update
     void Start()
     {
@@ -195,7 +239,7 @@ public class EntitySpawner : MonoBehaviour
                     currentFrame = 0,
                     frameTimerMax = .0875f,
                     frameTimer = 0f,
-                    unitType = UnitType.Enemy,
+                    unitType = UnitType.Default,
                     direction = Direction.Right,
                     animationType = AnimationType.Idle,
                     prevAnimationType = AnimationType.Idle,
@@ -296,6 +340,31 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .0875f;
                 animationComponent.frameTimer = 0f; // Reset the frame timer
+
+                break;
+            case EntitySpawner.AnimationType.Walk:
+                animationComponent.frameCount = 4; 
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = 0.12f;
+                animationComponent.frameTimer = 0f;
+                break;
+            case EntitySpawner.AnimationType.Defend:
+                animationComponent.frameCount = 3;
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = .1f;
+                animationComponent.frameTimer = 0f;
+                break;
+            case EntitySpawner.AnimationType.Block:
+                animationComponent.frameCount = 3;
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = .0875f;
+                animationComponent.frameTimer = 0f;
+                break;
+            case EntitySpawner.AnimationType.TakeDamage:
+                animationComponent.frameCount = 3;
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = .0875f;
+                animationComponent.frameTimer = 0f;
 
                 break;
                 // Add other cases as necessary
