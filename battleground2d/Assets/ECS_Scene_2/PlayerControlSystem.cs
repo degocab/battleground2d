@@ -6,9 +6,10 @@ using UnityEngine;
 public class PlayerControlSystem : SystemBase
 {
     public Transform cameraMain;
-
+    public static EntitySpawner entitySpawner;
     protected override void OnStartRunning()
     {
+        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
         if (cameraMain == null)
             cameraMain = Camera.main.transform;
     }
@@ -51,7 +52,7 @@ public class PlayerControlSystem : SystemBase
         Entities.WithAll<CommanderComponent>().ForEach((ref PositionComponent position, ref MovementSpeedComponent velocity, in PlayerInputComponent input) => 
         {
 
-            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * 3f);
+            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * 1.25f);
             vel.z = 0;
             velocity.value = vel;
         }).ScheduleParallel();

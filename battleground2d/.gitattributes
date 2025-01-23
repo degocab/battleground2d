@@ -1,0 +1,5 @@
+# Track .pack files with LFS
+*.pack filter=lfs diff=lfs merge=lfs -text
+
+# Track ArtifactDB in the Library folder with LFS
+Library/ArtifactDB filter=lfs diff=lfs merge=lfs -text

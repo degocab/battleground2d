@@ -900,8 +900,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7c6e6470b151804c8f8bd736dbb004c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speedVar: 0.12
-  mainSpeedVar: 2
+  frameTimerMaxDebug: 0
+  movementSpeedDebug: 0
   instance: {fileID: 0}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   defaultIdleDownMaterials:

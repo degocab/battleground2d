@@ -9,6 +9,7 @@ using UnityEngine;
 [UpdateAfter(typeof(CombatSystem))]
 public class AnimationSystem : SystemBase
 {
+
     protected override void OnUpdate()
     {
         var deltaTime = Time.DeltaTime;
@@ -89,6 +90,15 @@ public class RenderSystem : SystemBase
 [BurstCompile]
 public class MovementSystem : SystemBase
 {
+
+    public static EntitySpawner entitySpawner;
+
+    protected override void OnStartRunning()
+    {
+        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
+        //Debug.Log(entitySpawner);
+    }
+
     protected override void OnUpdate()
     {
         var deltaTime = Time.DeltaTime;
@@ -172,10 +182,10 @@ public class MovementSystem : SystemBase
         }).ScheduleParallel();
 
         // Movement speed randomizer
-        float minRange = 3f;
-        float maxRange = 3.5f;
+        float minRange = 1f;
+        float maxRange = 1.25f;
         Entities
-            //.WithAll<CommanderComponent>()// remove to let all units update
+            .WithNone<CommanderComponent>()// remove to let all units update
             .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
         {
             if (velocity.randomSpeed == 0f)
@@ -187,7 +197,7 @@ public class MovementSystem : SystemBase
                 velocity.randomSpeed = random.NextFloat(minRange, maxRange);
             }
 
-            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
+        float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
             vel.z = 0;
             velocity.value = vel;
         }).ScheduleParallel();
