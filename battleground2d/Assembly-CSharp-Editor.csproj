@@ -76,6 +76,7 @@
     <Compile Include="Assets\RTSToolkit\Scripts\AStarPlugin\Editor\UseAStarEditor.cs" />
     <Compile Include="Assets\RTSToolkit\NavMeshComponents\Editor\NavMeshSurfaceEditor.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\IconsBake\Editor\IconsBakeEditor.cs" />
+    <Compile Include="Assets\TheTopicbirdTools\ToDoList\Editor\ToDoListEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

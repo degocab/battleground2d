@@ -96,7 +96,6 @@ public class MovementSystem : SystemBase
     protected override void OnStartRunning()
     {
         entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
-        //Debug.Log(entitySpawner);
     }
 
     protected override void OnUpdate()
@@ -104,11 +103,13 @@ public class MovementSystem : SystemBase
         var deltaTime = Time.DeltaTime;
         float moveX = 0f;
         float moveY = 0f;
+        bool isRunnning = false;
 
         if (Input.GetKey(KeyCode.W)) moveY = 1f;
         if (Input.GetKey(KeyCode.S)) moveY = -1f;
         if (Input.GetKey(KeyCode.A)) moveX = -1f;
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
+        if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
 
         //update movement x and y
         Entities
@@ -117,12 +118,13 @@ public class MovementSystem : SystemBase
         {
             movementSpeedComponent.moveX = moveX;
             movementSpeedComponent.moveY = moveY;
+            movementSpeedComponent.isRunnning = isRunnning;
         }).ScheduleParallel();
 
 
         //move all units?
         Entities
-        .ForEach((ref MovementSpeedComponent movementSpeedComponent,ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
+        .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
         {
             float3 targetPosition = targetLocationComponent.targetPosition;
             float3 direction = targetPosition - translation.Value;
@@ -146,6 +148,7 @@ public class MovementSystem : SystemBase
             //movementSpeedComponent.normalizedDirection = math.normalize(direction);
             movementSpeedComponent.moveX = direction.x;
             movementSpeedComponent.moveY = direction.y;
+            movementSpeedComponent.isRunnning = isRunnning;
         }).ScheduleParallel();
 
         Entities
@@ -158,11 +161,18 @@ public class MovementSystem : SystemBase
                 {
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
                     EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                    movementSpeedComponent.randomSpeed = 0f;
+                    //movementSpeedComponent.randomSpeed = 0f;
                 }
                 else
                 {
-                    animationComponent.animationType = EntitySpawner.AnimationType.Run;
+                    if (movementSpeedComponent.isRunnning)
+                    {
+                        animationComponent.animationType = EntitySpawner.AnimationType.Run;
+                    }
+                    else
+                    {
+                        animationComponent.animationType = EntitySpawner.AnimationType.Walk;
+                    }
                 }
                 if (animationComponent.prevAnimationType != animationComponent.animationType)
                 {
@@ -191,13 +201,21 @@ public class MovementSystem : SystemBase
             if (velocity.randomSpeed == 0f)
             {
                 // Create a random generator, seeded by the entity's index
-                Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
+                if (velocity.isRunnning)
+                {
+                    // Generate a random float between 1f and 1.25f
+                    Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
+                    velocity.randomSpeed = random.NextFloat(minRange, maxRange);
+                }
+                else
+                {
+                    Unity.Mathematics.Random random2 = new Unity.Mathematics.Random((uint)entity.Index);
+                    velocity.randomSpeed = random2.NextFloat(.5f, .55f);
+                }
 
-                // Generate a random float between 1f and 1.25f
-                velocity.randomSpeed = random.NextFloat(minRange, maxRange);
             }
 
-        float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
+            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
             vel.z = 0;
             velocity.value = vel;
         }).ScheduleParallel();
@@ -240,7 +258,7 @@ public class MovementSystem : SystemBase
         .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
         {
             //stop moving on attack
-            if (animationComponent.animationType == EntitySpawner.AnimationType.Run)//walk || animationComponent.animationType != EntitySpawner.AnimationType.Run)
+            if (animationComponent.animationType == EntitySpawner.AnimationType.Run|| animationComponent.animationType == EntitySpawner.AnimationType.Walk)
             {
                 // Update position based on velocity (movement calculations)
                 position.value += velocity.value * deltaTime;

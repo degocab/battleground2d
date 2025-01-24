@@ -348,7 +348,7 @@ public class EntitySpawner : MonoBehaviour
             case EntitySpawner.AnimationType.Walk:
                 animationComponent.frameCount = 4; 
                 animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = 0.12f;
+                animationComponent.frameTimerMax = 0.1f;
                 animationComponent.frameTimer = 0f;
                 break;
             case EntitySpawner.AnimationType.Defend:

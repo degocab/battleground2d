@@ -11,4 +11,5 @@ public struct MovementSpeedComponent : IComponentData
     public float moveY;
     public float3 direction;
     public float3 normalizedDirection;
+    public bool isRunnning;
 }
