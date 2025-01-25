@@ -14,11 +14,18 @@ public class EntitySpawner : MonoBehaviour
 
     private Entity commanderEntity;
     private EntityArchetype commanderArchetype;
-
-    [Range(0.05f, 0.12f)]
+    /// <summary>
+    /// Update movement speed randomizer system
+    /// Set to run with .WithoutBurst() and with .Run()
+    /// </summary>
+    [Range(0.05f, 0.2f)]
     public float frameTimerMaxDebug;
-    [Range(1, 3)]
-    public float movementSpeedDebug;
+    /// <summary>
+    /// Update movement speed randomizer system
+    /// Set to run with .WithoutBurst() and with .Run()
+    /// </summary>
+    [Range(0.1f, .75f)]
+    public float movementSpeedDebug = .1f;
 
     public EntitySpawner instance;
     public Mesh quadMesh;      // Assign your quad mesh here
@@ -98,27 +105,27 @@ public class EntitySpawner : MonoBehaviour
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieLeft");
         materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Die)] = LoadMaterialArray("Material/Default/DieRight");
-        
+
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackDown");
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackLeft");
         materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Attack)] = LoadMaterialArray("Material/Default/AttackRight");
-        
+
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkDown");
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkLeft");
         materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Walk)] = LoadMaterialArray("Material/Default/WalkRight");
-        
+
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendDown");
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendLeft");
         materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Defend)] = LoadMaterialArray("Material/Default/DefendRight");
-        
+
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockDown");
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockLeft");
         materialDictionary[(UnitType.Default, Direction.Right, AnimationType.Block)] = LoadMaterialArray("Material/Default/BlockRight");
-        
+
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageDown");
         materialDictionary[(UnitType.Default, Direction.Up, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageUp");
         materialDictionary[(UnitType.Default, Direction.Left, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Default/TakeDamageLeft");
@@ -216,39 +223,163 @@ public class EntitySpawner : MonoBehaviour
 
         SpawnCommander();
 
-        SpawnUnits(10000, unitEntityPrefab);
+        SpawnUnits(7000, unitEntityPrefab);
     }
+
+    int phalanxSize = 100; // 10x10 formation
+    float unitSpacing = 0.25f; // Spacing between units within a phalanx
+    float formationSpacing = 4f; // Space between phalanxes
+
+    int totalUnits = 10000; // Total number of units
+    int unitsPerPhalanx = 1000; // 100 units per phalanx (10x10 grid)
+    int numPhalanxes = 100; // Number of phalanxes (100)
 
     private void SpawnUnits(int count, Entity unitEntityPrefab)
     {
-        for (int i = 0; i < count; i++)
+
+
+
+        //phalanxCap
+
+        //[0,0] starting x,y - first unit
+        //[.25,0] second unit x,y
+        //[.5,0] third unit x,y
+        //....
+        //[25,25] 1000th unit x,y
+
+        // next phalanx
+        // gap of 4f vertically (final unit y coordinate = 25) + 4f spacing = 29
+        //start of next phalanx coordinate
+        //[0,29] first unit of second phalanx x,y
+        //[0,29.25] second unit of second phalanx x,y
+        //.....
+        //[25,50] 1000th unit of second phalanx x,y
+
+        // next phalanx
+        // gap of 4f vertically (final unit y coordinate = 50) + 4f spacing = 54
+        // start of next phalanx coordinate
+        //[0,54] first unit of third phalanx x,y
+        //[0,54.25] second unit of third phalanx x,y
+        //.....
+        //[25,75] 1000th unit of third phalanx x,y
+        //etc...
+
+        totalUnits = count;
+        int unitsPerPhalanx = 256; // Number of units in each phalanx (e.g., 16x16 grid)
+        float unitSpacing = 0.25f; // Spacing between units within a phalanx
+        float phalanxSpacing = 1f; // Vertical spacing between each phalanx
+
+        // Determine how many full phalanxes we have and the remainder
+        int numFullPhalanxes = totalUnits / unitsPerPhalanx;
+        int remainingUnits = totalUnits % unitsPerPhalanx;
+
+        // Create the array for phalanxes, storing the number of units per phalanx
+        int[] phalanxSizes = GeneratePhalanxSizes(numFullPhalanxes, remainingUnits, unitsPerPhalanx);
+
+        // Track vertical position for spawning units
+        float yTracker = 0f;
+
+        // Spawn the units in phalanx formation
+        foreach (int phalanxSize in phalanxSizes)
         {
-            Entity unit = entityManager.CreateEntity(unitArchetype);
-            float x = i % 4 * 2f;
-            float y = i / 4 * 2f;
-            float3 randomPos = new float3(UnityEngine.Random.Range(-50f, 50f), UnityEngine.Random.Range(-20f, 20f), 0);
-            entityManager.SetComponentData(unit, new PositionComponent { value = randomPos });
-            entityManager.SetComponentData(unit, new Translation { Value = randomPos });
-            entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
-            entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
-            entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
-            entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
-            entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(randomPos.x + 50f, randomPos.y,0f) });
-            entityManager.SetComponentData(unit,
-                new AnimationComponent
-                {
-                    frameCount = 2,
-                    currentFrame = 0,
-                    frameTimerMax = .0875f,
-                    frameTimer = 0f,
-                    unitType = UnitType.Default,
-                    direction = Direction.Right,
-                    animationType = AnimationType.Idle,
-                    prevAnimationType = AnimationType.Idle,
-                    finishAnimation = false
-                }
-            );
+
+
+            // Calculate the dimensions of the current phalanx based on the number of units
+            int sqrtSize = Mathf.CeilToInt(Mathf.Sqrt(phalanxSize));
+
+            // Spawn the units in a grid within the phalanx
+            SpawnPhalanxUnits(sqrtSize, unitSpacing, yTracker, phalanxSize);
+            // Update the Y position to account for vertical spacing between phalanxes
+            yTracker += Mathf.CeilToInt(Mathf.Sqrt(phalanxSize)) * unitSpacing + phalanxSpacing; // Apply vertical gap
         }
+
+    }
+
+
+    /// <summary>
+    /// Generate the sizes of each phalanx, considering full phalanxes and the remaining units for the last group
+    /// </summary>
+    /// <param name="numFullPhalanxes"></param>
+    /// <param name="remainingUnits"></param>
+    /// <param name="unitsPerPhalanx"></param>
+    /// <returns></returns>
+    private int[] GeneratePhalanxSizes(int numFullPhalanxes, int remainingUnits, int unitsPerPhalanx)
+    {
+        int[] phalanxSizes = new int[numFullPhalanxes + (remainingUnits > 0 ? 1 : 0)];
+
+        for (int i = 0; i < numFullPhalanxes; i++)
+        {
+            phalanxSizes[i] = unitsPerPhalanx; // Fill full phalanxes
+        }
+
+        if (remainingUnits > 0)
+        {
+            phalanxSizes[numFullPhalanxes] = remainingUnits; // Fill the last group with remaining units
+        }
+
+        return phalanxSizes;
+    }
+
+    /// <summary>
+    /// Spawn units in a given phalanx based on its size (calculated dimensions of the grid)
+    /// </summary>
+    /// <param name="sqrtSize"></param>
+    /// <param name="unitSpacing"></param>
+    /// <param name="yTracker"></param>
+    /// <param name="phalanxSize"></param>
+    private void SpawnPhalanxUnits(int sqrtSize, float unitSpacing, float yTracker, int phalanxSize)
+    {
+        // For each unit in the phalanx (calculated by sqrtSize to make it a square-like formation)
+        for (int row = 0; row < sqrtSize; row++)
+        {
+            for (int col = 0; col < sqrtSize; col++)
+            {
+                // Ensure we don't spawn more units than we have
+                if (row * sqrtSize + col >= phalanxSize)
+                    return;
+
+                // Calculate the unit's position
+                float xCoord = col * unitSpacing;
+                float yCoord = yTracker + row * unitSpacing;
+
+                // Set the position of the unit
+                float3 unitPosition = new float3(xCoord, yCoord, 0);
+
+                // Create the entity for the unit and set its position
+                Entity unit = entityManager.CreateEntity(unitArchetype);
+                entityManager.SetComponentData(unit, new Translation { Value = unitPosition });
+                entityManager.SetComponentData(unit, new PositionComponent { value = unitPosition });
+
+                // Set additional unit components such as Health, Movement, etc.
+                SetUnitComponents(unit, unitPosition);
+            }
+        }
+    }
+
+
+
+    private void SetUnitComponents(Entity unit, float3 unitPosition)
+    {
+        // Set common components for each unit
+        entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
+        entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
+        entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
+        entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
+        entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 50f, unitPosition.y, 0f) });
+        entityManager.SetComponentData(unit,
+            new AnimationComponent
+            {
+                frameCount = 2,
+                currentFrame = 0,
+                frameTimerMax = .0875f,
+                frameTimer = 0f,
+                unitType = UnitType.Default,
+                direction = Direction.Right,
+                animationType = AnimationType.Idle,
+                prevAnimationType = AnimationType.Idle,
+                finishAnimation = false
+            }
+        );
     }
     int GetMaterialIndex(string unitType)
     {
@@ -273,7 +404,7 @@ public class EntitySpawner : MonoBehaviour
         entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f });
         entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f });
         entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
-        entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true});
+        entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
         entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
@@ -320,7 +451,7 @@ public class EntitySpawner : MonoBehaviour
     {
 
     }
-    public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? random = null)
+    public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? walkRandom = null, Unity.Mathematics.Random? runRandom = default)
     {
         // Depending on the animationType, set the specific frame-related values
         switch (animationComponent.animationType)
@@ -333,11 +464,12 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.frameTimer = 0f; // Reset the frame timer
                 break;
             case EntitySpawner.AnimationType.Run:
-                animationComponent.currentFrame = random.Value.NextInt(0, 6);
                 animationComponent.frameCount = 6;
+                animationComponent.currentFrame = runRandom.Value.NextInt(0, 5);
                 animationComponent.frameTimerMax = .1f;
                 animationComponent.frameTimer = 0f; // Reset the frame timer
                 break;
+            default:
             case EntitySpawner.AnimationType.Idle:
                 animationComponent.frameCount = 2;
                 animationComponent.currentFrame = 0;
@@ -346,9 +478,9 @@ public class EntitySpawner : MonoBehaviour
 
                 break;
             case EntitySpawner.AnimationType.Walk:
-                animationComponent.frameCount = 4; 
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = 0.1f;
+                animationComponent.frameCount = 4;
+                animationComponent.currentFrame = walkRandom.Value.NextInt(0, 3);
+                animationComponent.frameTimerMax = 0.15f;
                 animationComponent.frameTimer = 0f;
                 break;
             case EntitySpawner.AnimationType.Defend:

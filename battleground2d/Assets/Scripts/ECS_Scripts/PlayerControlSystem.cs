@@ -21,12 +21,14 @@ public class PlayerControlSystem : SystemBase
         if (Input.GetKey(KeyCode.S)) moveY = -1f;
         if (Input.GetKey(KeyCode.A)) moveX = -1f;
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
+        bool isRunnning = false;
+        if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
 
         //zoom camera
         //will be needed for riding horse
         // should give you more zoomed out vision!
         if (Input.GetKey(KeyCode.Tab))
-            Camera.main.orthographicSize = 6;
+            Camera.main.orthographicSize = 7f;
         else
             Camera.main.orthographicSize = 4f;
         var time = Time.DeltaTime;
@@ -47,12 +49,22 @@ public class PlayerControlSystem : SystemBase
         {
             movementSpeedComponent.moveX = moveX;
             movementSpeedComponent.moveY = moveY;
+            movementSpeedComponent.isRunnning = isRunnning;
         }).ScheduleParallel();
 
         Entities.WithAll<CommanderComponent>().ForEach((ref PositionComponent position, ref MovementSpeedComponent velocity, in PlayerInputComponent input) => 
         {
 
-            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * 1.25f);
+            if (velocity.isRunnning)
+            {
+                velocity.randomSpeed = 2f;// 1.25f;
+            }
+            else
+            {
+                velocity.randomSpeed = .525f;
+            }
+            float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
+
             vel.z = 0;
             velocity.value = vel;
         }).ScheduleParallel();

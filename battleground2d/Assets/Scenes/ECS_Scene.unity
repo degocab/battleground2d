@@ -533,30 +533,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948c6eac03994cd49bad23b71ceeec7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: LIST TITLE
+  title: ToDo
   textList:
-  - s: frame max timer not resetting while holding move after attack
-    state: 1
-    show: 1
-    deleteQuestion: 0
-  - s: 'new animations mismatched
-
-      [] fix walk animations
-
-      [] see if
-      any other animations are messed up'
-    state: 1
-    show: 1
-    deleteQuestion: 0
-  - s: 'Animations
-
-      [] add logic for take damage, block, defend, walk animations
-
-      []
-      abstract methods for both AI and player'
-    state: 2
-    show: 1
-    deleteQuestion: 0
   - s: 'AI
 
       [] start working on AI commander to mimic player functions
@@ -568,7 +546,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Unit Types
 
@@ -593,6 +571,32 @@ MonoBehaviour:
       [] figure
       out how to send to troops to each location'
     state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Physics\n[] create simple collision \n[] damage phyiscs\n[] arrow phyiscs\n[]
+      calvary charge phyiscs\n"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Animations\n[x] add logic for walk \n[] add logic for defend\n[] add logic
+      for block\n[] add logic for take damage \n[] add logic for death animation\n[]
+      abstract methods for both AI and player"
+    state: 2
+    show: 1
+    deleteQuestion: 0
+  - s: 'Smooth out animations
+
+      [] smooth out walk animation
+
+      [] smooth
+      out run animation
+
+      [] smooth out attack animation'
+    state: 2
+    show: 0
+    deleteQuestion: 0
+  - s: frame max timer not resetting while holding move after attack
+    state: 3
     show: 0
     deleteQuestion: 0
 --- !u!4 &985990580
@@ -1005,8 +1009,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7c6e6470b151804c8f8bd736dbb004c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  frameTimerMaxDebug: 0
-  movementSpeedDebug: 0
+  frameTimerMaxDebug: 0.1
+  movementSpeedDebug: 0.1
   instance: {fileID: 0}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   defaultIdleDownMaterials:
