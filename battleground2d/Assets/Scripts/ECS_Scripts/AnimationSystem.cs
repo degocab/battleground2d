@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(CombatSystem))]
+[UpdateAfter(typeof(MovementSystem))]
 [BurstCompile]
 public class AnimationSystem : SystemBase
 {
@@ -22,6 +22,12 @@ public class AnimationSystem : SystemBase
 
         Entities.ForEach((ref AnimationComponent spriteSheetAnimationData, ref Translation translation) =>
         {
+
+            if (spriteSheetAnimationData.isFrozen)
+            {
+                // Do nothing or handle frozen state (keep the last frame as it is)
+                return;
+            }
             spriteSheetAnimationData.frameTimer += deltaTime;
 
             if (spriteSheetAnimationData.frameCount > 0)
@@ -104,7 +110,7 @@ public class RenderSystem : SystemBase
     }
 }
 
-[UpdateBefore(typeof(AnimationSystem))]
+[UpdateAfter(typeof(CombatSystem))]
 [BurstCompile]
 public class MovementSystem : SystemBase
 {
@@ -169,51 +175,11 @@ public class MovementSystem : SystemBase
             //movementSpeedComponent.isRunnning = isRunnning;
         }).WithBurst().ScheduleParallel();
 
-        //Entities
-        ////.WithAll<CommanderComponent>()// remove to let all units update
-        //.ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, ref AttackComponent attackComponent, in Entity entity) =>
-        //{
-        //    if (!attackComponent.isAttacking)
-        //    {
-        //        if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f) //not moving
-        //        {
-        //            animationComponent.animationType = EntitySpawner.AnimationType.Idle;
-        //            EntitySpawner.UpdateAnimationFields(ref animationComponent);
-        //            movementSpeedComponent.randomSpeed = 0f;
-        //        }
-        //        else
-        //        {
-        //            if (movementSpeedComponent.isRunnning)
-        //            {
-        //                animationComponent.animationType = EntitySpawner.AnimationType.Run;
-        //            }
-        //            else
-        //            {
-        //                animationComponent.animationType = EntitySpawner.AnimationType.Walk;
-        //            }
-        //        }
-        //        if (animationComponent.prevAnimationType != animationComponent.animationType)
-        //        {
-        //            if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
-        //            {
-        //                EntitySpawner.UpdateAnimationFields(ref animationComponent);
-        //            }
-        //            else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
-        //            {
-        //                Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-        //                EntitySpawner.UpdateAnimationFields(ref animationComponent, random);
-        //            }
-        //            animationComponent.prevAnimationType = animationComponent.animationType;
-        //        }
-        //    }
-
-        //}).WithBurst().ScheduleParallel();
 
         // Movement speed randomizer
         float minRange = 1f;
         float maxRange = 1.25f;
         Entities
-            .WithNone<CommanderComponent>()// remove to let all units update
             .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
         {
             //if (velocity.randomSpeed == 0f)
@@ -241,7 +207,6 @@ public class MovementSystem : SystemBase
 
         //get direction
         Entities
-            //.WithAll<CommanderComponent>()//remove to allow all units to move from wasd
             .ForEach((ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
         {
             if (velocity.value.x > 0)
@@ -289,95 +254,37 @@ public class MovementSystem : SystemBase
     }
 }
 
-[UpdateAfter(typeof(MovementSystem))]
-public class CombatSystem : SystemBase
+
+[UpdateAfter(typeof(RenderSystem))]
+public class DeathSystem : SystemBase
 {
     protected override void OnUpdate()
     {
-        var deltaTime = Time.DeltaTime;
-        bool attack = false;
-        //if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
-        if (Input.GetMouseButtonDown(0)) // Detect spacebar press only
-            attack = true;
+        // Create an EntityCommandBuffer
+        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
 
-        Entities.ForEach((ref Entity entity, ref Translation translation, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref AnimationComponent animationComponent) =>
-        {
-            if (attack)
-            {
-                if (!attackComponent.isAttacking) //dont reset until we are done
-                {
-                    attackComponent.isAttacking = true;
-                    //animationComponent.animationType = EntitySpawner.AnimationType.Attack;
-                    //EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                    attackCooldown.timeRemaining = attackCooldown.cooldownDuration; // Set the cooldown duration 
-                }
-            }
-        }).ScheduleParallel();
-
-
-
-
+        // Iterate through entities that are marked as dead
+        //update movement x and y
         Entities
-        .ForEach((ref AnimationComponent animationComponent, ref MovementSpeedComponent movementSpeedComponent, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, in Entity entity) =>
-        {
-            if (attackComponent.isAttacking)
+            .WithAll<HealthComponent>()
+            .ForEach((ref Entity entity, ref HealthComponent health, ref AnimationComponent animation) =>
             {
-                if (attackCooldown.timeRemaining == attackCooldown.cooldownDuration) //on attack trigger?
+                if (animation.isFrozen)
                 {
-                    animationComponent.animationType = EntitySpawner.AnimationType.Attack;
-                }
-                if (attackCooldown.timeRemaining > 0f)
-                {
-                    attackCooldown.timeRemaining -= deltaTime; // Reduce cooldown
-                }
-                else
-                {
-                    animationComponent.finishAnimation = false; // Reset finish flag after animation is done
-                    attackComponent.isAttacking = false; // Reset finish flag after animation is done
+                    // Mark the entity as dead and freeze the animation
 
-                    //animationComponent.animationType = EntitySpawner.AnimationType.Idle;
-                    //EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                    //Debug.Log(animationComponent.prevAnimationType);
+                    //// Optionally remove components, destroy entity, or do other cleanup
+                    ecb.RemoveComponent<HealthComponent>(entity);  // Example: Remove HealthComponent
+                    ecb.RemoveComponent<MovementSpeedComponent>(entity);  // Example: Remove MovementComponent
+                    ecb.RemoveComponent<AttackComponent>(entity);  // Example: Remove CombatComponent
+                    ecb.RemoveComponent<AttackCooldownComponent>(entity);  // Example: Remove CombatComponent
+                    ecb.RemoveComponent<PositionComponent>(entity);  // Example: Remove CombatComponent
+                    //ecb.DestroyEntity(entity);  // Optionally destroy the entity
                 }
-            }
-            else
-            {
-                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f) //not moving
-                {
-                    animationComponent.animationType = EntitySpawner.AnimationType.Idle;
-                    //EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                    movementSpeedComponent.randomSpeed = 0f;
-                }
-                else
-                {
-                    if (movementSpeedComponent.isRunnning)
-                    {
-                        animationComponent.animationType = EntitySpawner.AnimationType.Run;
-                    }
-                    else
-                    {
-                        animationComponent.animationType = EntitySpawner.AnimationType.Walk;
-                    }
-                }
+            }).WithoutBurst().Run();
 
-            }
-
-            if (animationComponent.prevAnimationType != animationComponent.animationType)
-            {
-                //if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
-                //{
-                //    EntitySpawner.UpdateAnimationFields(ref animationComponent);
-                //}
-                //else //(animationComponent.animationType == EntitySpawner.AnimationType.Run)
-                //{
-
-                Unity.Mathematics.Random walkRandom = new Unity.Mathematics.Random((uint)entity.Index);
-                Unity.Mathematics.Random runRandom = new Unity.Mathematics.Random((uint)entity.Index * 1000);
-                EntitySpawner.UpdateAnimationFields(ref animationComponent, walkRandom, runRandom);
-                //}
-                animationComponent.prevAnimationType = animationComponent.animationType;
-            }
-
-        }).WithBurst().ScheduleParallel();
+        // Apply the command buffer at the end of the frame
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
 }

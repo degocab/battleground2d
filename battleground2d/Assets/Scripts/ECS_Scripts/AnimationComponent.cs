@@ -24,4 +24,5 @@ public struct AnimationComponent : IComponentData
     /// This resets on each frame, so it could finish the animation early.
     /// </summary>
     public bool finishAnimation;
+    public bool isFrozen;
 }

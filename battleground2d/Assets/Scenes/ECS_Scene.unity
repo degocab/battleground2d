@@ -546,7 +546,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Unit Types
 
@@ -573,14 +573,43 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: "Physics\n[] create simple collision \n[] damage phyiscs\n[] arrow phyiscs\n[]
-      calvary charge phyiscs\n"
+  - s: 'Create new defend while moving
+
+      [] Sprite animation
+
+      [] Game
+      logic to move while holding defend'
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: "Animations\n[x] add logic for walk \n[] add logic for defend\n[] add logic
-      for block\n[] add logic for take damage \n[] add logic for death animation\n[]
-      abstract methods for both AI and player"
+  - s: 'Figure out how to keep bodies in background.
+
+      [] research way to save
+      all spirte mat of last frame to a larger object not used in systems
+
+
+
+'
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: 'Update rendering to easily allow 100k objects at 30fps
+
+      [] import code
+      from code monkey''s "100,000 Units Animated in Unity ECS!."'
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: 'Physics v2
+
+      [] arrow phyiscs
+
+      [] calvary charge phyiscs'
+    state: 0
+    show: 1
+    deleteQuestion: 0
+  - s: "Physics v1\n[] create simple collision \n[] damage phyiscs\n[] add logic
+      for block, need collision first"
     state: 2
     show: 1
     deleteQuestion: 0
@@ -594,6 +623,11 @@ MonoBehaviour:
       [] smooth out attack animation'
     state: 2
     show: 0
+    deleteQuestion: 0
+  - s: "Animations v1\n[x] add logic for walk \n\n[x] add logic for take damage \n[x]
+      add logic for death animation\n[x] abstract methods for both AI and player"
+    state: 3
+    show: 1
     deleteQuestion: 0
   - s: frame max timer not resetting while holding move after attack
     state: 3

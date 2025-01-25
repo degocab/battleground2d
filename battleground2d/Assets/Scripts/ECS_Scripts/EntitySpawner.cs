@@ -363,8 +363,8 @@ public class EntitySpawner : MonoBehaviour
         // Set common components for each unit
         entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
         entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
-        entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f });
-        entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
+        entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
+        entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 50f, unitPosition.y, 0f) });
         entityManager.SetComponentData(unit,
             new AnimationComponent
@@ -400,12 +400,11 @@ public class EntitySpawner : MonoBehaviour
     {
         commanderEntity = entityManager.CreateEntity(commanderArchetype);
         entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0) });
-        entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 100f, maxHealth = 100f });
+        entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 10000f, maxHealth = 10000f });
         entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f });
-        entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f });
-        entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
+        entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
+        entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
-        entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f });
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {
@@ -421,29 +420,6 @@ public class EntitySpawner : MonoBehaviour
                 finishAnimation = false
             }
         );
-
-
-
-
-        ////set intial data
-        //entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0f) });
-        //entityManager.SetComponentData(commanderEntity, new VelocityComponent { velocity = new float3(0f, 0f, 0f) });
-        //entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 100f, maxHealth = 100f });
-        //entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 5f });
-        //entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
-        //entityManager.SetComponentData(commanderEntity,
-        //    new AnimationComponent
-        //    {
-        //        currentFrame = UnityEngine.Random.Range(0, 1),
-        //        frameCount = 2,
-        //        frameTimer = UnityEngine.Random.Range(0f, 1f),
-        //        frameTimerMax = .1f
-        //    }
-        ////);
-
-        //// Set the material index based on the unit type
-        //int materialIndex = GetMaterialIndex("");
-        //entityManager.SetComponentData(commanderEntity, new UnitMaterialComponent { materialIndex = materialIndex });
 
     }
     // Update is called once per frame
@@ -499,6 +475,13 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.frameCount = 3;
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .0875f;
+                animationComponent.frameTimer = 0f;
+
+                break;
+            case EntitySpawner.AnimationType.Die:
+                animationComponent.frameCount = 6;
+                animationComponent.currentFrame = 0;
+                animationComponent.frameTimerMax = 0.12f;
                 animationComponent.frameTimer = 0f;
 
                 break;
