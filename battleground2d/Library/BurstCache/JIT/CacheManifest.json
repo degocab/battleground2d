@@ -51,7 +51,7 @@
     },
     {
       "FullName": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
-      "LastWriteTime": "2025-01-28T21:50:55.1071798Z"
+      "LastWriteTime": "2025-01-28T22:05:57.7590696Z"
     }
   ],
   "Functions": [
@@ -829,7 +829,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<CombatSystem/<>c__DisplayClass_OnUpdate_LambdaJob1>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "68a5457e3c2d5d1da79851fccb885de2",
+      "ModuleHash": "86339febdb67b4a29baf9e82617c9950",
       "LinkName": "45D35B6180249FB7",
       "AssemblyDependencyIndices": [
         2,
@@ -844,7 +844,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob0>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "63ad06290ccd45ede890965dd8cec949",
+      "ModuleHash": "cd67689899dc6a08127f8e9a637588a1",
       "LinkName": "FF91928A409B865F",
       "AssemblyDependencyIndices": [
         2,
@@ -859,7 +859,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob1>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "c45ffa2222420a9978cc5c0ab1388b25",
+      "ModuleHash": "5fb49d20f945edfed48db1c107c4387f",
       "LinkName": "8567EAF3320D4D75",
       "AssemblyDependencyIndices": [
         2,
@@ -875,7 +875,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob2>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "ee75865793ac97dfe438ad79fbc54ab2",
+      "ModuleHash": "66d6caf6c604686ce99af528592df2b0",
       "LinkName": "558B95F0771C0E57",
       "AssemblyDependencyIndices": [
         2,
@@ -891,7 +891,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob3>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "b949167cb0029ab770f5464779f80aba",
+      "ModuleHash": "a2beac3c2310cbd272be61de99f8ba31",
       "LinkName": "CA75256E3F6CB9FE",
       "AssemblyDependencyIndices": [
         2,
@@ -906,7 +906,7 @@
     {
       "FullName": "System.Void Unity.Entities.JobChunkExtensions/JobChunkProducer`1<MovementSystem/<>c__DisplayClass_OnUpdate_LambdaJob4>::Execute(Unity.Entities.JobChunkExtensions/JobChunkWrapper`1<T>&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "1733edb3b97ea874115b26a3237c33ef",
+      "ModuleHash": "1a0918c926300dd6596cbd361a9a63a4",
       "LinkName": "FA645103E8E85192",
       "AssemblyDependencyIndices": [
         2,
@@ -938,7 +938,7 @@
     {
       "FullName": "System.Void Unity.Jobs.IJobParallelForExtensions/ParallelForJobStruct`1<UnitCollisionSystem/UnitCollisionJob>::Execute(T&,System.IntPtr,System.IntPtr,Unity.Jobs.LowLevel.Unsafe.JobRanges&,System.Int32)",
       "ModuleOptionsHash": 8794384452606821980,
-      "ModuleHash": "16e5fad42445ffcdaf14eb9dbb15013a",
+      "ModuleHash": "fea14c165f1d7a138113d62a227b7aac",
       "LinkName": "3D4447BE595DB52F",
       "AssemblyDependencyIndices": [
         4,

@@ -231,10 +231,7 @@ public partial class UnitCollisionSystem : SystemBase
         };
 
         // Step 2: Schedule the job
-        Debug.Log($"Unit Positions Length: {unitPositions.Length}");
-        Debug.Log($"Unit Entities Length: {unitEntities.Length}");
-        Debug.Log($"Unit Query Count: {unitQuery.CalculateEntityCount()}");
-        JobHandle jobHandle = job.Schedule(unitQuery.CalculateEntityCount(), 64, Dependency);
+        JobHandle jobHandle = job.Schedule(unitQuery.CalculateEntityCount(), 256, Dependency);
 
         // Step 3: Ensure that the job finishes before disposing of the arrays
         jobHandle.Complete();
@@ -291,6 +288,11 @@ public partial class UnitCollisionSystem : SystemBase
                 // Get the translation for the other unit
                 var otherUnitTranslation = unitPositions[i];
 
+                // Check X and Y distance first to quickly eliminate unnecessary distance calculations
+                if (math.abs(currentUnitTranslation.Value.x - otherUnitTranslation.Value.x) > collisionBound.radius * 2f)
+                    continue;  // Skip if units are too far apart on X axis
+                if (math.abs(currentUnitTranslation.Value.y - otherUnitTranslation.Value.y) > collisionBound.radius * 2f)
+                    continue;  // Skip if units are too far apart on Y axis
                 // Calculate the distance between the units
                 float distance = math.distance(currentUnitTranslation.Value, otherUnitTranslation.Value);
 
@@ -306,19 +308,6 @@ public partial class UnitCollisionSystem : SystemBase
         // Handle the collision logic to stop movement on collision
         public void HandleCollision(Unit unit, ref MovementSpeedComponent movementSpeedComponent, ref PositionComponent position, ref Translation translation, Translation otherTranslation, CollisionBounds collisionBounds, EntityCommandBuffer.ParallelWriter ecb, int index)
         {
-
-            //// Example optimization: Check distance along X and Y first
-            if (math.abs(translation.Value.x - otherTranslation.Value.x) > 3f)
-            {
-                // Skip distance calculation for the X-axis if they are too far apart
-                return;
-            }
-
-            if (math.abs(translation.Value.y - otherTranslation.Value.y) > 3f)
-            {
-                // Skip distance calculation for the Y-axis if they are too far apart
-                return;
-            }
 
             float3 direction = translation.Value - otherTranslation.Value;
             float distance = math.length(direction);

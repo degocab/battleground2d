@@ -613,8 +613,26 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
+  - s: 'OPTIMIZATIONS
+
+      [] optimize rendering system
+
+      [] optimize animation
+      system
+
+      [] optimize combat system
+
+      [] optimize movement system'
+    state: 0
+    show: 0
+    deleteQuestion: 0
   - s: "Physics v1\n[x] create simple collision \n[] damage phyiscs\n[] add logic
       for block, need collision first"
+    state: 2
+    show: 1
+    deleteQuestion: 0
+  - s: "Investigate a grid system\n[] create grid system for proximity based collisions
+      checks\n- we dont want to loop through the entire unit count\n  "
     state: 2
     show: 1
     deleteQuestion: 0
