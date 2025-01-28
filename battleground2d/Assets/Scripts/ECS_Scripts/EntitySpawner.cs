@@ -80,7 +80,7 @@ public class EntitySpawner : MonoBehaviour
     public enum AnimationType { Idle, Run, Die, Attack, Walk, Defend, Block, TakeDamage }
     public enum UnitType { Default, Enemy }
 
-    public Dictionary<(UnitType, Direction, AnimationType), Material[]> materialDictionary;
+    public Dictionary<(UnitType, Direction, AnimationType), UnityEngine.Material[]> materialDictionary;
 
     /// <summary>
     /// Load all animation materials into the material Dictionary
@@ -174,7 +174,7 @@ public class EntitySpawner : MonoBehaviour
         materialDictionary[(UnitType.Enemy, Direction.Right, AnimationType.TakeDamage)] = LoadMaterialArray("Material/Enemy/TakeDamageRight");
 
     }
-    Material[] LoadMaterialArray(string path)
+    UnityEngine.Material[] LoadMaterialArray(string path)
     {
         return Resources.LoadAll<Material>(path);
     }
@@ -185,7 +185,7 @@ public class EntitySpawner : MonoBehaviour
 
         LoadMaterials();
 
-        Entity unitEntityPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(unitPrefab, GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null));
+        //Entity unitEntityPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(unitPrefab, GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null));
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         //define unit archetype
         unitArchetype = entityManager.CreateArchetype(
@@ -200,7 +200,9 @@ public class EntitySpawner : MonoBehaviour
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
-            typeof(Translation)
+            typeof(Translation),
+            typeof(Unit),
+            typeof(CollisionBounds)
             );
 
 
@@ -218,12 +220,14 @@ public class EntitySpawner : MonoBehaviour
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
-            typeof(Translation)
+            typeof(Translation),
+            typeof(Unit),
+            typeof(CollisionBounds)
             );
 
         SpawnCommander();
 
-        SpawnUnits(7000, unitEntityPrefab);
+        SpawnUnits(10000);
     }
 
     int phalanxSize = 100; // 10x10 formation
@@ -234,7 +238,7 @@ public class EntitySpawner : MonoBehaviour
     int unitsPerPhalanx = 1000; // 100 units per phalanx (10x10 grid)
     int numPhalanxes = 100; // Number of phalanxes (100)
 
-    private void SpawnUnits(int count, Entity unitEntityPrefab)
+    private void SpawnUnits(int count)
     {
 
 
@@ -362,10 +366,12 @@ public class EntitySpawner : MonoBehaviour
     {
         // Set common components for each unit
         entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
-        entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f });
+        entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f, isBlocked = false });
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 50f, unitPosition.y, 0f) });
+        entityManager.SetComponentData(unit, new Unit { isMounted = false });
+        entityManager.SetComponentData(unit, new CollisionBounds { radius = .25f });
         entityManager.SetComponentData(unit,
             new AnimationComponent
             {
@@ -378,8 +384,8 @@ public class EntitySpawner : MonoBehaviour
                 animationType = AnimationType.Idle,
                 prevAnimationType = AnimationType.Idle,
                 finishAnimation = false
-            }
-        );
+            });
+
     }
     int GetMaterialIndex(string unitType)
     {
@@ -399,12 +405,16 @@ public class EntitySpawner : MonoBehaviour
     private void SpawnCommander()
     {
         commanderEntity = entityManager.CreateEntity(commanderArchetype);
-        entityManager.SetComponentData(commanderEntity, new PositionComponent { value = new float3(0f, 0f, 0) });
+        float3 pos = new float3 (-2f,0f,0f );
+        entityManager.SetComponentData(commanderEntity, new Translation { Value = pos });
+        entityManager.SetComponentData(commanderEntity, new PositionComponent { value = pos });
         entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 10000f, maxHealth = 10000f });
-        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f });
+        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f, isBlocked = false });
         entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
+        entityManager.SetComponentData(commanderEntity, new Unit { isMounted = false });
+        entityManager.SetComponentData(commanderEntity, new CollisionBounds { radius = .25f });
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {
@@ -488,4 +498,11 @@ public class EntitySpawner : MonoBehaviour
                 // Add other cases as necessary
         }
     }
+}
+
+public struct UnitPhysicsData : IComponentData
+{
+    public float mass;
+    public float3 velocity;
+    public float radius;
 }

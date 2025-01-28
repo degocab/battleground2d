@@ -284,7 +284,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &910295581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -460,6 +460,11 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 7fc976cba0628074d98740046edf6070, type: 2}
+    - target: {fileID: 6296847189719346033, guid: 7f024a5a1c04be3478e22a00b4126b85,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f024a5a1c04be3478e22a00b4126b85, type: 3}
 --- !u!1 &952375374 stripped
@@ -606,9 +611,9 @@ MonoBehaviour:
 
       [] calvary charge phyiscs'
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
-  - s: "Physics v1\n[] create simple collision \n[] damage phyiscs\n[] add logic
+  - s: "Physics v1\n[x] create simple collision \n[] damage phyiscs\n[] add logic
       for block, need collision first"
     state: 2
     show: 1
@@ -627,7 +632,7 @@ MonoBehaviour:
   - s: "Animations v1\n[x] add logic for walk \n\n[x] add logic for take damage \n[x]
       add logic for death animation\n[x] abstract methods for both AI and player"
     state: 3
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: frame max timer not resetting while holding move after attack
     state: 3
@@ -680,7 +685,7 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1287,7 +1292,7 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
