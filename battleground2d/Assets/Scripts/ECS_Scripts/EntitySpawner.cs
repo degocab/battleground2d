@@ -29,6 +29,8 @@ public class EntitySpawner : MonoBehaviour
 
     public EntitySpawner instance;
     public Mesh quadMesh;      // Assign your quad mesh here
+    public Material walkingSpriteSheetMaterial;  // Drag your prefab with MeshRenderer in Unity editor
+
 
     #region Materials
     public Material[] defaultIdleDownMaterials;  // Assign the material here
@@ -227,7 +229,7 @@ public class EntitySpawner : MonoBehaviour
 
         SpawnCommander();
 
-        SpawnUnits(10000);
+        SpawnUnits(8000);
     }
 
     int phalanxSize = 100; // 10x10 formation
@@ -333,6 +335,7 @@ public class EntitySpawner : MonoBehaviour
     /// <param name="phalanxSize"></param>
     private void SpawnPhalanxUnits(int sqrtSize, float unitSpacing, float yTracker, int phalanxSize)
     {
+
         // For each unit in the phalanx (calculated by sqrtSize to make it a square-like formation)
         for (int row = 0; row < sqrtSize; row++)
         {
@@ -353,16 +356,29 @@ public class EntitySpawner : MonoBehaviour
                 Entity unit = entityManager.CreateEntity(unitArchetype);
                 entityManager.SetComponentData(unit, new Translation { Value = unitPosition });
                 entityManager.SetComponentData(unit, new PositionComponent { value = unitPosition });
+                UnitType unitType;
+
+                ///
+                /// randomoing range to test unit materials
+                ///
+                if (UnityEngine.Random.Range(0f, 1f) > 0.5f)
+                {
+                    unitType = UnitType.Enemy;
+                }
+                else
+                {
+                    unitType = UnitType.Default;
+                }
 
                 // Set additional unit components such as Health, Movement, etc.
-                SetUnitComponents(unit, unitPosition);
+                SetUnitComponents(unit, unitPosition, unitType);
             }
         }
     }
 
 
 
-    private void SetUnitComponents(Entity unit, float3 unitPosition)
+    private void SetUnitComponents(Entity unit, float3 unitPosition, UnitType unitType)
     {
         // Set common components for each unit
         entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
@@ -379,7 +395,7 @@ public class EntitySpawner : MonoBehaviour
                 currentFrame = 0,
                 frameTimerMax = .0875f,
                 frameTimer = 0f,
-                unitType = UnitType.Default,
+                unitType = unitType,
                 direction = Direction.Right,
                 animationType = AnimationType.Idle,
                 prevAnimationType = AnimationType.Idle,
@@ -468,6 +484,7 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = walkRandom.Value.NextInt(0, 3);
                 animationComponent.frameTimerMax = 0.15f;
                 animationComponent.frameTimer = 0f;
+
                 break;
             case EntitySpawner.AnimationType.Defend:
                 animationComponent.frameCount = 3;

@@ -598,13 +598,6 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'Update rendering to easily allow 100k objects at 30fps
-
-      [] import code
-      from code monkey''s "100,000 Units Animated in Unity ECS!."'
-    state: 0
-    show: 0
-    deleteQuestion: 0
   - s: 'Physics v2
 
       [] arrow phyiscs
@@ -626,6 +619,15 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
+  - s: 'Create new way to get frame coorinates
+
+      [] New method to get frame
+      coordinates (uv * height) (uv * width)
+
+      [] Update start to load all frames?'
+    state: 2
+    show: 1
+    deleteQuestion: 0
   - s: "Physics v1\n[x] create simple collision \n[] damage phyiscs\n[] add logic
       for block, need collision first"
     state: 2
@@ -646,6 +648,13 @@ MonoBehaviour:
       [] smooth out attack animation'
     state: 2
     show: 0
+    deleteQuestion: 0
+  - s: 'Update rendering to easily allow 100k objects at 30fps
+
+      [x] import
+      code from code monkey''s "100,000 Units Animated in Unity ECS!."'
+    state: 3
+    show: 1
     deleteQuestion: 0
   - s: "Animations v1\n[x] add logic for walk \n\n[x] add logic for take damage \n[x]
       add logic for death animation\n[x] abstract methods for both AI and player"
@@ -1068,8 +1077,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameTimerMaxDebug: 0.1
   movementSpeedDebug: 0.1
-  instance: {fileID: 0}
+  instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,
+    type: 2}
   defaultIdleDownMaterials:
   - {fileID: 2100000, guid: 7fc976cba0628074d98740046edf6070, type: 2}
   - {fileID: 2100000, guid: 5631e7b2774c4ee41b0bde38a5ee40c3, type: 2}

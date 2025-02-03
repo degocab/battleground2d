@@ -226,7 +226,7 @@ public partial class UnitCollisionSystem : SystemBase
             unitData = unitData,
             movementData = movementData,
             positionComponents = positionComponents,
-            ecb = ecbSystem.CreateCommandBuffer().ToConcurrent(),
+            ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter(),
             deltaTime = Time.DeltaTime // Passing time to the job if needed
         };
 
