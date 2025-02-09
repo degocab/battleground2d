@@ -171,8 +171,10 @@ public class RenderSystem : SystemBase
     {
 
         [ReadOnly] public NativeArray<RenderData> nativeArray;
-        [NativeDisableContainerSafetyRestriction] public NativeArray<Matrix4x4> matrixArray;
-        [NativeDisableContainerSafetyRestriction] public NativeArray<Vector4> uvArray;
+        //[NativeDisableContainerSafetyRestriction] 
+        public NativeArray<Matrix4x4> matrixArray;
+        //[NativeDisableContainerSafetyRestriction]
+        public NativeArray<Vector4> uvArray;
         public int startingIndex;
 
         public void Execute(int index)

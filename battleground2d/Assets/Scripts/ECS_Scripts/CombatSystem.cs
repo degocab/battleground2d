@@ -95,7 +95,7 @@ public class CombatSystem : SystemBase
                     {
                         //animationComponent.finishAnimation = false; // Reset finish flag after animation is done
                         //attackComponent.isTakingDamage = false; // Reset finish flag after animation is done
-                        animationComponent.isFrozen = true; 
+                        animationComponent.isFrozen = true;
                     }
 
                 }
@@ -138,7 +138,7 @@ public class CombatSystem : SystemBase
             }
             else
             {
-                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f) //not moving
+                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f && movementSpeedComponent.isKnockedBack == false) //not moving
                 {
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
                     //EntitySpawner.UpdateAnimationFields(ref animationComponent);

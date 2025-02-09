@@ -43,10 +43,10 @@ public class AnimationSystem : SystemBase
 
                     //float uvWidth = 1f / spriteSheetAnimationData.frameCount;
                     //float uvHeight = 1f;
-                    float uvWidth = 1f / 12f;// divide by num of sprites horizontally
-                    float uvHeight = 1f / 12f;// divide by num of sprites vertically
-                    float uvOffsetX = uvWidth * spriteSheetAnimationData.currentFrame;
-                    float uvOffsetY = uvHeight * 6;
+                    float uvWidth = 1f / 24f;// divide by num of sprites horizontally
+                    float uvHeight = 1f / 24f;// divide by num of sprites vertically
+                    float uvOffsetX = uvWidth * (spriteSheetAnimationData.currentFrame  +  ((spriteSheetAnimationData.animationWidthOffset -1 )* spriteSheetAnimationData.frameCount));
+                    float uvOffsetY = uvHeight * (spriteSheetAnimationData.animationHeightOffset);
                     spriteSheetAnimationData.uv = new Vector4(uvWidth, uvHeight, uvOffsetX, uvOffsetY);
 
                     float3 position = translation.Value;

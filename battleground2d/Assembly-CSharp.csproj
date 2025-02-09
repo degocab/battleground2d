@@ -168,6 +168,7 @@
     <Compile Include="Assets\Scripts\ECS_Scripts\HealthComponent.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\Lobby\LobbyCustomCursor.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\SelectionMarksUI.cs" />
+    <Compile Include="Assets\Scripts\ECS_Scripts\RenderSystem.cs" />
     <Compile Include="Assets\Scripts\ECS_Scripts\IsDeadComponent.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\Rendering\PSpriteLoader.cs" />
     <Compile Include="Assets\Scripts\ECS_Scripts\EntitySpawner.cs" />
@@ -224,8 +225,10 @@
     <Compile Include="Assets\RTSToolkit\Scripts\UI\GroupingMenuUI.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\QuickScripts\MipMapReader.cs" />
     <Compile Include="Assets\RTSToolkit\Standard Assets\Environment\Water\Water\Scripts\Water.cs" />
+    <Compile Include="Assets\Scripts\ECS_Scripts\DeathSystem.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\Diplomacy\NationsScoresListUI.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\PlayerAIUI.cs" />
+    <Compile Include="Assets\Scripts\ECS_Scripts\GridSystem.cs" />
     <Compile Include="Assets\Scripts\ECS_Scripts\UnitAnimationController.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\Camera\CameraJiggler.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\RTS\BuildingGrowSystem.cs" />
@@ -310,8 +313,7 @@
     <Compile Include="Assets\RTSToolkit\Scripts\UI\UnitSelection\ShurikenParticles\SelectionMarkParticle.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\Environment\TerrainTextures.cs" />
     <Compile Include="Assets\RTSToolkit\Scripts\UI\Diplomacy\TheirProposalsUI.cs" />
-    <Compile Include="Assets\Scripts\ECS_Scripts\RenderSystem.cs" />
-    <Compile Include="Assets\Scripts\ECS_Scripts\DeathSystem.cs" />
+    <Compile Include="Assets\Scripts\ECS_Scripts\CollisionSystem.cs" />
   </ItemGroup>
   <ItemGroup>
      <None Include="Assets\RTSToolkit\Resources\3dSprites\config\Worker_WalkPouch_config.txt" />

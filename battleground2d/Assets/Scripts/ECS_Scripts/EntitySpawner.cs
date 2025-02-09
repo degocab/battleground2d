@@ -180,6 +180,7 @@ public class EntitySpawner : MonoBehaviour
     {
         return Resources.LoadAll<Material>(path);
     }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -204,6 +205,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(UnitMaterialComponent),
             typeof(Translation),
             typeof(Unit),
+            typeof(GridID),
             typeof(CollisionBounds)
             );
 
@@ -224,6 +226,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(UnitMaterialComponent),
             typeof(Translation),
             typeof(Unit),
+            typeof(GridID),
             typeof(CollisionBounds)
             );
 
@@ -385,8 +388,9 @@ public class EntitySpawner : MonoBehaviour
         entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f, isBlocked = false });
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
-        entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 50f, unitPosition.y, 0f) });
+        entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
         entityManager.SetComponentData(unit, new Unit { isMounted = false });
+        entityManager.SetComponentData(unit, new GridID { value = 0 });
         entityManager.SetComponentData(unit, new CollisionBounds { radius = .25f });
         entityManager.SetComponentData(unit,
             new AnimationComponent
@@ -395,6 +399,8 @@ public class EntitySpawner : MonoBehaviour
                 currentFrame = 0,
                 frameTimerMax = .0875f,
                 frameTimer = 0f,
+                animationHeightOffset = 0,
+                animationWidthOffset = 1,
                 unitType = unitType,
                 direction = Direction.Right,
                 animationType = AnimationType.Idle,
@@ -430,19 +436,21 @@ public class EntitySpawner : MonoBehaviour
         entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
         entityManager.SetComponentData(commanderEntity, new Unit { isMounted = false });
+        entityManager.SetComponentData(commanderEntity, new GridID { value = 0 });
         entityManager.SetComponentData(commanderEntity, new CollisionBounds { radius = .25f });
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {
                 currentFrame = UnityEngine.Random.Range(0, 5),
-                frameCount = 6,
+                frameCount = 2,
                 frameTimer = UnityEngine.Random.Range(0f, 1f),
                 frameTimerMax = .1f,
-
+                animationHeightOffset = 0,
+                animationWidthOffset = 1,
                 unitType = UnitType.Default,
                 direction = Direction.Right,
-                animationType = AnimationType.Run,
-                prevAnimationType = AnimationType.Run,
+                animationType = AnimationType.Idle,
+                prevAnimationType = AnimationType.Idle,
                 finishAnimation = false
             }
         );
@@ -455,6 +463,9 @@ public class EntitySpawner : MonoBehaviour
     }
     public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? walkRandom = null, Unity.Mathematics.Random? runRandom = default)
     {
+
+
+
         // Depending on the animationType, set the specific frame-related values
         switch (animationComponent.animationType)
         {
@@ -464,12 +475,16 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = 0; // Start at the first frame
                 animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
                 animationComponent.frameTimer = 0f; // Reset the frame timer
+                animationComponent.animationHeightOffset = 7;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Run:
                 animationComponent.frameCount = 6;
                 animationComponent.currentFrame = runRandom.Value.NextInt(0, 5);
                 animationComponent.frameTimerMax = .1f;
                 animationComponent.frameTimer = 0f; // Reset the frame timer
+                animationComponent.animationHeightOffset = 5;
+                //animationComponent.animationWidthOffset =  horizontalMultiplier;
                 break;
             default:
             case EntitySpawner.AnimationType.Idle:
@@ -477,13 +492,16 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .0875f;
                 animationComponent.frameTimer = 0f; // Reset the frame timer
-
+                animationComponent.animationHeightOffset = 0;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Walk:
                 animationComponent.frameCount = 4;
                 animationComponent.currentFrame = walkRandom.Value.NextInt(0, 3);
                 animationComponent.frameTimerMax = 0.15f;
                 animationComponent.frameTimer = 0f;
+                animationComponent.animationHeightOffset = 1;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
 
                 break;
             case EntitySpawner.AnimationType.Defend:
@@ -491,18 +509,24 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .1f;
                 animationComponent.frameTimer = 0f;
+                animationComponent.animationHeightOffset = 2;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Block:
                 animationComponent.frameCount = 3;
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .0875f;
                 animationComponent.frameTimer = 0f;
+                animationComponent.animationHeightOffset = 3;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.TakeDamage:
                 animationComponent.frameCount = 3;
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = .0875f;
                 animationComponent.frameTimer = 0f;
+                animationComponent.animationHeightOffset = 6;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
 
                 break;
             case EntitySpawner.AnimationType.Die:
@@ -510,7 +534,8 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.currentFrame = 0;
                 animationComponent.frameTimerMax = 0.12f;
                 animationComponent.frameTimer = 0f;
-
+                animationComponent.animationHeightOffset = 4;
+                //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
                 // Add other cases as necessary
         }
