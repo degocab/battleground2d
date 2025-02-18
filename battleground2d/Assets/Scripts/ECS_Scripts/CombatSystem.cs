@@ -138,7 +138,10 @@ public class CombatSystem : SystemBase
             }
             else
             {
-                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f && movementSpeedComponent.isKnockedBack == false) //not moving
+                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f 
+                            //&& movementSpeedComponent.isBlocked == false
+                            //&& movementSpeedComponent.isKnockedBack == false
+                            ) //not moving
                 {
                     animationComponent.animationType = EntitySpawner.AnimationType.Idle;
                     //EntitySpawner.UpdateAnimationFields(ref animationComponent);

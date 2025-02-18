@@ -107,7 +107,7 @@ public class RenderSystem : SystemBase
                     matrix = spriteSheetAnimationData.matrix
                 };
 
-                nativeQueue_1.Enqueue(entityPosition); return;
+                //nativeQueue_1.Enqueue(entityPosition); return;
 
                 if (positionY < yTop_20) { nativeQueue_20.Enqueue(entityPosition); }
                 else if (positionY < yTop_19) { nativeQueue_19.Enqueue(entityPosition); }
@@ -171,9 +171,9 @@ public class RenderSystem : SystemBase
     {
 
         [ReadOnly] public NativeArray<RenderData> nativeArray;
-        //[NativeDisableContainerSafetyRestriction] 
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<Matrix4x4> matrixArray;
-        //[NativeDisableContainerSafetyRestriction]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<Vector4> uvArray;
         public int startingIndex;
 
@@ -404,9 +404,11 @@ public class RenderSystem : SystemBase
         NativeArray<Vector4> uvArray = new NativeArray<Vector4>(visibleEntityTotal, Allocator.TempJob);
 
         int startingIndex = 0;
+        JobHandle lastJobHandle = default(JobHandle); // To store the last job handle
+
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            //if (i != 4) continue;
+            // Create a FillArraysParallelJob instance for each slice
             FillArraysParallelJob fillArraysParallelJob = new FillArraysParallelJob
             {
                 nativeArray = nativeArrayArray[i],
@@ -415,10 +417,17 @@ public class RenderSystem : SystemBase
                 startingIndex = startingIndex
             };
             startingIndex += nativeArrayArray[i].Length;
-            jobHandleArray[i] = fillArraysParallelJob.Schedule(nativeArrayArray[i].Length, 10);
+
+            // Schedule the job and make sure it depends on the previous job
+            jobHandleArray[i] = fillArraysParallelJob.Schedule(nativeArrayArray[i].Length, 10, lastJobHandle);
+
+            // Update the lastJobHandle to the current job's handle
+            lastJobHandle = jobHandleArray[i];
         }
 
+        // Ensure that all jobs are completed before proceeding
         JobHandle.CompleteAll(jobHandleArray);
+
 
 
         for (int i = 0; i < POSITION_SLICES; i++)

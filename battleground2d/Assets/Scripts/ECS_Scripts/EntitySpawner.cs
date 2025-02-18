@@ -3,8 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
+using static UnityEngine.UI.CanvasScaler;
 
 public class EntitySpawner : MonoBehaviour
 {
@@ -26,55 +29,57 @@ public class EntitySpawner : MonoBehaviour
     /// </summary>
     [Range(0.1f, .75f)]
     public float movementSpeedDebug = .1f;
+    [Range(1, 10000)]
+    public int UnitCountToSpawn = 256;
 
     public EntitySpawner instance;
     public Mesh quadMesh;      // Assign your quad mesh here
-    public Material walkingSpriteSheetMaterial;  // Drag your prefab with MeshRenderer in Unity editor
+    public UnityEngine.Material walkingSpriteSheetMaterial;  // Drag your prefab with MeshRenderer in Unity editor
 
 
     #region Materials
-    public Material[] defaultIdleDownMaterials;  // Assign the material here
-    public Material[] defaultIdleLeftMaterials;  // Assign the material here
-    public Material[] defaultIdleRightMaterials;  // Assign the material here
-    public Material[] defaultIdleUpMaterials;  // Assign the material here
+    public UnityEngine.Material[] defaultIdleDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultIdleLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultIdleRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultIdleUpMaterials;  // Assign the UnityEngine.Material here
 
-    public Material[] defaultDieDownMaterials;  // Assign the material here
-    public Material[] defaultDieLeftMaterials;  // Assign the material here
-    public Material[] defaultDieRightMaterials;  // Assign the material here
-    public Material[] defaultDieUpMaterials;  // Assign the material here
+    public UnityEngine.Material[] defaultDieDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultDieLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultDieRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultDieUpMaterials;  // Assign the UnityEngine.Material here
 
-    public Material[] defaultRunDownMaterials;  // Assign the material here
-    public Material[] defaultRunLeftMaterials;  // Assign the material here
-    public Material[] defaultRunRightMaterials;  // Assign the material here
-    public Material[] defaultRunUpMaterials;  // Assign the material here
-
-
-    public Material[] defaultAttackDownMaterials;  // Assign the material here
-    public Material[] defaultAttackLeftMaterials;  // Assign the material here
-    public Material[] defaultAttackRightMaterials;  // Assign the material here
-    public Material[] defaultAttackUpMaterials;  // Assign the material here
+    public UnityEngine.Material[] defaultRunDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultRunLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultRunRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultRunUpMaterials;  // Assign the UnityEngine.Material here
 
 
-    public Material[] enemyIdleDownMaterials;  // Assign the material here
-    public Material[] enemyIdleLeftMaterials;  // Assign the material here
-    public Material[] enemyIdleRightMaterials;  // Assign the material here
-    public Material[] enemyIdleUpMaterials;  // Assign the material here
-
-    public Material[] enemyDieDownMaterials;  // Assign the material here
-    public Material[] enemyDieLeftMaterials;  // Assign the material here
-    public Material[] enemyDieRightMaterials;  // Assign the material here
-    public Material[] enemyDieUpMaterials;  // Assign the material here
-
-    public Material[] enemyRunDownMaterials;  // Assign the material here
-    public Material[] enemyRunLeftMaterials;  // Assign the material here
-    public Material[] enemyRunRightMaterials;  // Assign the material here
-    public Material[] enemyRunUpMaterials;  // Assign the material here
+    public UnityEngine.Material[] defaultAttackDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultAttackLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultAttackRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] defaultAttackUpMaterials;  // Assign the UnityEngine.Material here
 
 
-    public Material[] enemyAttackDownMaterials;  // Assign the material here
-    public Material[] enemyAttackLeftMaterials;  // Assign the material here
-    public Material[] enemyAttackRightMaterials;  // Assign the material here
-    public Material[] enemyAttackUpMaterials;  // Assign the material here 
+    public UnityEngine.Material[] enemyIdleDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyIdleLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyIdleRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyIdleUpMaterials;  // Assign the UnityEngine.Material here
+
+    public UnityEngine.Material[] enemyDieDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyDieLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyDieRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyDieUpMaterials;  // Assign the UnityEngine.Material here
+
+    public UnityEngine.Material[] enemyRunDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyRunLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyRunRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyRunUpMaterials;  // Assign the UnityEngine.Material here
+
+
+    public UnityEngine.Material[] enemyAttackDownMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyAttackLeftMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyAttackRightMaterials;  // Assign the UnityEngine.Material here
+    public UnityEngine.Material[] enemyAttackUpMaterials;  // Assign the UnityEngine.Material here 
     #endregion
 
     public GameObject unitPrefab;  // Drag your prefab with MeshRenderer in Unity editor
@@ -90,7 +95,7 @@ public class EntitySpawner : MonoBehaviour
     public void LoadMaterials()
     {
         // Initialize the dictionary for Default and Enemy materials
-        materialDictionary = new Dictionary<(UnitType, Direction, AnimationType), Material[]>();
+        materialDictionary = new Dictionary<(UnitType, Direction, AnimationType), UnityEngine.Material[]>();
 
         //// Default unit type materials
         materialDictionary[(UnitType.Default, Direction.Down, AnimationType.Idle)] = LoadMaterialArray("Material/Default/IdleDown"); //defaultIdleDownMaterials;
@@ -178,7 +183,7 @@ public class EntitySpawner : MonoBehaviour
     }
     UnityEngine.Material[] LoadMaterialArray(string path)
     {
-        return Resources.LoadAll<Material>(path);
+        return Resources.LoadAll<UnityEngine.Material>(path);
     }
 
     // Start is called before the first frame update
@@ -206,7 +211,13 @@ public class EntitySpawner : MonoBehaviour
             typeof(Translation),
             typeof(Unit),
             typeof(GridID),
-            typeof(CollisionBounds)
+            typeof(CollisionBounds),
+                        typeof(PhysicsPosition),    // Position component
+            typeof(PhysicsVelocity),    // Velocity component
+            typeof(PhysicsForce),       // Force component
+            typeof(PhysicsRadius)       // Radius componen
+            , typeof(PhysicsColliderComponent),   // Collider for physics
+            typeof(HitDetectionComponent)      // Hit detection component
             );
 
 
@@ -227,12 +238,18 @@ public class EntitySpawner : MonoBehaviour
             typeof(Translation),
             typeof(Unit),
             typeof(GridID),
-            typeof(CollisionBounds)
+            typeof(CollisionBounds),
+                        typeof(PhysicsPosition),    // Position component
+            typeof(PhysicsVelocity),    // Velocity component
+            typeof(PhysicsForce),       // Force component
+            typeof(PhysicsRadius)       // Radius componen
+                        , typeof(PhysicsColliderComponent),   // Collider for physics
+            typeof(HitDetectionComponent)      // Hit detection component
             );
 
         SpawnCommander();
 
-        SpawnUnits(8000);
+        SpawnUnits(UnitCountToSpawn);
     }
 
     int phalanxSize = 100; // 10x10 formation
@@ -361,6 +378,13 @@ public class EntitySpawner : MonoBehaviour
                 entityManager.SetComponentData(unit, new PositionComponent { value = unitPosition });
                 UnitType unitType;
 
+                // Set common components for each unit
+                entityManager.SetComponentData(unit, new PhysicsPosition { Value = unitPosition });
+                entityManager.SetComponentData(unit, new PhysicsVelocity { Value = new float3(0, 0, 0) });
+                entityManager.SetComponentData(unit, new PhysicsForce { Value = new float3(0, 0, 0) });
+                entityManager.SetComponentData(unit, new PhysicsRadius { Value = 0.25f }); // Set radius for collision
+
+
                 ///
                 /// randomoing range to test unit materials
                 ///
@@ -383,15 +407,33 @@ public class EntitySpawner : MonoBehaviour
 
     private void SetUnitComponents(Entity unit, float3 unitPosition, UnitType unitType)
     {
-        // Set common components for each unit
         entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
-        entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f, isBlocked = false });
+        entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f, isBlocked = false, isKnockedBack = false });
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
         entityManager.SetComponentData(unit, new Unit { isMounted = false });
         entityManager.SetComponentData(unit, new GridID { value = 0 });
         entityManager.SetComponentData(unit, new CollisionBounds { radius = .25f });
+        SphereGeometry sphereGeometry = new SphereGeometry
+        {
+            Center = unitPosition,  // Center of the sphere collider (relative to the entity's position)
+            Radius = 0.25f         // Radius of the sphere collider
+        };
+
+        // Create the PhysicsCollider component with the SphereGeometry
+        PhysicsCollider physicsCollider = new PhysicsCollider
+        {
+            Value = Unity.Physics.SphereCollider.Create(sphereGeometry)  // Create the actual collider
+        };
+        var t = new Unity.Physics.SphereCollider();
+        t.Geometry = sphereGeometry;
+        entityManager.SetComponentData(unit, new PhysicsColliderComponent { Collider = t });
+
+        // Initialize hit detection (for example, set radius)
+        entityManager.SetComponentData(unit, new HitDetectionComponent { Radius = 0.5f });
+
+
         entityManager.SetComponentData(unit,
             new AnimationComponent
             {
@@ -430,14 +472,38 @@ public class EntitySpawner : MonoBehaviour
         float3 pos = new float3 (-2f,0f,0f );
         entityManager.SetComponentData(commanderEntity, new Translation { Value = pos });
         entityManager.SetComponentData(commanderEntity, new PositionComponent { value = pos });
+
+        entityManager.SetComponentData(commanderEntity, new PhysicsPosition { Value = pos });
+        entityManager.SetComponentData(commanderEntity, new PhysicsVelocity { Value = new float3(0, 0, 0) });
+        entityManager.SetComponentData(commanderEntity, new PhysicsForce { Value = new float3(0, 0, 0) });
+        entityManager.SetComponentData(commanderEntity, new PhysicsRadius { Value = 0.5f }); // Set radius for collision
+
         entityManager.SetComponentData(commanderEntity, new HealthComponent { health = 10000f, maxHealth = 10000f });
-        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f, isBlocked = false });
+        entityManager.SetComponentData(commanderEntity, new MovementSpeedComponent { value = 3f, isBlocked = false, isKnockedBack = false });
         entityManager.SetComponentData(commanderEntity, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(commanderEntity, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(commanderEntity, new CommanderComponent { isPlayerControlled = true });
         entityManager.SetComponentData(commanderEntity, new Unit { isMounted = false });
         entityManager.SetComponentData(commanderEntity, new GridID { value = 0 });
         entityManager.SetComponentData(commanderEntity, new CollisionBounds { radius = .25f });
+
+
+        SphereGeometry sphereGeometry = new SphereGeometry
+        {
+            Center = pos,  // Center of the sphere collider (relative to the entity's position)
+            Radius = 0.25f         // Radius of the sphere collider
+        };
+
+        // Create the PhysicsCollider component with the SphereGeometry
+        PhysicsCollider physicsCollider = new PhysicsCollider
+        {
+            Value = Unity.Physics.SphereCollider.Create(sphereGeometry)  // Create the actual collider
+        };
+        var t = new Unity.Physics.SphereCollider();
+        t.Geometry = sphereGeometry;
+        entityManager.SetComponentData(commanderEntity, new PhysicsColliderComponent { Collider = t });
+
+
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {

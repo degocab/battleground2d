@@ -619,14 +619,13 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'Create new way to get frame coorinates
-
-      [] New method to get frame
-      coordinates (uv * height) (uv * width)
-
-      [] Update start to load all frames?'
-    state: 2
-    show: 1
+  - s: "Add Unit Crit chance\nCaptains/commanders will have 90% chance to one shot
+      any enemy\n\t- to help mimic cinematic combat\n\t- to show superior skill\n\t-
+      will need to figure out how that works against each other\nUnits will have
+      low crit one chance, but should allow many units to die fast when crits are
+      applied"
+    state: 0
+    show: 0
     deleteQuestion: 0
   - s: "Physics v1\n[x] create simple collision \n[] damage phyiscs\n[] add logic
       for block, need collision first"
@@ -648,6 +647,16 @@ MonoBehaviour:
       [] smooth out attack animation'
     state: 2
     show: 0
+    deleteQuestion: 0
+  - s: 'Create new way to get frame coorinates
+
+      [x] New method to get frame
+      coordinates (uv * height) (uv * width)
+
+      [x] Update start to load all
+      frames?'
+    state: 3
+    show: 1
     deleteQuestion: 0
   - s: 'Update rendering to easily allow 100k objects at 30fps
 
@@ -1076,7 +1085,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   frameTimerMaxDebug: 0.1
-  movementSpeedDebug: 0.1
+  movementSpeedDebug: 0.228
+  UnitCountToSpawn: 256
   instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,

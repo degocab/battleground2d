@@ -15,4 +15,7 @@ public struct MovementSpeedComponent : IComponentData
     public bool isBlocked;
     public bool isKnockedBack;
     public float3 knockedBackDirection;
+    public float3 nextFloat3ToCheck;
+    public float sqrDistance;
+    public int frameCounter;
 }
