@@ -356,6 +356,12 @@ public class EntitySpawner : MonoBehaviour
     private void SpawnPhalanxUnits(int sqrtSize, float unitSpacing, float yTracker, int phalanxSize)
     {
 
+        Entity leaderEntity = Entity.Null; // The leader of the phalanx
+        int rank = 1; // Start with Rank 1 for the basic soldier
+                      // Define the total number of soldiers we want to spawn per phalanx or army
+        int soldierCount = 0;
+        int officerCount = 0;
+        int captainCount = 0;
         // For each unit in the phalanx (calculated by sqrtSize to make it a square-like formation)
         for (int row = 0; row < sqrtSize; row++)
         {
@@ -397,22 +403,86 @@ public class EntitySpawner : MonoBehaviour
                     unitType = UnitType.Default;
                 }
 
+
+                //TODO: not working figure it out
+                if (soldierCount * row  % 15 != 0 )
+                {
+                    if (captainCount == 1)
+                    {
+                        rank = 2;//reset
+                    }
+                    else
+                    {
+                        rank = 4;
+                        captainCount++;
+                    }
+                }
+                else
+                {
+                    rank = 1;
+                    soldierCount++;
+                }
+                if (soldierCount == 225)
+                {
+                    rank = 3;
+                    officerCount++;
+                }
+
+
+
+                // Determine the rank of the unit based on soldier count and position
+                //if (rank == 1) // Soldier/Hoplite
+                //{
+                //    rank = 1;
+                //    soldierCount++;
+                //}
+                //else if (rank == 2) // Elite Soldier (Commander's Guard)
+                //{
+                //    rank = 2;
+                //    soldierCount++;
+                //}
+                //else if (rank == 3 && officerCount < phalanxSize / 15) // Officer (commands 15 soldiers)
+                //{
+                //    rank = 3; 
+                //    officerCount++;
+                //}
+                //else if (rank == 4 && captainCount == 0) // Captain (commands the phalanx)
+                //{
+                //    rank = 4;
+                //    captainCount++;
+                //}
+                //else if (rank == 5 && leaderEntity == Entity.Null) // General (commanding multiple phalanxes)
+                //{
+                //    rank = 5;
+                //    leaderEntity = unit; // Set the first general as the leader
+                //}
+                //else if (rank == 6 && leaderEntity == Entity.Null) // Commander (player or AI)
+                //{
+                //    rank = 6;
+                //    leaderEntity = unit; // Set the commander as the overall leader
+                //}
+                else // Increment rank for the next soldier
+                {
+                    //rank++; // Increment rank for the next soldier
+                }
+
+
                 // Set additional unit components such as Health, Movement, etc.
-                SetUnitComponents(unit, unitPosition, unitType);
+                SetUnitComponents(unit, unitPosition, unitType, rank);
             }
         }
     }
 
 
 
-    private void SetUnitComponents(Entity unit, float3 unitPosition, UnitType unitType)
+    private void SetUnitComponents(Entity unit, float3 unitPosition, UnitType unitType, int rank)
     {
         entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
         entityManager.SetComponentData(unit, new MovementSpeedComponent { value = 3f, isBlocked = false, isKnockedBack = false });
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
-        entityManager.SetComponentData(unit, new Unit { isMounted = false });
+        entityManager.SetComponentData(unit, new Unit { isMounted = false, rank = rank });
         entityManager.SetComponentData(unit, new GridID { value = 0 });
         entityManager.SetComponentData(unit, new CollisionBounds { radius = .25f });
         SphereGeometry sphereGeometry = new SphereGeometry

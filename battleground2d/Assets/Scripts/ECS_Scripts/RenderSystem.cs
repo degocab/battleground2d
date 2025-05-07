@@ -461,18 +461,4 @@ public class RenderSystem : SystemBase
 
     }
 
-
-    public Material[] GetMaterials(EntitySpawner.UnitType unitType, EntitySpawner.Direction direction, EntitySpawner.AnimationType animationType)
-    {
-        var key = (unitType, direction, animationType);  // Tuple as key
-        if (entitySpawner.materialDictionary.TryGetValue(key, out Material[] materials))
-        {
-            return materials; // Return the materials if found
-        }
-        else
-        {
-            Debug.LogError("Materials not found for " + key);
-            return null; // Return null or handle the missing case
-        }
-    }
 }

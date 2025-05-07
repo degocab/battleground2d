@@ -576,7 +576,7 @@ MonoBehaviour:
       [] figure
       out how to send to troops to each location'
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Create new defend while moving
 
@@ -598,27 +598,6 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'Physics v2
-
-      [] arrow phyiscs
-
-      [] calvary charge phyiscs'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'OPTIMIZATIONS
-
-      [] optimize rendering system
-
-      [] optimize animation
-      system
-
-      [] optimize combat system
-
-      [] optimize movement system'
-    state: 0
-    show: 0
-    deleteQuestion: 0
   - s: "Add Unit Crit chance\nCaptains/commanders will have 90% chance to one shot
       any enemy\n\t- to help mimic cinematic combat\n\t- to show superior skill\n\t-
       will need to figure out how that works against each other\nUnits will have
@@ -627,15 +606,18 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: "Physics v1\n[x] create simple collision \n[] damage phyiscs\n[] add logic
-      for block, need collision first"
+  - s: 'OPTIMIZATIONS
+
+      [x] optimize rendering system
+
+      [x] optimize animation
+      system
+
+      [] optimize combat system
+
+      [] optimize movement system'
     state: 2
-    show: 1
-    deleteQuestion: 0
-  - s: "Investigate a grid system\n[] create grid system for proximity based collisions
-      checks\n- we dont want to loop through the entire unit count\n  "
-    state: 2
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Smooth out animations
 
@@ -648,6 +630,22 @@ MonoBehaviour:
     state: 2
     show: 0
     deleteQuestion: 0
+  - s: "Physics v2\n[] group based physics before unit \n[] damage phyiscs\n[] add
+      logic for block, need collision first\n[] arrow phyiscs\n[] calvary charge
+      phyiscs"
+    state: 2
+    show: 0
+    deleteQuestion: 0
+  - s: "Investigate a grid system\n[] create grid system for proximity based collisions
+      checks\n- we dont want to loop through the entire unit count\n[] quad tree
+      \n  "
+    state: 2
+    show: 1
+    deleteQuestion: 0
+  - s: "Physics v1\n[x] create simple collision \n"
+    state: 3
+    show: 0
+    deleteQuestion: 0
   - s: 'Create new way to get frame coorinates
 
       [x] New method to get frame
@@ -656,14 +654,14 @@ MonoBehaviour:
       [x] Update start to load all
       frames?'
     state: 3
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Update rendering to easily allow 100k objects at 30fps
 
       [x] import
       code from code monkey''s "100,000 Units Animated in Unity ECS!."'
     state: 3
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: "Animations v1\n[x] add logic for walk \n\n[x] add logic for take damage \n[x]
       add logic for death animation\n[x] abstract methods for both AI and player"
