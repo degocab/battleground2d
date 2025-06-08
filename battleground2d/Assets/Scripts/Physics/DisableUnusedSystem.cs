@@ -59,13 +59,19 @@ public class DisableUnusedSystem : MonoBehaviour
 
         System.Type[] systemsToDisable = new[]
         {
-                    typeof(AnimationSystem),
-                    typeof(CombatSystem),
-                    typeof(DeathSystem),
-                    //typeof(GridSystem),
-                    typeof(MovementSystem),
-                    typeof(RenderSystem),
+                    //typeof(AnimationSystem),
+                    //typeof(CombatSystem),
+                    //typeof(DeathSystem),
+                    ////typeof(GridSystem),
+                    //typeof(MovementSystem),
+                    //typeof(RenderSystem),
                     // Add any system you want to disable here
+
+
+                    typeof(OLD_CollisionDetectionSystem),
+                    typeof(OLD_CollisionResolutionSystem),
+                    typeof(OLD_VelocitySystem),
+                    typeof(OLD_AddCollisionBufferSystem),
                 };
         // Example: Disable a specific system
         foreach (System.Type item in systemsToDisable)

@@ -25,7 +25,7 @@ using Unity.Transforms;
 
 
 [UpdateInGroup(typeof(InitializationSystemGroup))]
-public class AddCollisionBufferSystem : SystemBase
+public class OLD_AddCollisionBufferSystem : SystemBase
 {
     protected override void OnUpdate()
     {

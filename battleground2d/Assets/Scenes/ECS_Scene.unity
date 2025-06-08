@@ -640,6 +640,22 @@ MonoBehaviour:
       checks\n- we dont want to loop through the entire unit count\n[] quad tree
       \n  "
     state: 2
+    show: 0
+    deleteQuestion: 0
+  - s: 'Merge test physics system into existing codebase
+
+      [x] movement system
+
+      [x]
+      addcollisionbuffersystem
+
+      [x] add missing components
+
+      [x] collision
+      detection/resolution system
+
+      [] cleanup'
+    state: 2
     show: 1
     deleteQuestion: 0
   - s: "Physics v1\n[x] create simple collision \n"
@@ -670,7 +686,7 @@ MonoBehaviour:
     deleteQuestion: 0
   - s: frame max timer not resetting while holding move after attack
     state: 3
-    show: 0
+    show: 1
     deleteQuestion: 0
 --- !u!4 &985990580
 Transform:
