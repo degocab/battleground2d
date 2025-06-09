@@ -42,4 +42,6 @@ public class GridSystem : SystemBase
 public struct GridID : IComponentData
 {
     public int value;
+
+    public Entity otherEntity;
 }

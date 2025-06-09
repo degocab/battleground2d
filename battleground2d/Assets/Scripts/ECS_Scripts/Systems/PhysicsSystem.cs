@@ -66,3 +66,11 @@ public struct ECS_Velocity2D : IComponentData
     public float2 Value;
     public float2 PrevValue;
 }
+
+
+//var otherGridID = gridData[otherIndex].value; // Get the grid_id for the other unit
+//                                              // Skip if the grid IDs don't match
+//if (currentGridID != otherGridID)
+//{
+//    continue; // Skip the collision check if grid IDs don't match
+//}
