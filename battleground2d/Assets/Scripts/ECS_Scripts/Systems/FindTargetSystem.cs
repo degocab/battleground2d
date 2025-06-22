@@ -5,12 +5,12 @@ using System;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 
-[UpdateBefore(typeof(MovementSystem))]
+[UpdateBefore(typeof(UnitMoveToTargetSystem))]
 public class FindTargetSystem : ComponentSystem
 {
     protected override void OnUpdate()
     {
-        Entities.WithNone<HasTarget>().WithAll<Unit>().ForEach((Entity entity, ref Translation unitTranslation) =>
+        Entities.WithNone<CommanderComponent>().WithNone<HasTarget>().WithAll<Unit>().ForEach((Entity entity, ref Translation unitTranslation) =>
         {
             float2 unitPosition = unitTranslation.Value.xy;
             Entity closestTargetEntity = Entity.Null;
@@ -56,8 +56,8 @@ public class HasTargetDebug : ComponentSystem
     {
         Entities.ForEach((Entity entity, ref Translation translation, ref HasTarget hasTarget) =>
         {
-            Translation targetTrnanslation = EntityManager.GetComponentData<Translation>(hasTarget.targetEntity);
-            Debug.DrawLine(translation.Value, targetTrnanslation.Value, Color.red);
+            Translation targetTranslation = EntityManager.GetComponentData<Translation>(hasTarget.targetEntity);
+            Debug.DrawLine(translation.Value, targetTranslation.Value, Color.red);
             // https://youtu.be/t11uB7Gl6m8?t=823
         });
     }

@@ -17,7 +17,7 @@ public class PhysicsSystem : SystemBase
         Entities
             .WithAll<ECS_PhysicsBody2DAuthoring>() // Optional: Only move dynamic bodies
                                                    //.ForEach((ref Translation translation, in Velocity2D velocity, in PhysicsBody2D body) =>
-            .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity) =>
+            .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent) =>
             {
                 //if (body.IsStatic)
                 //    return;
@@ -35,7 +35,7 @@ public class PhysicsSystem : SystemBase
                 //// Reset force after applying it to prevent it from accumulating
                 //force.Value = float3.zero;
 
-                translation.Value.xy += velocity.Value.xy * deltaTime;
+                translation.Value.xy += movementSpeedComponent.velocity.xy * deltaTime;
                 position.Value.xy = translation.Value.xy;
             }).ScheduleParallel();
 

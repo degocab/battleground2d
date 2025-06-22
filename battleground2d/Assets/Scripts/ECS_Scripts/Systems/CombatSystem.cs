@@ -138,7 +138,7 @@ public class CombatSystem : SystemBase
             }
             else
             {
-                if (movementSpeedComponent.moveX == 0f && movementSpeedComponent.moveY == 0f 
+                if (movementSpeedComponent.velocity.x == 0f && movementSpeedComponent.velocity.y == 0f 
                             //&& movementSpeedComponent.isBlocked == false
                             //&& movementSpeedComponent.isKnockedBack == false
                             ) //not moving

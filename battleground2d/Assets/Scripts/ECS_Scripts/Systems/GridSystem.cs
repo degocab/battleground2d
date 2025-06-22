@@ -33,9 +33,9 @@ public class GridSystem : SystemBase
 
 
         EntityQuery query = GetEntityQuery(typeof(Translation), typeof(GridID));
-        NativeArray<GridID> gridIds = query.ToComponentDataArray<GridID>(Allocator.TempJob);
-        NativeArray<Translation> translations = query.ToComponentDataArray<Translation>(Allocator.TempJob);
-        Particle[] particles = new Particle[translations.Count()];
+        //NativeArray<GridID> gridIds = query.ToComponentDataArray<GridID>(Allocator.TempJob);
+        //NativeArray<Translation> translations = query.ToComponentDataArray<Translation>(Allocator.TempJob);
+        //Particle[] particles = new Particle[translations.Count()];
 
         ////loop through units(particles)
         ////  insert unit into quadtree
@@ -165,7 +165,7 @@ public struct Circle : IShape
         this.x = x;
         this.y = y;
         this.r = r;
-        this.rSquared = this.r * this.r; 
+        this.rSquared = this.r * this.r;
     }
 
     public bool Contains(Point point)
@@ -187,7 +187,7 @@ public struct Circle : IShape
         float edges = Mathf.Pow((xDist - w), 2) + Mathf.Pow((yDist - h), 2);
 
         //no intersection
-        if (xDist > (r + w) || yDist > (r + h)) 
+        if (xDist > (r + w) || yDist > (r + h))
             return false;
         // intersection within the circle 
         if (xDist <= w || yDist <= h)
@@ -257,7 +257,7 @@ public class QuadTree
     public QuadTree southwest;
 
 
-    public QuadTree (Rectangle boundary, int n)
+    public QuadTree(Rectangle boundary, int n)
     {
         this.boundary = boundary;
         this.capacity = n;
@@ -267,32 +267,24 @@ public class QuadTree
 
     public void subdivide()
     {
-        try
-        {
-            float x = this.boundary.x;
-            float y = this.boundary.y;
-            float w = this.boundary.w;
-            float h = this.boundary.h;
+        float x = this.boundary.x;
+        float y = this.boundary.y;
+        float w = this.boundary.w;
+        float h = this.boundary.h;
 
 
-            Rectangle ne = new Rectangle(x + w / 2, y - h / 2, w / 2, h / 2);
-            this.northeast = new QuadTree(ne, this.capacity);
+        Rectangle ne = new Rectangle(x + w / 2, y - h / 2, w / 2, h / 2);
+        this.northeast = new QuadTree(ne, this.capacity);
 
-            Rectangle nw = new Rectangle(x - w / 2, y - h / 2, w / 2, h / 2);
-            this.northwest = new QuadTree(nw, this.capacity);
+        Rectangle nw = new Rectangle(x - w / 2, y - h / 2, w / 2, h / 2);
+        this.northwest = new QuadTree(nw, this.capacity);
 
-            Rectangle se = new Rectangle(x + w / 2, y + h / 2, w / 2, h / 2);
-            this.southeast = new QuadTree(se, this.capacity);
+        Rectangle se = new Rectangle(x + w / 2, y + h / 2, w / 2, h / 2);
+        this.southeast = new QuadTree(se, this.capacity);
 
-            Rectangle sw = new Rectangle(x - w / 2, y + h / 2, w / 2, h / 2);
-            this.southwest = new QuadTree(sw, this.capacity);
-            this.divided = true;
-        }
-        catch (Exception ex)
-        {
-
-            throw;
-        }
+        Rectangle sw = new Rectangle(x - w / 2, y + h / 2, w / 2, h / 2);
+        this.southwest = new QuadTree(sw, this.capacity);
+        this.divided = true;
     }
 
     public bool insert(Point point)

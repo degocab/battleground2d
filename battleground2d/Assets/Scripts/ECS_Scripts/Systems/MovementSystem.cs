@@ -41,8 +41,9 @@ public class MovementSystem : SystemBase
           .WithAll<CommanderComponent>() // Remove to let all units update
           .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
           {
-              movementSpeedComponent.moveX = moveX;
-              movementSpeedComponent.moveY = moveY;
+              //movementSpeedComponent.moveX = moveX;
+              //movementSpeedComponent.moveY = moveY;
+              movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
               movementSpeedComponent.isRunnning = isRunnning;
           }).ScheduleParallel();
 
@@ -57,10 +58,7 @@ public class MovementSystem : SystemBase
 
         int count = query.CalculateEntityCount();
 
-        // Collect positions and collision bounds in NativeArrays for collision detection
-        NativeArray<Translation> positions = new NativeArray<Translation>(count, Unity.Collections.Allocator.TempJob);
-        positions = query.ToComponentDataArray<Translation>(Allocator.TempJob);
-        NativeArray<float3> updatedPositions = new NativeArray<float3>(count, Unity.Collections.Allocator.TempJob); // To store updated positions
+
 
         Entities
           .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
@@ -104,99 +102,81 @@ public class MovementSystem : SystemBase
               //    movementSpeedComponent.moveY = direction.y;
               //}
 
-              float3 direction = float3.zero;
-              movementSpeedComponent.direction = direction;
-              movementSpeedComponent.Value = float3.zero;
-              movementSpeedComponent.moveX = direction.x;
-              movementSpeedComponent.moveY = direction.y;
+              //float3 direction = float3.zero;
+              //movementSpeedComponent.direction = direction;
+              //movementSpeedComponent.Value = float3.zero;
+              //movementSpeedComponent.moveX = direction.x;
+              //movementSpeedComponent.moveY = direction.y;
 
-              movementSpeedComponent.isRunnning = true;
+              //movementSpeedComponent.isRunnning = true;
           }).WithBurst().ScheduleParallel();
 
         // Randomize movement speed
         float minRange = 1f;
         float maxRange = 1.125f;
         Entities
-          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent velocity, in Entity entity) =>
+          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
           {
-              if (velocity.isRunnning)
+              if (movementSpeedComponent.isRunnning)
               {
                   Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-                  velocity.randomSpeed = random.NextFloat(minRange, maxRange);
+                  movementSpeedComponent.randomSpeed = random.NextFloat(minRange, maxRange);
               }
               else
               {
                   //Unity.Mathematics.Random random2 = new Unity.Mathematics.Random((uint)entity.Index);
                   //velocity.randomSpeed = random2.NextFloat(.5f, .6f);
-                  velocity.randomSpeed = .5f;
+                  movementSpeedComponent.randomSpeed = .5f;
               }
 
-              float3 vel = new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed;
+              float3 vel = new float3(movementSpeedComponent.velocity.x, movementSpeedComponent.velocity.y, 0) * movementSpeedComponent.randomSpeed;
               vel.z = 0;
-              velocity.Value = vel;
+              movementSpeedComponent.velocity = vel;
           }).WithBurst().ScheduleParallel();
-        NativeArray<MovementSpeedComponent> velocities = new NativeArray<MovementSpeedComponent>(count, Unity.Collections.Allocator.TempJob); // To store updated positions
-        velocities = query.ToComponentDataArray<MovementSpeedComponent>(Allocator.TempJob);
 
         // Get direction for animation
         Entities
-          .ForEach((ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
+          .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
           {
-              if (velocity.Value.x > 0)
+              float2 velocity = movementSpeedComponent.velocity.xy;
+
+              if (math.lengthsq(velocity) > 0.0001f) // Check if moving
               {
-                  animationComponent.direction = EntitySpawner.Direction.Right;
-                  animationComponent.animationWidthOffset = 1;
-              }
-              else if (velocity.Value.x < 0)
-              {
-                  animationComponent.direction = EntitySpawner.Direction.Left;
-                  animationComponent.animationWidthOffset = 2;
-              }
-              else if (velocity.Value.y > 0)
-              {
-                  animationComponent.direction = EntitySpawner.Direction.Up;
-                  animationComponent.animationWidthOffset = 3;
-              }
-              else if (velocity.Value.y < 0)
-              {
-                  animationComponent.direction = EntitySpawner.Direction.Down;
-                  animationComponent.animationWidthOffset = 4;
-              }
-              else
-              {
-                  if (!animationComponent.finishAnimation)
+                  //compare abs values to deterimine dominant axis
+                  if (math.abs(velocity.x) > math.abs(velocity.y))
                   {
-                      animationComponent.direction = animationComponent.prevDirection;
+                      if (velocity.x > 0)
+                      {
+                          animationComponent.direction = EntitySpawner.Direction.Right;
+                          animationComponent.animationWidthOffset = 1;
+                      }
+                      else
+                      {
+                          animationComponent.direction = EntitySpawner.Direction.Left;
+                          animationComponent.animationWidthOffset = 2;
+                      }
+                  }
+                  else
+                  {
+                      if (velocity.y > 0)
+                      {
+                          animationComponent.direction = EntitySpawner.Direction.Up;
+                          animationComponent.animationWidthOffset = 3;
+                      }
+                      else
+                      {
+                          animationComponent.direction = EntitySpawner.Direction.Down;
+                          animationComponent.animationWidthOffset = 4;
+                      }
                   }
               }
+
               animationComponent.prevDirection = animationComponent.direction;
           }).WithBurst().ScheduleParallel();
 
-        NativeArray<AnimationComponent> anims = new NativeArray<AnimationComponent>(count, Unity.Collections.Allocator.TempJob); // To store updated positions
-        anims = query.ToComponentDataArray<AnimationComponent>(Allocator.TempJob);
-
-        NativeArray<GridID> grids = new NativeArray<GridID>(count, Unity.Collections.Allocator.TempJob); // To store updated positions
-        grids = query.ToComponentDataArray<GridID>(Allocator.TempJob);
-
-
-
-        // Apply the updated positions to the entities
-        //Entities
-        //  .ForEach((int entityInQueryIndex, ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, ref Unit unit, ref CollisionBounds collisionBounds, ref AnimationComponent animationComponent) =>
-        //  {
-        //      // Apply the updated position from the collision job
-        //      position.value = updatedPositions[entityInQueryIndex]; // Just use index here as a placeholder for actual entity lookup
-        //      //translation.Value = position.value;
-        //  }).WithBurst().ScheduleParallel();
-
-        // Complete and dispose of NativeArrays
         Dependency.Complete(); // Ensure job is completed before disposal
-        positions.Dispose();
-        //radii.Dispose();
-        updatedPositions.Dispose();
-        velocities.Dispose();
-        anims.Dispose();
-        grids.Dispose();
+
+
     }
 
 }
