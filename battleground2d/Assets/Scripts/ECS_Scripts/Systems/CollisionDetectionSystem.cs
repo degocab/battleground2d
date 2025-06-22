@@ -167,7 +167,7 @@ public class CollisionDetectionSystem : SystemBase
             Translation positionA = positions[index];
             ECS_CircleCollider2DAuthoring radius = radii[index];
             GridID currentGrid = gridData[index];
-            int currentGridID = currentGrid.value;
+            int currentGridID = currentGrid.Value;
 
             float2 posA = positions[index].Value.xy;
             float radiusA = radius.Radius;
@@ -181,7 +181,7 @@ public class CollisionDetectionSystem : SystemBase
                 }
                 if (otherIndex == index) continue; // Skip comparing the unit against itself
                 GridID otherGrid = gridData[index]; // Get the grid_id for the current unit
-                var otherGridID = otherGrid.value; // Get the grid_id for the other unit
+                var otherGridID = otherGrid.Value; // Get the grid_id for the other unit
                                                               // Skip if the grid IDs don't match
                 if (currentGridID != otherGridID)
                 {
@@ -200,21 +200,9 @@ public class CollisionDetectionSystem : SystemBase
 
                     if (myComponentData.HasComponent(entity) && myComponentData.HasComponent(otherEntity)) // Check if entity has MyComponent
                     {
-                        // Do something with MyComponent
-                        //ecb.AddComponent<CollisionEvent2D>(index, entity, new CollisionEvent2D { OtherEntity = entities[otherIndex] });
-
-                        //ecb.AddBuffer(otherIndex, otherEntity, phyiscsToApplyOnOtheIndex);
-
                         currentGrid.otherEntity = otherEntity; 
                         otherGrid.otherEntity = entity; 
                     }
-                    // Collision detected
-                    //if (ecb.HasComponent<CollisionEvent2D>(entities[index]) &&
-                    //    entityManager.HasComponent<CollisionEvent2D>(entities[otherIndex]))
-                    //{
-                    //    entityManager.GetBuffer<CollisionEvent2D>(entities[index]).Add(new CollisionEvent2D { OtherEntity = entities[otherIndex] });
-                    //    entityManager.GetBuffer<CollisionEvent2D>(entities[otherIndex]).Add(new CollisionEvent2D { OtherEntity = entities[index] });
-                    //}
                 }
             }
 
@@ -243,7 +231,7 @@ public class CollisionDetectionSystem : SystemBase
             for (int j = i + 1; j < Entities.Length; j++)
             {
                 GridID gridIdB = GridIds[j];
-                if (gridId.value != gridIdB.value) { continue; }
+                if (gridId.Value != gridIdB.Value) { continue; }
                 float2 posB = Positions[j].Value.xy;
                 float radiusB = Colliders[j].Radius;
 

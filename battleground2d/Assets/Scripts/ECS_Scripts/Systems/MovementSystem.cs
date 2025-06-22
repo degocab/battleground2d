@@ -65,45 +65,52 @@ public class MovementSystem : SystemBase
         Entities
           .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
           {
-              float3 targetPosition = targetLocationComponent.targetPosition;
-              if (movementSpeedComponent.isBlocked == false)
-              {
-                  float3 direction = targetPosition - translation.Value;
-                  direction.z = 0;
-                  if (math.length(direction) < 0.1f)
-                  {
-                      movementSpeedComponent.direction = float3.zero;
-                      movementSpeedComponent.Value = float3.zero;
+              //float3 targetPosition = targetLocationComponent.targetPosition;
+              //if (movementSpeedComponent.isBlocked == false)
+              //{
+              //    float3 direction = targetPosition - translation.Value;
+              //    direction.z = 0;
+              //    if (math.length(direction) < 0.1f)
+              //    {
+              //        movementSpeedComponent.direction = float3.zero;
+              //        movementSpeedComponent.Value = float3.zero;
 
-                      // Increment frame counter for the unit
-                      movementSpeedComponent.frameCounter++;
+              //        // Increment frame counter for the unit
+              //        movementSpeedComponent.frameCounter++;
 
-                      // If we've waited for 2-3 frames, move the unit and update target position
-                      if (movementSpeedComponent.frameCounter >= 300) // Wait for 3 frames (or you can use 2)
-                      {
-                          // Move the unit by changing the target position
-                          float newX = translation.Value.x;
-                          newX -= 50f;
-                          targetPosition = new float3(newX, translation.Value.y, 0f);
-                          targetLocationComponent.targetPosition = targetPosition;
+              //        // If we've waited for 2-3 frames, move the unit and update target position
+              //        if (movementSpeedComponent.frameCounter >= 300) // Wait for 3 frames (or you can use 2)
+              //        {
+              //            // Move the unit by changing the target position
+              //            float newX = translation.Value.x;
+              //            newX -= 50f;
+              //            targetPosition = new float3(newX, translation.Value.y, 0f);
+              //            targetLocationComponent.targetPosition = targetPosition;
 
-                          // Reset the frame counter after moving
-                          movementSpeedComponent.frameCounter = 0;
+              //            // Reset the frame counter after moving
+              //            movementSpeedComponent.frameCounter = 0;
 
-                          // Recalculate direction after updating target position
-                          direction = targetPosition - translation.Value;
-                      }
-                  }
-                  else
-                  {
-                      direction = math.normalize(direction);
-                      movementSpeedComponent.direction = direction;
-                  }
+              //            // Recalculate direction after updating target position
+              //            direction = targetPosition - translation.Value;
+              //        }
+              //    }
+              //    else
+              //    {
+              //        direction = math.normalize(direction);
+              //        movementSpeedComponent.direction = direction;
+              //    }
 
-                  movementSpeedComponent.moveX = direction.x;
-                  movementSpeedComponent.moveY = direction.y;
-              }
-              //movementSpeedComponent.isRunnning = isRunnning;
+              //    movementSpeedComponent.moveX = direction.x;
+              //    movementSpeedComponent.moveY = direction.y;
+              //}
+
+              float3 direction = float3.zero;
+              movementSpeedComponent.direction = direction;
+              movementSpeedComponent.Value = float3.zero;
+              movementSpeedComponent.moveX = direction.x;
+              movementSpeedComponent.moveY = direction.y;
+
+              movementSpeedComponent.isRunnning = true;
           }).WithBurst().ScheduleParallel();
 
         // Randomize movement speed

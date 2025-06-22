@@ -197,6 +197,17 @@ public class EntitySpawner : MonoBehaviour
 
         //Entity unitEntityPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(unitPrefab, GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null));
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+        //var settingsEntity = entityManager.CreateEntity(typeof(GridSettings));
+        //entityManager.SetComponentData(settingsEntity, new GridSettings()
+        //{
+        //    GridSizeX = 1000,
+        //    GridSizeY = 1000,
+        //    CellSizeX = 1f,
+        //    CellSizeY = 1f
+        //});
+
+
         //define unit archetype
         unitArchetype = entityManager.CreateArchetype(
             typeof(PositionComponent),
@@ -214,10 +225,12 @@ public class EntitySpawner : MonoBehaviour
             typeof(Unit),
             typeof(GridID),
             typeof(CircleCollider2D),
-            typeof(ECS_CircleCollider2DAuthoring),   
+            typeof(ECS_CircleCollider2DAuthoring),
             typeof(ECS_PhysicsBody2DAuthoring),
             typeof(CollidableTag),
-            typeof(ECS_Velocity2D)     
+            typeof(ECS_Velocity2D)
+            //,typeof(Radius)
+            //,typeof(HasNeighbor)
             );
 
 
@@ -242,11 +255,50 @@ public class EntitySpawner : MonoBehaviour
             typeof(ECS_PhysicsBody2DAuthoring),
             typeof(CollidableTag),
             typeof(ECS_Velocity2D)
+            //,typeof(Radius)
+            //,typeof(HasNeighbor)
             );
 
         SpawnCommander();
 
         SpawnUnits(UnitCountToSpawn);
+
+        for (int i = 0; i < 20; i++)
+        {
+            SpawnTargets(); 
+        }
+
+    }
+
+    private void SpawnTargets()
+    {
+        EntityArchetype targetArchetype = entityManager.CreateArchetype(
+             typeof(PositionComponent)
+            , typeof(AnimationComponent)
+            , typeof(Translation)
+            , typeof(Target)
+            );
+
+
+        Entity entity = entityManager.CreateEntity(targetArchetype);
+        float3 pos = new float3(-20f, UnityEngine.Random.Range(-20, 20), 0f);
+        entityManager.SetComponentData(entity, new PositionComponent {  Value = pos});
+        entityManager.SetComponentData(entity, new Translation {  Value = pos});
+        entityManager.SetComponentData(entity,
+            new AnimationComponent
+            {
+                currentFrame = UnityEngine.Random.Range(0, 5),
+                frameCount = 2,
+                frameTimer = UnityEngine.Random.Range(0f, 1f),
+                frameTimerMax = .1f,
+                animationHeightOffset = 0,
+                animationWidthOffset = 1,
+                unitType = UnitType.Enemy,
+                direction = Direction.Right,
+                animationType = AnimationType.Idle,
+                prevAnimationType = AnimationType.Idle,
+                finishAnimation = false
+            });
     }
 
     int phalanxSize = 100; // 10x10 formation
@@ -397,7 +449,7 @@ public class EntitySpawner : MonoBehaviour
 
 
                 //TODO: not working figure it out
-                if (soldierCount * row  % 15 != 0 )
+                if (soldierCount * row % 15 != 0)
                 {
                     if (captainCount == 1)
                     {
@@ -463,6 +515,22 @@ public class EntitySpawner : MonoBehaviour
                 entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
 
                 SetUnitComponents(unit, unitPosition, unitType, rank);
+                entityManager.SetComponentData(unit,
+    new AnimationComponent
+    {
+        currentFrame = UnityEngine.Random.Range(0, 5),
+        frameCount = 2,
+        frameTimer = UnityEngine.Random.Range(0f, 1f),
+        frameTimerMax = .1f,
+        animationHeightOffset = 0,
+        animationWidthOffset = 1,
+        unitType = UnitType.Default,
+        direction = Direction.Right,
+        animationType = AnimationType.Idle,
+        prevAnimationType = AnimationType.Idle,
+        finishAnimation = false
+    }
+);
             }
         }
     }
@@ -492,7 +560,9 @@ public class EntitySpawner : MonoBehaviour
             PrevValue = new float2(0, 0)
         });
 
-
+        //entityManager.SetComponentData(unit, new Radius { Value = 0.125f });
+        //entityManager.SetComponentData(unit, new HasNeighbor { Value = false });
+        //entityManager.SetComponentData(unit, new GridID { Value = 0 });
 
 
     }
@@ -523,22 +593,22 @@ public class EntitySpawner : MonoBehaviour
         SetUnitComponents(commanderEntity, unitPosition, UnitType.Default, 6);
 
 
-        //entityManager.SetComponentData(commanderEntity,
-        //    new AnimationComponent
-        //    {
-        //        currentFrame = UnityEngine.Random.Range(0, 5),
-        //        frameCount = 2,
-        //        frameTimer = UnityEngine.Random.Range(0f, 1f),
-        //        frameTimerMax = .1f,
-        //        animationHeightOffset = 0,
-        //        animationWidthOffset = 1,
-        //        unitType = UnitType.Default,
-        //        direction = Direction.Right,
-        //        animationType = AnimationType.Idle,
-        //        prevAnimationType = AnimationType.Idle,
-        //        finishAnimation = false
-        //    }
-        //);
+        entityManager.SetComponentData(commanderEntity,
+            new AnimationComponent
+            {
+                currentFrame = UnityEngine.Random.Range(0, 5),
+                frameCount = 2,
+                frameTimer = UnityEngine.Random.Range(0f, 1f),
+                frameTimerMax = .1f,
+                animationHeightOffset = 0,
+                animationWidthOffset = 1,
+                unitType = UnitType.Default,
+                direction = Direction.Right,
+                animationType = AnimationType.Idle,
+                prevAnimationType = AnimationType.Idle,
+                finishAnimation = false
+            }
+        );
 
     }
     // Update is called once per frame
