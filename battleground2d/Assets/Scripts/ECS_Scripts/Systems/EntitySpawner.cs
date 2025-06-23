@@ -206,7 +206,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(HealthComponent),
             typeof(AttackComponent),
             typeof(AttackCooldownComponent),
-            typeof(TargetComponent),
+
             typeof(TargetPositionComponent),
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
@@ -234,7 +234,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(HealthComponent),
             typeof(AttackComponent),
             typeof(AttackCooldownComponent),
-            typeof(TargetComponent),
+
             typeof(AnimationComponent),
             typeof(IsDeadComponent),
             typeof(UnitMaterialComponent),
@@ -266,7 +266,7 @@ public class EntitySpawner : MonoBehaviour
              typeof(PositionComponent)
             , typeof(AnimationComponent)
             , typeof(Translation)
-            , typeof(Target)
+            , typeof(TargetComponent)
             );
 
 
