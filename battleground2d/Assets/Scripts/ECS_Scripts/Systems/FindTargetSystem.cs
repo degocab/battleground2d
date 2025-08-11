@@ -11,63 +11,13 @@ using TMPro.EditorUtilities;
 using static UnityEngine.EventSystems.EventTrigger;
 using Unity.Burst;
 
-//[UpdateBefore(typeof(UnitMoveToTargetSystem))]
-//public class FindTargetSystem : ComponentSystem
-//{
-
-//    protected override void OnUpdate()
-//    {
-//        Entities.WithNone<CommanderComponent>().WithNone<HasTarget>().WithAll<Unit>().ForEach((Entity entity, ref Translation unitTranslation) =>
-//        {
-//            float2 unitPosition = unitTranslation.Value.xy;
-//            Entity closestTargetEntity = Entity.Null;
-//            float2 closestTargetPosition = float2.zero;
-//            float closestDistance = float.MaxValue;
-
-//            Entities.WithAll<TargetComponent>().ForEach((Entity targetEntity, ref Translation targetTranslation) =>
-//            {
-//                // Cycling through all entities with "Target" tagg
-//                float2 targetPos = targetTranslation.Value.xy;
-//                if (closestTargetEntity == Entity.Null)
-//                {
-//                    // no target
-//                    closestTargetEntity = targetEntity;
-//                    closestTargetPosition = targetPos;
-//                }
-//                else
-//                {
-//                    if (math.distance(unitPosition, targetTranslation.Value.xy) < math.distance(unitPosition, closestTargetPosition))
-//                    {
-//                        closestTargetEntity = targetEntity;
-//                        closestTargetPosition = targetPos;
-//                    }
-//                }
-//            });
-
-//            //https://youtu.be/nuxTq0AQAyY?t=367
-//            // working on setting up this to match codemoney
-//            // use IJobChunk instead of Ijobforeach....
-//            // https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
-
-//            // closest target
-//            if (closestTargetEntity != Entity.Null)
-//            {
-
-//                // PostUpdateCommands is the "old" way of doing structural changes
-//                PostUpdateCommands.AddComponent(entity, new HasTarget
-//                {
-//                    targetEntity = closestTargetEntity
-//                });
-//            }
-//        });
-//    }
-//}
 
 
-//https://youtu.be/nuxTq0AQAyY?t=888
+//https://youtu.be/hP4Vu6JbzSo?t=198
 // working on setting up this to match codemoney
 // use IJobChunk instead of Ijobforeach....
-// finished converting, need to find out if this will work with 10,000 units
+// finished separating find targets and add component into two jobs.
+// need to implement quadrant system
 // https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
 
 [UpdateBefore(typeof(UnitMoveToTargetSystem))]
@@ -94,45 +44,13 @@ public class FindTargetSystem : JobComponentSystem
 
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        EntityQuery targeQuery = GetEntityQuery(typeof(TargetComponent), ComponentType.ReadOnly<Translation>());
-        NativeArray<Entity> targetEntityArray = targeQuery.ToEntityArray(Allocator.TempJob);
-        NativeArray<Translation> targetTranslationArray = targeQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
-        NativeArray<EntityWithPosition> targetArray = new NativeArray<EntityWithPosition>(targetEntityArray.Length, Allocator.TempJob);
-
-        for (int i = 0; i < targetEntityArray.Length; i++)
-        {
-            targetArray[i] = new EntityWithPosition
-            {
-                entity = targetEntityArray[i],
-                position = targetTranslationArray[i].Value.xy
-            };
-        }
-        targetEntityArray.Dispose();
-        targetTranslationArray.Dispose();
-        var job = new FindTargetJob()
-        {
-            targetArray = targetArray,
-            UnitTypeHandle = GetComponentTypeHandle<Unit>(true),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            entityTypeHandle = GetEntityTypeHandle(),
-            entityCommandBuffer = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter()
-        };
-
-
-        var jobHandle = job.ScheduleParallel(m_Query);
-        endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(jobHandle);
-        return jobHandle;
-    }
-
     [BurstCompile]
-    private struct FindTargetJob : IJobChunk
+    private struct FindTargetBurstJob : IJobChunk
     {
         [DeallocateOnJobCompletion]
         [ReadOnly]
         public NativeArray<EntityWithPosition> targetArray;
-        public EntityCommandBuffer.ParallelWriter entityCommandBuffer;
+        public NativeArray<Entity> closestTargetEntityArray;
 
         [ReadOnly] public ComponentTypeHandle<Unit> UnitTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
@@ -175,23 +93,80 @@ public class FindTargetSystem : JobComponentSystem
                     }
                 }
 
-
-
-
-                // closest target
-                if (closestTargetEntity != Entity.Null)
-                {
-
-                    // PostUpdateCommands is the "old" way of doing structural changes
-                    entityCommandBuffer.AddComponent(chunkIndex, entity, new HasTarget
-                    {
-                        targetEntity = closestTargetEntity
-                    });
-                }
+                closestTargetEntityArray[firstEntityIndex + i] = closestTargetEntity;
             }
 
         }
     }
+
+    private struct AddComponentJob : IJobChunk
+    {
+
+        public EntityCommandBuffer.ParallelWriter entityCommandBuffer;
+        [DeallocateOnJobCompletion]
+        [ReadOnly]
+        public NativeArray<Entity> closestTargetEntityArray;
+        [ReadOnly] public EntityTypeHandle entityTypeHandle;
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
+            for (var index = 0; index < chunk.Count; index++)
+            {
+                Entity entity = chunkEntities[index];
+                int flatIndex = firstEntityIndex + index;
+                if (closestTargetEntityArray[flatIndex] != Entity.Null) 
+                {
+                    entityCommandBuffer.AddComponent(index, entity, new HasTarget() { targetEntity = closestTargetEntityArray[flatIndex] });
+                }
+            }
+        }
+    }
+
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        EntityQuery targetQuery = GetEntityQuery(typeof(TargetComponent), ComponentType.ReadOnly<Translation>());
+        NativeArray<Entity> targetEntityArray = targetQuery.ToEntityArray(Allocator.TempJob);
+        NativeArray<Translation> targetTranslationArray = targetQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
+        NativeArray<EntityWithPosition> targetArray = new NativeArray<EntityWithPosition>(targetEntityArray.Length, Allocator.TempJob);
+
+        for (int i = 0; i < targetEntityArray.Length; i++)
+        {
+            targetArray[i] = new EntityWithPosition
+            {
+                entity = targetEntityArray[i],
+                position = targetTranslationArray[i].Value.xy
+            };
+        }
+        targetEntityArray.Dispose();
+        targetTranslationArray.Dispose();
+        EntityQuery unitQuery = GetEntityQuery(typeof(Unit), ComponentType.Exclude<HasTarget>(), ComponentType.Exclude<CommanderComponent>());
+        NativeArray<Entity> closestTargetEntityArray = new NativeArray<Entity>(unitQuery.CalculateEntityCount(), Allocator.TempJob);
+
+        var job = new FindTargetBurstJob()
+        {
+            targetArray = targetArray,
+            closestTargetEntityArray = closestTargetEntityArray,
+            UnitTypeHandle = GetComponentTypeHandle<Unit>(true),
+            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            entityTypeHandle = GetEntityTypeHandle(),
+        };
+
+        var jobHandle = job.ScheduleParallel(m_Query);
+        AddComponentJob addComponentJob = new AddComponentJob()
+        {
+            entityTypeHandle = GetEntityTypeHandle(),
+            closestTargetEntityArray = closestTargetEntityArray,
+            entityCommandBuffer = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter()
+        };
+        var addComponentJobHandler = addComponentJob.ScheduleParallel(unitQuery, jobHandle);
+        addComponentJobHandler.Complete();
+
+        endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(addComponentJobHandler);
+        return addComponentJobHandler;
+    }
+
+
 }
 
 

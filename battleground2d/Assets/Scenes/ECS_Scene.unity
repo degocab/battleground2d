@@ -633,9 +633,9 @@ MonoBehaviour:
       []
       quadrant system
 
-      [] find target with ecs and unity job system
+      [x] find target with ecs and unity job system
 
-      []
+      [x]
       find target int unity ecs'
     state: 2
     show: 1
