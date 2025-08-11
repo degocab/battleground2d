@@ -1112,7 +1112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameTimerMaxDebug: 0.1
   movementSpeedDebug: 0.228
-  UnitCountToSpawn: 20
+  UnitCountToSpawn: 256
   instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,
