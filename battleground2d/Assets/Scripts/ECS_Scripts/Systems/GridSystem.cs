@@ -74,7 +74,7 @@ public class GridSystem : SystemBase
         //}
 
         // Iterate through all entities with Translation and GridID components
-        Entities.ForEach((ref Translation translation, ref GridID grid) =>
+        Dependency = Entities.ForEach((ref Translation translation, ref GridID grid) =>
         {
             // Find the grid cell index based on the entity's position
             int gridX = Mathf.FloorToInt(translation.Value.x / divisionSize.x);
@@ -91,7 +91,9 @@ public class GridSystem : SystemBase
             grid.Value = gridId;
 
 
-        }).WithBurst().ScheduleParallel();
+        }).WithBurst().ScheduleParallel(Dependency);
+
+        
     }
 }
 

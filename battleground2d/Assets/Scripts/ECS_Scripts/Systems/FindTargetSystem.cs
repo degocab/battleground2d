@@ -21,6 +21,8 @@ using Unity.Burst;
 // https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
 
 [UpdateBefore(typeof(UnitMoveToTargetSystem))]
+[UpdateAfter(typeof(GridSystem))]
+[UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 public class FindTargetSystem : JobComponentSystem
 {
     private struct EntityWithPosition
@@ -152,7 +154,7 @@ public class FindTargetSystem : JobComponentSystem
             entityTypeHandle = GetEntityTypeHandle(),
         };
 
-        var jobHandle = job.ScheduleParallel(m_Query);
+        var jobHandle = job.ScheduleParallel(m_Query, inputDeps);
         AddComponentJob addComponentJob = new AddComponentJob()
         {
             entityTypeHandle = GetEntityTypeHandle(),
@@ -160,7 +162,6 @@ public class FindTargetSystem : JobComponentSystem
             entityCommandBuffer = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter()
         };
         var addComponentJobHandler = addComponentJob.ScheduleParallel(unitQuery, jobHandle);
-        addComponentJobHandler.Complete();
 
         endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(addComponentJobHandler);
         return addComponentJobHandler;
