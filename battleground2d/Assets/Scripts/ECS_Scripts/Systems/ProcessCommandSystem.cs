@@ -1,0 +1,114 @@
+﻿using System.Reflection;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
+using Unity.Transforms;
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(FindTargetSystem))]
+[UpdateAfter(typeof(GridSystem))]
+public class ProcessCommandSystem : JobComponentSystem
+{
+    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+    private EntityQuery _query;
+
+    protected override void OnCreate()
+    {
+        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+
+        //_query = GetEntityQuery(new EntityQueryDesc
+        //{
+        //    All = new ComponentType[] {
+        //          ComponentType.ReadOnly<Unit>(),
+        //                                ComponentType.ReadOnly<CommandData>(),
+        //    },
+
+        //    None = new ComponentType[] { typeof(CommanderComponent) }
+        //});
+        _query = GetEntityQuery(
+        ComponentType.ReadOnly<Unit>(),
+        ComponentType.ReadOnly<CommandData>(),
+        ComponentType.Exclude<CommanderComponent>());
+
+
+
+        base.OnCreate();
+    }
+
+    [BurstCompile]
+    private struct AssignFindTargetCommandJob : IJobChunk
+    {
+        //public float Time;
+
+        [ReadOnly] public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+
+        public EntityCommandBuffer.ParallelWriter ECB;
+
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var entities = chunk.GetNativeArray(EntityTypeHandle);
+
+            //bool shouldAssign = (Time % 5f < 0.1f); // simulate assignment every 5 seconds
+
+            //if (!shouldAssign)
+            //    return;         
+
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                Entity entity = entities[i];
+                var command = commandDataArray[i];
+
+                //todo: clean commandtags.....
+                if (command.Command != CommandType.FindTarget)
+                {
+                    command.Command = CommandType.FindTarget;
+                    command.TargetEntity = Entity.Null;
+                    command.TargetPosition = float3.zero;
+
+                    commandDataArray[i] = command;
+
+                    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                    //ECB.AddComponent(i, entity, new FindTargetCommandTag() {  });
+                }
+            }
+        }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new AssignFindTargetCommandJob
+        {
+            //Time = UnityEngine.Time.deltaTime,
+            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            EntityTypeHandle = GetEntityTypeHandle(),
+            ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
+        };
+
+        var handle = job.ScheduleParallel(_query, inputDeps);
+        _ecbSystem.AddJobHandleForProducer(handle);
+        return handle;
+    }
+}
+
+
+
+public enum CommandType : byte
+{
+    Idle,
+    FindTarget,
+    MoveTo,
+    Attack,
+    Defend
+}
+
+public struct FindTargetCommandTag : IComponentData { }
+public struct CommandData : IComponentData
+{
+    public CommandType Command;
+    public float3 TargetPosition; // Optional (used for MoveTo, etc.)
+    public Entity TargetEntity;   // Optional (used for Attack, etc.)
+}

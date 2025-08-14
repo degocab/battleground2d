@@ -20,9 +20,10 @@ using Unity.Burst;
 // need to implement quadrant system
 // https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
 
-[UpdateBefore(typeof(UnitMoveToTargetSystem))]
-[UpdateAfter(typeof(GridSystem))]
+
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
+[UpdateBefore(typeof(UnitMoveToTargetSystem))]
+[UpdateAfter(typeof(ProcessCommandSystem))]
 public class FindTargetSystem : JobComponentSystem
 {
     private struct EntityWithPosition
@@ -37,10 +38,13 @@ public class FindTargetSystem : JobComponentSystem
     protected override void OnCreate()
     {
         m_Query = GetEntityQuery(
-            ComponentType.ReadOnly<Unit>(),
-    ComponentType.ReadOnly<Translation>(),
-    ComponentType.Exclude<CommanderComponent>(), // <== exclude commanders
+        ComponentType.ReadOnly<Unit>(),
+        ComponentType.ReadOnly<Translation>(),
+        //ComponentType.Exclude<FindTargetCommandTag>(),
+        ComponentType.Exclude<CommanderComponent>(), // <== exclude commanders
         ComponentType.Exclude<HasTarget>());
+
+
         endSimlationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         base.OnCreate();
 
@@ -116,7 +120,7 @@ public class FindTargetSystem : JobComponentSystem
             {
                 Entity entity = chunkEntities[index];
                 int flatIndex = firstEntityIndex + index;
-                if (closestTargetEntityArray[flatIndex] != Entity.Null) 
+                if (closestTargetEntityArray[flatIndex] != Entity.Null)
                 {
                     entityCommandBuffer.AddComponent(index, entity, new HasTarget() { targetEntity = closestTargetEntityArray[flatIndex] });
                 }
@@ -161,7 +165,7 @@ public class FindTargetSystem : JobComponentSystem
             closestTargetEntityArray = closestTargetEntityArray,
             entityCommandBuffer = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter()
         };
-        var addComponentJobHandler = addComponentJob.ScheduleParallel(unitQuery, jobHandle);
+        var addComponentJobHandler = addComponentJob.ScheduleParallel(m_Query, jobHandle);
 
         endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(addComponentJobHandler);
         return addComponentJobHandler;

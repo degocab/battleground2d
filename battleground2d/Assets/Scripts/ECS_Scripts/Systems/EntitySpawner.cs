@@ -218,6 +218,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(ECS_CircleCollider2DAuthoring),
             typeof(ECS_PhysicsBody2DAuthoring),
             typeof(CollidableTag),
+            typeof(CommandData),
             typeof(ECS_Velocity2D)
             //,typeof(Radius)
             //,typeof(HasNeighbor)
@@ -503,6 +504,14 @@ public class EntitySpawner : MonoBehaviour
 
                 // Set additional unit components such as Health, Movement, etc.
                 entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
+                
+                //unit commands
+                entityManager.SetComponentData(unit, new CommandData
+                {
+                    Command = CommandType.Idle,
+                    TargetEntity = Entity.Null,
+                    TargetPosition = float3.zero
+                });
 
                 SetUnitComponents(unit, unitPosition, unitType, rank);
                 entityManager.SetComponentData(unit,
