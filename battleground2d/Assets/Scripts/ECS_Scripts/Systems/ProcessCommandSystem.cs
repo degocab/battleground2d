@@ -42,7 +42,7 @@ public class ProcessCommandSystem : JobComponentSystem
     {
         //public float Time;
 
-        [ReadOnly] public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;

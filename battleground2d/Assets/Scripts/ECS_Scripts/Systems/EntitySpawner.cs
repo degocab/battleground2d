@@ -254,7 +254,7 @@ public class EntitySpawner : MonoBehaviour
 
         SpawnUnits(UnitCountToSpawn);
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 100; i++)
         {
             SpawnTargets(); 
         }

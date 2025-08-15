@@ -136,6 +136,28 @@ public class FindTargetSystem : JobComponentSystem
         NativeArray<Translation> targetTranslationArray = targetQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
         NativeArray<EntityWithPosition> targetArray = new NativeArray<EntityWithPosition>(targetEntityArray.Length, Allocator.TempJob);
 
+        if (targetArray.Length == 0)
+        {
+            targetEntityArray.Dispose();
+            targetTranslationArray.Dispose();
+            targetArray.Dispose();
+
+            var commandDataTypeHandle = GetComponentTypeHandle<CommandData>(false);
+            var entityTypeHandle = GetEntityTypeHandle();
+            var ecb = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter();
+
+            var clearJob = new ClearCommandJob
+            {
+                CommandDataTypeHandle = commandDataTypeHandle,
+                EntityTypeHandle = entityTypeHandle,
+                ECB = ecb,
+            };
+
+            var handle = clearJob.ScheduleParallel(m_Query, inputDeps);
+            endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(handle);
+            return handle;
+        }
+
         for (int i = 0; i < targetEntityArray.Length; i++)
         {
             targetArray[i] = new EntityWithPosition
@@ -171,6 +193,40 @@ public class FindTargetSystem : JobComponentSystem
         return addComponentJobHandler;
     }
 
+    [BurstCompile]
+    private struct ClearCommandJob : IJobChunk
+    {
+        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ECB;
+
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var entityArray = chunk.GetNativeArray(EntityTypeHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                var entity = entityArray[i];
+                var command = commandDataArray[i];
+
+                if (command.Command == CommandType.FindTarget ||
+                    command.Command == CommandType.Attack ||
+                    command.Command == CommandType.MoveTo)
+                {
+                    command.Command = CommandType.Idle;
+                    command.TargetEntity = Entity.Null;
+                    command.TargetPosition = float3.zero;
+
+                    commandDataArray[i] = command;
+
+                    // Remove HasTarget if present
+                    ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
+                    ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
+                }
+            }
+        }
+    }
 
 }
 
