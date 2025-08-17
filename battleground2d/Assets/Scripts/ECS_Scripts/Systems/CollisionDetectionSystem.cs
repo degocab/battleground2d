@@ -4,249 +4,293 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Jobs;
-using System.Linq;
-using UnityEngine.Analytics;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
-[UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(MovementSystem))]
-public class CollisionDetectionSystem : SystemBase
+public partial class CollisionDetectionSystem : SystemBase
 {
     private EntityCommandBufferSystem ecbSystem;
+
+    // Persistent buffers for quadrant offsets and collision events
+    private NativeArray<int2> quadrantOffsets;
+    private NativeMultiHashMap<Entity, Entity> collisionEvents;
 
     protected override void OnCreate()
     {
         ecbSystem = World.GetOrCreateSystem<EntityCommandBufferSystem>();
+
+        // 9 offsets for current + neighbors (including diagonals)
+        quadrantOffsets = new NativeArray<int2>(9, Allocator.Persistent);
+        quadrantOffsets[0] = new int2(0, 0);
+        quadrantOffsets[1] = new int2(1, 0);
+        quadrantOffsets[2] = new int2(-1, 0);
+        quadrantOffsets[3] = new int2(0, 1);
+        quadrantOffsets[4] = new int2(0, -1);
+        quadrantOffsets[5] = new int2(1, 1);
+        quadrantOffsets[6] = new int2(1, -1);
+        quadrantOffsets[7] = new int2(-1, 1);
+        quadrantOffsets[8] = new int2(-1, -1);
+
+        // Initial capacity, will grow automatically if needed (tweak as needed)
+        collisionEvents = new NativeMultiHashMap<Entity, Entity>(1024, Allocator.Persistent);
     }
+
+    protected override void OnDestroy()
+    {
+        if (quadrantOffsets.IsCreated) quadrantOffsets.Dispose();
+        if (collisionEvents.IsCreated) collisionEvents.Dispose();
+    }
+
     protected override void OnUpdate()
     {
-        // Collect all positions and radii
-        EntityQuery query = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag) ,typeof(GridID));
-        NativeArray<Entity> entities = query.ToEntityArray(Allocator.TempJob);
-        NativeArray<GridID> gridIds = query.ToComponentDataArray<GridID>(Allocator.TempJob);
-        NativeArray<Translation> positions = query.ToComponentDataArray<Translation>(Allocator.TempJob);
-        NativeArray<ECS_CircleCollider2DAuthoring> colliders = query.ToComponentDataArray<ECS_CircleCollider2DAuthoring>(Allocator.TempJob);
+        var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
-        NativeMultiHashMap<Entity, Entity> collisionEvents = new NativeMultiHashMap<Entity, Entity>(entities.Length * 4, Allocator.TempJob);
+        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag));
 
+        int totalEntities = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag)).CalculateEntityCount();
 
-        // Clear previous collision buffers
-        Entities
-            .WithAll<CollisionEvent2D>()
-            .ForEach((DynamicBuffer<CollisionEvent2D> buffer) =>
-            {
-                buffer.Clear();
-            }).ScheduleParallel();
-
-        EntityManager entityManager = EntityManager;
-        CompleteDependency();
-
-        var job = new CollisionDetectionJob
+        int estimatedCapacity = math.max(1024, totalEntities * 16); // Adjust multiplier based on expected density
+        if (collisionEvents.Capacity < estimatedCapacity)
         {
-            Entities = entities,
-            Positions = positions,
-            Colliders = colliders,
-            GridIds = gridIds,
-            CollisionEvents = collisionEvents.AsParallelWriter()
-        };
-        Dependency = job.Schedule(entities.Length, 64, Dependency);
-
-        CompleteDependency();
-
-        var bufferFromEntity = GetBufferFromEntity<CollisionEvent2D>();
-
-        var keys = collisionEvents.GetKeyArray(Allocator.Temp);
-        foreach (var entity in keys)
+            collisionEvents.Dispose();
+            collisionEvents = new NativeMultiHashMap<Entity, Entity>(estimatedCapacity, Allocator.Persistent);
+        }
+        else
         {
-            if (bufferFromEntity.HasComponent(entity))
-            {
-                DynamicBuffer<CollisionEvent2D> buffer = bufferFromEntity[entity];
-
-                NativeMultiHashMapIterator<Entity> it;
-                Entity other;
-                if (collisionEvents.TryGetFirstValue(entity, out other, out it))
-                {
-                    do
-                    {
-                        buffer.Add(new CollisionEvent2D { OtherEntity = other });
-                    } while (collisionEvents.TryGetNextValue(out other, ref it));
-                }
-            }
+            collisionEvents.Clear();
         }
 
+        var quadrantOffsetsCopy = quadrantOffsets;
+        var collisionEventsParallelWriter = collisionEvents.AsParallelWriter();
 
+        // Get handles for job safety and performance
+        var translationType = GetComponentTypeHandle<Translation>(true);
+        var colliderType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true);
+        var entityType = GetEntityTypeHandle();
 
-        #region OriginalPhysicsSystem
-        //for (int i = 0; i < entities.Length; i++)
+        var collisionQuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap;
+
+        // Schedule collision detection job
+        var collisionJob = new CollisionDetectionJob
+        {
+            TranslationType = translationType,
+            ColliderType = colliderType,
+            EntityType = entityType,
+            QuadrantOffsets = quadrantOffsetsCopy,
+            collisionQuadrantMap = collisionQuadrantMap,
+            CollisionEvents = collisionEventsParallelWriter
+        };
+
+        Dependency = collisionJob.ScheduleParallel(entityQuery, 64, Dependency);
+        Dependency.Complete();
+        //// Schedule job to write collision events into buffers after detection job completes
+        //var bufferFromEntity = GetBufferFromEntity<CollisionEvent2D>();
+        //var writeJob = new WriteCollisionBuffersJob
         //{
-        //    float2 posA = positions[i].Value.xy;
-        //    float radiusA = colliders[i].Radius;
-        //    var currentId = gridIds[i];
-        //    for (int j = i + 1; j < entities.Length; j++)
-        //    {
-        //        var otherId = gridIds[j];
-        //        if (otherId.value != currentId.value)
-        //        {
-        //            continue;
-        //        }
-        //        float2 posB = positions[j].Value.xy;
-        //        float radiusB = colliders[j].Radius;
-
-        //        float distSq = math.distancesq(posA, posB);
-        //        float radiusSum = radiusA + radiusB;
-
-        //        if (distSq <= radiusSum * radiusSum)
-        //        {
-        //            // Collision detected
-        //            if (entityManager.HasComponent<CollisionEvent2D>(entities[i]) &&
-        //                entityManager.HasComponent<CollisionEvent2D>(entities[j]))
-        //            {
-        //                entityManager.GetBuffer<CollisionEvent2D>(entities[i]).Add(new CollisionEvent2D { OtherEntity = entities[j] });
-        //                entityManager.GetBuffer<CollisionEvent2D>(entities[j]).Add(new CollisionEvent2D { OtherEntity = entities[i] });
-        //            }
-        //        }
-        //    }
-        //} 
-        #endregion
-
-        #region CollisionDetectionTest
-        //var job = new CollisionDetectionTestJob
-        //{
-        //    positions = positions,
-        //    entities = entities,
-        //    radii = colliders,
-        //    gridData = gridIds,
-        //    ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter()
-
+        //    CollisionEvents = collisionEvents,
+        //    CollisionEventBuffers = bufferFromEntity
         //};
-        //// Schedule the job
-        //JobHandle jobHandle = job.Schedule(query.CalculateEntityCount(), 256, Dependency);
-        //jobHandle.Complete();
 
-        //for (int i = 0; i < entities.Length-1; i++)
-        //{
-        //    var otherEntity = gridIds[i].otherEntity;
-        //    entityManager.GetBuffer<CollisionEvent2D>(entities[i]).Add(new CollisionEvent2D { OtherEntity = otherEntity });
-        //}
-        //ecbSystem.AddJobHandleForProducer(jobHandle); 
-        #endregion
+        //Dependency = writeJob.Schedule(collisionEvents.Count(), 64, Dependency);
+        // Collect all unique entities from collisionEvents keys
+        var keys = collisionEvents.GetKeyArray(Allocator.TempJob);
 
-        collisionEvents.Dispose();
-        entities.Dispose();
-        positions.Dispose();
-        colliders.Dispose();
-        gridIds.Dispose();
+        // Schedule job to write collision buffers
+        var writeJob = new WriteCollisionBuffersJob
+        {
+            Keys = keys,
+            CollisionEvents = collisionEvents,
+            CollisionEventBuffers = GetBufferFromEntity<CollisionEvent2D>()
+        };
+        Dependency = writeJob.Schedule(keys.Length, 64, Dependency);
+        Dependency.Complete();
+        keys.Dispose();
+
+        ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
-
     [BurstCompile]
-    struct CollisionDetectionTestJob : IJobParallelFor
+    struct CollisionDetectionJob : IJobEntityBatch
     {
-        // Input data
-        [NativeDisableParallelForRestriction]
-        public NativeArray<Translation> positions;
-        [ReadOnly] public NativeArray<Entity> entities;
-        [ReadOnly] public NativeArray<ECS_CircleCollider2DAuthoring> radii;
-         public NativeArray<GridID> gridData;
-        //[NativeDisableParallelForRestriction]
-        //public NativeArray<Translation> translations;
-        public EntityCommandBuffer.ParallelWriter ecb;
-        [ReadOnly] public BufferFromEntity<CollisionEvent2D> myComponentData;
-        public float deltaTime;
+        [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
+        [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderType;
+        [ReadOnly] public EntityTypeHandle EntityType;
 
-        public void Execute(int index)
+        [ReadOnly] public NativeArray<int2> QuadrantOffsets;
+        [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
+        public NativeMultiHashMap<Entity, Entity>.ParallelWriter CollisionEvents;
+
+        public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
         {
-            // Process each entity for collisions with every other entity
+            var entities = batchInChunk.GetNativeArray(EntityType);
+            var positions = batchInChunk.GetNativeArray(TranslationType);
+            var colliders = batchInChunk.GetNativeArray(ColliderType);
 
-            if (index >= positions.Length || index >= entities.Length || index >= positions.Length)
+            for (int i = 0; i < batchInChunk.Count; i++)
             {
-                return;
-            }
-            Entity entity = entities[index];
-            Translation positionA = positions[index];
-            ECS_CircleCollider2DAuthoring radius = radii[index];
-            GridID currentGrid = gridData[index];
-            int currentGridID = currentGrid.Value;
+                Entity entityA = entities[i];
+                float2 posA = positions[i].Value.xy;
+                float radiusA = colliders[i].Radius;
 
-            float2 posA = positions[index].Value.xy;
-            float radiusA = radius.Radius;
+                int baseX = (int)math.floor(posA.x / CollisionQuadrantSystem.quadrantCellSize);
+                int baseY = (int)math.floor(posA.y / CollisionQuadrantSystem.quadrantCellSize);
 
-
-            for (int otherIndex = 0; otherIndex < entities.Length - 1; otherIndex++)
-            {
-                if (otherIndex >= entities.Length || otherIndex >= entities.Length || otherIndex >= entities.Length)
+                for (int offsetIndex = 0; offsetIndex < QuadrantOffsets.Length; offsetIndex++)
                 {
-                    return;
-                }
-                if (otherIndex == index) continue; // Skip comparing the unit against itself
-                GridID otherGrid = gridData[index]; // Get the grid_id for the current unit
-                var otherGridID = otherGrid.Value; // Get the grid_id for the other unit
-                                                              // Skip if the grid IDs don't match
-                if (currentGridID != otherGridID)
-                {
-                    continue; // Skip the collision check if grid IDs don't match
-                }
-                Entity otherEntity = entities[otherIndex];
+                    int2 offset = QuadrantOffsets[offsetIndex];
+                    int2 cell = new int2(baseX + offset.x, baseY + offset.y);
 
-                float2 posB = positions[otherIndex].Value.xy;
-                float radiusB = radii[otherIndex].Radius;
+                    int neighborKey = cell.x + cell.y * CollisionQuadrantSystem.quadrantYMultiplier;
 
-                float distSq = math.distancesq(posA, posB);
-                float radiusSum = radiusA + radiusB;
+                    CollisionQuadrantData otherData;
+                    NativeMultiHashMapIterator<int> it;
 
-                if (distSq <= radiusSum * radiusSum)
-                {
-
-                    if (myComponentData.HasComponent(entity) && myComponentData.HasComponent(otherEntity)) // Check if entity has MyComponent
+                    if (collisionQuadrantMap.TryGetFirstValue(neighborKey, out otherData, out it))
                     {
-                        currentGrid.otherEntity = otherEntity; 
-                        otherGrid.otherEntity = entity; 
+                        do
+                        {
+                            if (otherData.entity == entityA)
+                                continue;
+
+                            float2 posB = otherData.position;
+                            float radiusB = otherData.radius;
+
+                            float distSq = math.distancesq(posA, posB);
+                            float radiusSum = radiusA + radiusB;
+
+                            if (distSq <= radiusSum * radiusSum)
+                            {
+                                CollisionEvents.Add(entityA, otherData.entity);
+                                CollisionEvents.Add(otherData.entity, entityA);
+                            }
+                        } while (collisionQuadrantMap.TryGetNextValue(out otherData, ref it));
                     }
                 }
             }
-
         }
+    }
+    [BurstCompile]
+    struct WriteCollisionBuffersJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Entity> Keys;
+        [ReadOnly] public NativeMultiHashMap<Entity, Entity> CollisionEvents;
+        [NativeDisableParallelForRestriction] public BufferFromEntity<CollisionEvent2D> CollisionEventBuffers;
+
+        public void Execute(int index)
+        {
+            Entity entity = Keys[index];
+
+            if (!CollisionEventBuffers.HasComponent(entity))
+                return;
+
+            var buffer = CollisionEventBuffers[entity];
+            buffer.Clear();
+
+            NativeMultiHashMapIterator<Entity> it;
+            Entity other;
+            if (CollisionEvents.TryGetFirstValue(entity, out other, out it))
+            {
+                do
+                {
+                    buffer.Add(new CollisionEvent2D { OtherEntity = other });
+                } while (CollisionEvents.TryGetNextValue(out other, ref it));
+            }
+        }
+    }
+}
+
+
+public struct CollisionQuadrantData
+{
+    public Entity entity;
+    public float2 position;
+    public float radius;
+}
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(CollisionDetectionSystem))]
+public partial class CollisionQuadrantSystem : SystemBase
+{
+    public const int quadrantYMultiplier = 1000;
+    public const int quadrantCellSize = 10;
+
+    public static NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
+
+    private EntityQuery _collisionQuery;
+
+    protected override void OnCreate()
+    {
+        base.OnCreate();
+
+        _collisionQuery = GetEntityQuery(
+            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<ECS_CircleCollider2DAuthoring>(),
+            ComponentType.ReadOnly<CollidableTag>()
+        );
+
+        collisionQuadrantMap = new NativeMultiHashMap<int, CollisionQuadrantData>(0, Allocator.Persistent);
+    }
+
+    protected override void OnDestroy()
+    {
+        if (collisionQuadrantMap.IsCreated)
+            collisionQuadrantMap.Dispose();
+
+        base.OnDestroy();
+    }
+
+    public static int GetPositionHashMapKey(float2 position)
+    {
+        return (int)(math.floor(position.x / quadrantCellSize) +
+                     quadrantYMultiplier * math.floor(position.y / quadrantCellSize));
     }
 
     [BurstCompile]
-    struct CollisionDetectionJob : IJobParallelFor
+    private struct SetCollisionQuadrantMapJob : IJobChunk
     {
-        [ReadOnly] public NativeArray<Entity> Entities;
-        [ReadOnly] public NativeArray<Translation> Positions;
-        [ReadOnly] public NativeArray<ECS_CircleCollider2DAuthoring> Colliders;
+        [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
+        [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ecsCircleCollider2DAuthoringType;
+        [ReadOnly] public EntityTypeHandle EntityType;
+        public NativeMultiHashMap<int, CollisionQuadrantData>.ParallelWriter QuadrantMap;
 
-        public NativeMultiHashMap<Entity, Entity>.ParallelWriter CollisionEvents;
-
-        [ReadOnly] public NativeArray<GridID> GridIds;
-
-        public void Execute(int i)
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            float2 posA = Positions[i].Value.xy;
-            float radiusA = Colliders[i].Radius;
-            GridID gridId = GridIds[i];
+            var translations = chunk.GetNativeArray(TranslationType);
+            var entities = chunk.GetNativeArray(EntityType);
+            var ECS_CircleCollider2DAuthorings = chunk.GetNativeArray(ecsCircleCollider2DAuthoringType);
 
-
-
-            for (int j = i + 1; j < Entities.Length; j++)
+            for (int i = 0; i < chunk.Count; i++)
             {
-                GridID gridIdB = GridIds[j];
-                if (gridId.Value != gridIdB.Value) { continue; }
-                float2 posB = Positions[j].Value.xy;
-                float radiusB = Colliders[j].Radius;
-
-                float distSq = math.distancesq(posA, posB);
-                float radiusSum = radiusA + radiusB;
-
-                if (distSq <= radiusSum * radiusSum)
+                float2 pos = translations[i].Value.xy;
+                int key = GetPositionHashMapKey(pos);
+                QuadrantMap.Add(key, new CollisionQuadrantData
                 {
-                    CollisionEvents.Add(Entities[i], Entities[j]);
-                    CollisionEvents.Add(Entities[j], Entities[i]);
-                }
+                    entity = entities[i],
+                    position = pos,
+                    radius = ECS_CircleCollider2DAuthorings[i].Radius
+                });
             }
         }
     }
 
+    protected override void OnUpdate()
+    {
+        collisionQuadrantMap.Clear();
+        int count = _collisionQuery.CalculateEntityCount();
 
+        if (collisionQuadrantMap.Capacity < count)
+            collisionQuadrantMap.Capacity = count;
 
+        var job = new SetCollisionQuadrantMapJob
+        {
+            TranslationType = GetComponentTypeHandle<Translation>(true),
+            ecsCircleCollider2DAuthoringType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
+            EntityType = GetEntityTypeHandle(),
+            QuadrantMap = collisionQuadrantMap.AsParallelWriter()
+        };
+
+        Dependency = job.ScheduleParallel(_collisionQuery, Dependency);
+        Dependency.Complete(); // Optional depending on if you're accessing it immediately
+    }
 }

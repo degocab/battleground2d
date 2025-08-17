@@ -388,7 +388,7 @@ PrefabInstance:
     - target: {fileID: 381998812018035557, guid: 7f024a5a1c04be3478e22a00b4126b85,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -3.4043655
+      value: -0.07
       objectReference: {fileID: 0}
     - target: {fileID: 381998812018035557, guid: 7f024a5a1c04be3478e22a00b4126b85,
         type: 3}
@@ -1112,7 +1112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameTimerMaxDebug: 0.1
   movementSpeedDebug: 0.228
-  UnitCountToSpawn: 256
+  UnitCountToSpawn: 1000
   instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,

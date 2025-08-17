@@ -218,6 +218,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(ECS_CircleCollider2DAuthoring),
             typeof(ECS_PhysicsBody2DAuthoring),
             typeof(CollidableTag),
+            typeof(QuadrantEntity),
             typeof(CommandData),
             typeof(ECS_Velocity2D)
             //,typeof(Radius)
@@ -244,6 +245,7 @@ public class EntitySpawner : MonoBehaviour
             typeof(GridID),
             typeof(ECS_CircleCollider2DAuthoring),
             typeof(ECS_PhysicsBody2DAuthoring),
+            typeof(QuadrantEntity),
             typeof(CollidableTag),
             typeof(ECS_Velocity2D)
             //,typeof(Radius)
@@ -254,7 +256,7 @@ public class EntitySpawner : MonoBehaviour
 
         SpawnUnits(UnitCountToSpawn);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 1000; i++)
         {
             SpawnTargets(); 
         }
@@ -268,13 +270,15 @@ public class EntitySpawner : MonoBehaviour
             , typeof(AnimationComponent)
             , typeof(Translation)
             , typeof(TargetComponent)
+            , typeof(QuadrantEntity)
             );
 
 
         Entity entity = entityManager.CreateEntity(targetArchetype);
-        float3 pos = new float3(UnityEngine.Random.Range(-2f, -.75f), UnityEngine.Random.Range(-2f, 20), 0f);
+        float3 pos = new float3(UnityEngine.Random.Range(-11f, -2f), UnityEngine.Random.Range(-2f, 2), 0f);
         entityManager.SetComponentData(entity, new PositionComponent {  Value = pos});
         entityManager.SetComponentData(entity, new Translation {  Value = pos});
+        entityManager.SetComponentData(entity, new QuadrantEntity {  typeEnum = QuadrantEntity.TypeEnum.Target});
         entityManager.SetComponentData(entity,
             new AnimationComponent
             {
@@ -416,7 +420,7 @@ public class EntitySpawner : MonoBehaviour
                 float yCoord = yTracker + row * unitSpacing;
 
                 // Set the position of the unit
-                float3 unitPosition = new float3(xCoord, yCoord, 0);
+                float3 unitPosition = new float3(xCoord * -1, yCoord, 0);
 
                 // Create the entity for the unit and set its position
                 Entity unit = entityManager.CreateEntity(unitArchetype);
@@ -543,6 +547,7 @@ public class EntitySpawner : MonoBehaviour
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
         entityManager.SetComponentData(unit, new Unit { isMounted = false, rank = rank });
+        entityManager.SetComponentData(unit, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Unit });
         entityManager.SetComponentData(unit, new ECS_CircleCollider2DAuthoring
         {
             Radius = .125f

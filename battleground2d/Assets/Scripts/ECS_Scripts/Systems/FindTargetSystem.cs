@@ -128,6 +128,124 @@ public class FindTargetSystem : JobComponentSystem
         }
     }
 
+    [BurstCompile]
+    private struct ClearCommandJob : IJobChunk
+    {
+        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ECB;
+
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var entityArray = chunk.GetNativeArray(EntityTypeHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                var entity = entityArray[i];
+                var command = commandDataArray[i];
+
+                if (command.Command == CommandType.FindTarget ||
+                    command.Command == CommandType.Attack ||
+                    command.Command == CommandType.MoveTo)
+                {
+                    command.Command = CommandType.Idle;
+                    command.TargetEntity = Entity.Null;
+                    command.TargetPosition = float3.zero;
+
+                    commandDataArray[i] = command;
+
+                    // Remove HasTarget if present
+                    ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
+                    ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
+                }
+            }
+        }
+    }
+
+    [BurstCompile]
+    private struct FindTargetQuadrantSystemob : IJobChunk
+    {
+        [ReadOnly] public NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap;
+        public NativeArray<Entity> closestTargetEntityArray;
+
+        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
+        [ReadOnly] public EntityTypeHandle entityTypeHandle;
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var chunkTranslations = chunk.GetNativeArray(TranslationTypeHandle);
+            NativeArray<QuadrantEntity> chunkQuadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
+            var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
+            for (var i = 0; i < chunk.Count; i++)
+            {
+                //Entity entity = chunkEntities[i];
+                var unitTranslation = chunkTranslations[i];
+                //var chunkUNit = chunkUnits[i];
+                float2 unitPosition = unitTranslation.Value.xy;
+                Entity closestTargetEntity = Entity.Null;
+                QuadrantEntity quadrantEntity = chunkQuadrantEntities[i];
+                float2 closestTargetPosition = float2.zero;
+                float closestTargetDistance = float.MaxValue;
+                int hashMapKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
+
+                FindTarget(hashMapKey, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+
+                //corners
+                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+
+
+                closestTargetEntityArray[firstEntityIndex + i] = closestTargetEntity;
+            }
+
+        }
+    }
+
+    private static void FindTarget(int hashMapKey
+        , float2 unitPosition
+        , QuadrantEntity quadrantEntity
+        , ref Entity closestTargetEntity
+        , ref float closestTargetDistance
+        , ref  NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap)
+    {
+        QuadrantData quadrantData;
+        NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
+
+        if (quadrantMultiHashMap.TryGetFirstValue(hashMapKey, out quadrantData, out nativeMultiHashMapIterator))
+        {
+            do
+            {
+                if (quadrantEntity.typeEnum != quadrantData.quadrantEntity.typeEnum)
+                {
+                    if (closestTargetEntity == Entity.Null)
+                    {
+                        // no target
+                        closestTargetEntity = quadrantData.entity;
+                        closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
+                        //closestTargetPosition = quadrantData.position;
+                    }
+                    else
+                    {
+                        if (math.distancesq(unitPosition, quadrantData.position) < closestTargetDistance)
+                        {
+                            //target is closer
+                            closestTargetEntity = quadrantData.entity;
+                            closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
+                            //closestTargetPosition = quadrantData.position;
+                        }
+                    }
+                }
+
+            } while (quadrantMultiHashMap.TryGetNextValue(out quadrantData, ref nativeMultiHashMapIterator));
+        }
+    }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
@@ -171,6 +289,17 @@ public class FindTargetSystem : JobComponentSystem
         EntityQuery unitQuery = GetEntityQuery(typeof(Unit), ComponentType.Exclude<HasTarget>(), ComponentType.Exclude<CommanderComponent>());
         NativeArray<Entity> closestTargetEntityArray = new NativeArray<Entity>(unitQuery.CalculateEntityCount(), Allocator.TempJob);
 
+        FindTargetQuadrantSystemob findTargetQuadrantSystemob = new FindTargetQuadrantSystemob
+        {
+            quadrantMultiHashMap = QuadrantSystem.quadrantMultiHashMap,
+    closestTargetEntityArray = closestTargetEntityArray,
+            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
+            entityTypeHandle = GetEntityTypeHandle(),
+        };
+        var jobHandle = findTargetQuadrantSystemob.ScheduleParallel(m_Query, inputDeps);
+
+        /*
         var job = new FindTargetBurstJob()
         {
             targetArray = targetArray,
@@ -181,6 +310,8 @@ public class FindTargetSystem : JobComponentSystem
         };
 
         var jobHandle = job.ScheduleParallel(m_Query, inputDeps);
+        */
+
         AddComponentJob addComponentJob = new AddComponentJob()
         {
             entityTypeHandle = GetEntityTypeHandle(),
@@ -190,43 +321,11 @@ public class FindTargetSystem : JobComponentSystem
         var addComponentJobHandler = addComponentJob.ScheduleParallel(m_Query, jobHandle);
 
         endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(addComponentJobHandler);
+        targetArray.Dispose();
+
         return addComponentJobHandler;
     }
 
-    [BurstCompile]
-    private struct ClearCommandJob : IJobChunk
-    {
-        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
-        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
-        public EntityCommandBuffer.ParallelWriter ECB;
-
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-        {
-            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
-            var entityArray = chunk.GetNativeArray(EntityTypeHandle);
-
-            for (int i = 0; i < chunk.Count; i++)
-            {
-                var entity = entityArray[i];
-                var command = commandDataArray[i];
-
-                if (command.Command == CommandType.FindTarget ||
-                    command.Command == CommandType.Attack ||
-                    command.Command == CommandType.MoveTo)
-                {
-                    command.Command = CommandType.Idle;
-                    command.TargetEntity = Entity.Null;
-                    command.TargetPosition = float3.zero;
-
-                    commandDataArray[i] = command;
-
-                    // Remove HasTarget if present
-                    ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
-                    ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
-                }
-            }
-        }
-    }
 
 }
 

@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 [UpdateBefore(typeof(CollisionDetectionSystem))]
+[UpdateAfter(typeof(QuadrantSystem))]
 [BurstCompile]
 public class MovementSystem : SystemBase
 {

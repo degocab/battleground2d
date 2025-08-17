@@ -5,25 +5,70 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 //https://youtu.be/hP4Vu6JbzSo?t=739
 // following code monkey quadrant system
 // working to grab all units
 // next is convert it to jobs
+
+public struct QuadrantEntity : IComponentData
+{
+    public TypeEnum typeEnum;
+
+    public enum TypeEnum
+    {
+        Unit,
+        Target
+    }
+}
+
+public struct QuadrantData
+{
+    public Entity entity;
+    public float2 position;
+    public QuadrantEntity quadrantEntity;
+}
+
+[UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
+[UpdateBefore(typeof(MovementSystem))]
 public class QuadrantSystem : SystemBase
 {
-    private  const int quadrantYMultiplier = 1000;
-    private  const int quadrantCellSize = 5;
+    public const int quadrantYMultiplier = 1000;
+    public const int quadrantCellSize = 5;
+    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+    private EntityQuery _query;
+
+    public static NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap;
+
+    protected override void OnCreate()
+    {
+
+        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _query = GetEntityQuery(
+ComponentType.ReadOnly<Translation>(),
+ComponentType.ReadOnly<CommandData>(),
+ComponentType.Exclude<CommanderComponent>());
+        quadrantMultiHashMap = new NativeMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
+
+
+        base.OnCreate();
+    }
+    protected override void OnDestroy()
+    {
+        quadrantMultiHashMap.Dispose();
+        base.OnDestroy();
+    }
 
     //convert position to quadrant
-    private static int GetPositionHashMapKey(float2 position)
+    public static int GetPositionHashMapKey(float2 position)
     {
         return (int)(math.floor(position.x / quadrantCellSize) + (quadrantYMultiplier * math.floor(position.y / quadrantCellSize)));
     }
 
     private static void DebugDrawQuadrant(float2 position)
     {
-        Vector2 lowerLeft = new Vector2(math.floor(position.x / quadrantCellSize)  * quadrantCellSize, math.floor(position.y / quadrantCellSize) * quadrantCellSize);
+        Vector2 lowerLeft = new Vector2(math.floor(position.x / quadrantCellSize) * quadrantCellSize, math.floor(position.y / quadrantCellSize) * quadrantCellSize);
         Debug.DrawLine(lowerLeft, lowerLeft + new Vector2(+1, +0) * quadrantCellSize);
         Debug.DrawLine(lowerLeft, lowerLeft + new Vector2(+0, +1) * quadrantCellSize);
         Debug.DrawLine(lowerLeft + new Vector2(+1, +0) * quadrantCellSize, lowerLeft + new Vector2(+1, +1) * quadrantCellSize);
@@ -31,31 +76,78 @@ public class QuadrantSystem : SystemBase
         //Debug.Log(GetPositionHashMapKey(position) + " " + position);
     }
 
-    private static int GetEntityCountInHashMap(NativeMultiHashMap<int, Entity> quadrantMultiHashMap, int hashMapKey)
+    private static int GetEntityCountInHashMap(NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap, int hashMapKey)
     {
-        Entity entity;
+        QuadrantData entity;
         NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
         int count = 0;
         if (quadrantMultiHashMap.TryGetFirstValue(hashMapKey, out entity, out nativeMultiHashMapIterator))
         {
-            do {
+            do
+            {
                 count++;
             } while (quadrantMultiHashMap.TryGetNextValue(out entity, ref nativeMultiHashMapIterator));
         }
         return count;
     }
 
+    [BurstCompile]
+    private struct SetQuadrantDataHashMapJob : IJobChunk
+    {
+
+        [ReadOnly] public ComponentTypeHandle<Translation> translationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<QuadrantEntity> quadrantEntityTypeHandle;
+        [ReadOnly] public EntityTypeHandle entityTypeHandle;
+        public NativeMultiHashMap<int, QuadrantData>.ParallelWriter quadrantMultiHashMap;
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var translations = chunk.GetNativeArray(translationTypeHandle);
+            var entities = chunk.GetNativeArray(entityTypeHandle);
+            var quadrantEntities = chunk.GetNativeArray(quadrantEntityTypeHandle);
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                float2 translation2d = translations[i].Value.xy;
+                int hashMapKey = GetPositionHashMapKey(translation2d);
+                quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
+                {
+                    entity = entities[i],
+                    position = translation2d,
+                    quadrantEntity = quadrantEntities[i]
+                });
+            }
+        }
+    }
+
+
+
+
     protected override void OnUpdate()
     {
-        EntityQuery entityQuery = GetEntityQuery(typeof(Unit), typeof(Translation));
-        NativeMultiHashMap<int, Entity> quadrantMultiHasMap = new NativeMultiHashMap<int, Entity>(entityQuery.CalculateEntityCount(), Allocator.TempJob);
-
-        Entities.WithAll<Unit>().WithNone<CommanderComponent>().ForEach((Entity entity, ref Translation translation) =>
+        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity));
+        quadrantMultiHashMap.Clear();
+        var entityCount = entityQuery.CalculateEntityCount();
+        if (entityCount > quadrantMultiHashMap.Capacity)
         {
-            int hashMapKey = GetPositionHashMapKey(translation.Value.xy);
-            quadrantMultiHasMap.Add(hashMapKey, entity);
+            quadrantMultiHashMap.Capacity = entityCount;
+        }
+        var job = new SetQuadrantDataHashMapJob
+        {
+            translationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            quadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
+            entityTypeHandle = GetEntityTypeHandle(),
+            quadrantMultiHashMap = quadrantMultiHashMap.AsParallelWriter()
+        };
+        Dependency = job.ScheduleParallel(entityQuery, Dependency);
+        Dependency.Complete();
 
-        }).Run();
+
+
+        //Entities.WithAll<Unit>().WithNone<CommanderComponent>().ForEach((Entity entity, ref Translation translation) =>
+        //{
+        //    int hashMapKey = GetPositionHashMapKey(translation.Value.xy);
+        //    quadrantMultiHashMap.Add(hashMapKey, entity);
+
+        //}).Run();
 
         // Get mouse position in screen space
         float3 mousePosition = Input.mousePosition;
@@ -66,9 +158,11 @@ public class QuadrantSystem : SystemBase
         // If you're using 2D, drop the Z axis
         float2 worldMouse2D = worldPosition.xy;
         DebugDrawQuadrant(worldMouse2D);
-        Debug.Log(GetEntityCountInHashMap(quadrantMultiHasMap, GetPositionHashMapKey(worldMouse2D)));
+        //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
+        //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
 
-        quadrantMultiHasMap.Dispose();
-
+        //var key = GetPositionHashMapKey(worldMouse2D);
+        //int count = GetEntityCountInHashMap(quadrantMultiHashMap, key);
+        //Debug.Log($"Entities in cell {key}: {count}");
     }
 }
