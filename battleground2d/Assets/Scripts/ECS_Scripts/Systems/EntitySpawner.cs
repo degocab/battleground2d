@@ -256,7 +256,7 @@ public class EntitySpawner : MonoBehaviour
 
         SpawnUnits(UnitCountToSpawn);
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 100; i++)
         {
             SpawnTargets(); 
         }
@@ -507,15 +507,15 @@ public class EntitySpawner : MonoBehaviour
 
 
                 // Set additional unit components such as Health, Movement, etc.
-                entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
+                //entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
                 
-                //unit commands
-                entityManager.SetComponentData(unit, new CommandData
-                {
-                    Command = CommandType.Idle,
-                    TargetEntity = Entity.Null,
-                    TargetPosition = float3.zero
-                });
+                ////unit commands
+                //entityManager.SetComponentData(unit, new CommandData
+                //{
+                //    Command = CommandType.Idle,
+                //    TargetEntity = Entity.Null,
+                //    TargetPosition = float3.zero
+                //});
 
                 SetUnitComponents(unit, unitPosition, unitType, rank);
                 entityManager.SetComponentData(unit,

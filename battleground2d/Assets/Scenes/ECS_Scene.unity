@@ -625,19 +625,19 @@ MonoBehaviour:
     deleteQuestion: 0
   - s: 'Investigate a grid system
 
-      [] create grid system for proximity based
+      [x] create grid system for proximity based
       collisions checks
 
       - we dont want to loop through the entire unit count
 
-      []
+      [x]
       quadrant system
 
       [x] find target with ecs and unity job system
 
       [x]
       find target int unity ecs'
-    state: 2
+    state: 3
     show: 1
     deleteQuestion: 0
   - s: 'OPTIMIZATIONS
@@ -1112,7 +1112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameTimerMaxDebug: 0.1
   movementSpeedDebug: 0.228
-  UnitCountToSpawn: 1000
+  UnitCountToSpawn: 10000
   instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,

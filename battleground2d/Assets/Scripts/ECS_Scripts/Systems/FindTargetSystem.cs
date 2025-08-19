@@ -14,7 +14,7 @@ using Unity.Burst;
 
 
 //https://youtu.be/hP4Vu6JbzSo?t=198
-// working on setting up this to match codemoney
+//working on setting up this to match codemoney
 // use IJobChunk instead of Ijobforeach....
 // finished separating find targets and add component into two jobs.
 // need to implement quadrant system
@@ -40,7 +40,7 @@ public class FindTargetSystem : JobComponentSystem
         m_Query = GetEntityQuery(
         ComponentType.ReadOnly<Unit>(),
         ComponentType.ReadOnly<Translation>(),
-        //ComponentType.Exclude<FindTargetCommandTag>(),
+        ComponentType.ReadWrite<FindTargetCommandTag>(),
         ComponentType.Exclude<CommanderComponent>(), // <== exclude commanders
         ComponentType.Exclude<HasTarget>());
 
@@ -213,7 +213,7 @@ public class FindTargetSystem : JobComponentSystem
         , QuadrantEntity quadrantEntity
         , ref Entity closestTargetEntity
         , ref float closestTargetDistance
-        , ref  NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap)
+        , ref NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap)
     {
         QuadrantData quadrantData;
         NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
@@ -292,7 +292,7 @@ public class FindTargetSystem : JobComponentSystem
         FindTargetQuadrantSystemob findTargetQuadrantSystemob = new FindTargetQuadrantSystemob
         {
             quadrantMultiHashMap = QuadrantSystem.quadrantMultiHashMap,
-    closestTargetEntityArray = closestTargetEntityArray,
+            closestTargetEntityArray = closestTargetEntityArray,
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             entityTypeHandle = GetEntityTypeHandle(),

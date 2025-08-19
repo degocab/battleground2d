@@ -41,98 +41,96 @@ public class RenderSystem : SystemBase
         }
     }
 
-
     [BurstCompile]
-    private struct CullAndSortNativeQueueJob : IJobForEachWithEntity<Translation, AnimationComponent>
+    private struct CullJob : IJobForEachWithEntity<Translation, AnimationComponent>
     {
-
         public float xMin;
         public float xMax;
-        public float yBottom; // Bottom cull position
+        public float yBottom;
+        public float yTop_1, yTop_2, yTop_3, yTop_4, yTop_5, yTop_6, yTop_7, yTop_8, yTop_9, yTop_10;
+        public float yTop_11, yTop_12, yTop_13, yTop_14, yTop_15, yTop_16, yTop_17, yTop_18, yTop_19, yTop_20;
 
-        public float yTop_1; // Top most cull position
-        public float yTop_2;
-        public float yTop_3;
-        public float yTop_4;
-        public float yTop_5;
-        public float yTop_6;
-        public float yTop_7;
-        public float yTop_8;
-        public float yTop_9;
-        public float yTop_10;
-        public float yTop_11;
-        public float yTop_12;
-        public float yTop_13;
-        public float yTop_14;
-        public float yTop_15;
-        public float yTop_16;
-        public float yTop_17;
-        public float yTop_18;
-        public float yTop_19;
-        public float yTop_20;
+        // Use NativeList ParallelWriter for thread-safe adds
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_1;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_2;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_3;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_4;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_5;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_6;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_7;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_8;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_9;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_10;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_11;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_12;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_13;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_14;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_15;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_16;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_17;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_18;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_19;
+        [NativeDisableParallelForRestriction]
+        public NativeList<RenderData>.ParallelWriter nativeList_20;
 
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_1;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_2;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_3;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_4;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_5;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_6;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_7;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_8;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_9;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_10;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_11;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_12;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_13;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_14;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_15;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_16;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_17;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_18;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_19;
-        public NativeQueue<RenderData>.ParallelWriter nativeQueue_20;
-
-        public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref AnimationComponent spriteSheetAnimationData)
+        public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref AnimationComponent animation)
         {
-            float positionX = translation.Value.x;
-            float positionY = translation.Value.y;
-            if (positionX > xMin && positionX < xMax && positionY < yTop_1 && positionY > yBottom)
+            float x = translation.Value.x;
+            float y = translation.Value.y;
+
+            if (x > xMin && x < xMax && y < yTop_1 && y > yBottom)
             {
-                //Valid position
-                RenderData entityPosition = new RenderData
+                var renderData = new RenderData
                 {
                     entity = entity,
                     position = translation.Value,
-                    uv = spriteSheetAnimationData.uv,
-                    matrix = spriteSheetAnimationData.matrix
+                    matrix = animation.matrix,
+                    uv = animation.uv
                 };
 
-                //nativeQueue_1.Enqueue(entityPosition); return;
-
-                if (positionY < yTop_20) { nativeQueue_20.Enqueue(entityPosition); }
-                else if (positionY < yTop_19) { nativeQueue_19.Enqueue(entityPosition); }
-                else if (positionY < yTop_18) { nativeQueue_18.Enqueue(entityPosition); }
-                else if (positionY < yTop_17) { nativeQueue_17.Enqueue(entityPosition); }
-                else if (positionY < yTop_16) { nativeQueue_16.Enqueue(entityPosition); }
-                else if (positionY < yTop_15) { nativeQueue_15.Enqueue(entityPosition); }
-                else if (positionY < yTop_14) { nativeQueue_14.Enqueue(entityPosition); }
-                else if (positionY < yTop_13) { nativeQueue_13.Enqueue(entityPosition); }
-                else if (positionY < yTop_12) { nativeQueue_12.Enqueue(entityPosition); }
-                else if (positionY < yTop_11) { nativeQueue_11.Enqueue(entityPosition); }
-                else if (positionY < yTop_10) { nativeQueue_10.Enqueue(entityPosition); }
-                else if (positionY < yTop_9) { nativeQueue_9.Enqueue(entityPosition); }
-                else if (positionY < yTop_8) { nativeQueue_8.Enqueue(entityPosition); }
-                else if (positionY < yTop_7) { nativeQueue_7.Enqueue(entityPosition); }
-                else if (positionY < yTop_6) { nativeQueue_6.Enqueue(entityPosition); }
-                else if (positionY < yTop_5) { nativeQueue_5.Enqueue(entityPosition); }
-                else if (positionY < yTop_4) { nativeQueue_4.Enqueue(entityPosition); }
-                else if (positionY < yTop_3) { nativeQueue_3.Enqueue(entityPosition); }
-                else if (positionY < yTop_2) { nativeQueue_2.Enqueue(entityPosition); }
-                else { nativeQueue_1.Enqueue(entityPosition); }
+                if (y < yTop_20) nativeList_20.AddNoResize(renderData);
+                else if (y < yTop_19) nativeList_19.AddNoResize(renderData);
+                else if (y < yTop_18) nativeList_18.AddNoResize(renderData);
+                else if (y < yTop_17) nativeList_17.AddNoResize(renderData);
+                else if (y < yTop_16) nativeList_16.AddNoResize(renderData);
+                else if (y < yTop_15) nativeList_15.AddNoResize(renderData);
+                else if (y < yTop_14) nativeList_14.AddNoResize(renderData);
+                else if (y < yTop_13) nativeList_13.AddNoResize(renderData);
+                else if (y < yTop_12) nativeList_12.AddNoResize(renderData);
+                else if (y < yTop_11) nativeList_11.AddNoResize(renderData);
+                else if (y < yTop_10) nativeList_10.AddNoResize(renderData);
+                else if (y < yTop_9) nativeList_9.AddNoResize(renderData);
+                else if (y < yTop_8) nativeList_8.AddNoResize(renderData);
+                else if (y < yTop_7) nativeList_7.AddNoResize(renderData);
+                else if (y < yTop_6) nativeList_6.AddNoResize(renderData);
+                else if (y < yTop_5) nativeList_5.AddNoResize(renderData);
+                else if (y < yTop_4) nativeList_4.AddNoResize(renderData);
+                else if (y < yTop_3) nativeList_3.AddNoResize(renderData);
+                else if (y < yTop_2) nativeList_2.AddNoResize(renderData);
+                else nativeList_1.AddNoResize(renderData);
             }
         }
-
     }
+
 
     [BurstCompile]
     private struct NativeQueueToArrayJob : IJob
@@ -156,21 +154,20 @@ public class RenderSystem : SystemBase
     [BurstCompile]
     private struct SortByPositionJob : IJob
     {
-
         public PositionComparer comparer;
-        public NativeArray<RenderData> sortArray;
+        public NativeList<RenderData> sortList;
 
         public void Execute()
         {
-            sortArray.Sort(comparer);
+            sortList.Sort(comparer);
         }
     }
+
 
     [BurstCompile]
     private struct FillArraysParallelJob : IJobParallelFor
     {
-
-        [ReadOnly] public NativeArray<RenderData> nativeArray;
+        [ReadOnly] public NativeList<RenderData> nativeList;
         [NativeDisableContainerSafetyRestriction]
         public NativeArray<Matrix4x4> matrixArray;
         [NativeDisableContainerSafetyRestriction]
@@ -179,21 +176,24 @@ public class RenderSystem : SystemBase
 
         public void Execute(int index)
         {
-            RenderData entityPositionWithIndex = nativeArray[index];
-            matrixArray[startingIndex + index] = entityPositionWithIndex.matrix;
-            uvArray[startingIndex + index] = entityPositionWithIndex.uv;
+            RenderData renderData = nativeList[index];
+            matrixArray[startingIndex + index] = renderData.matrix;
+            uvArray[startingIndex + index] = renderData.uv;
         }
     }
 
+
     [BurstCompile]
-    private struct ClearQueueJob : IJob
+    private struct ClearListJob : IJob
     {
-        public NativeQueue<RenderData> nativeQueue;
+        public NativeList<RenderData> nativeList;
+
         public void Execute()
         {
-            nativeQueue.Clear();
+            nativeList.Clear();
         }
     }
+
 
     private const int DRAW_MESH_INSTANCED_SLICE_COUNT = 1023;
     private Matrix4x4[] matrixInstancedArray;
@@ -225,7 +225,8 @@ public class RenderSystem : SystemBase
 
     private const int POSITION_SLICES = 20;
 
-    private NativeQueue<RenderData>[] nativeQueueArray;
+    //private NativeQueue<RenderData>[] nativeQueueArray;
+    NativeList<RenderData>[] nativeListArray;
     private NativeArray<JobHandle> jobHandleArray;
     private NativeArray<RenderData>[] nativeArrayArray;
     private PositionComparer positionComparer;
@@ -234,12 +235,11 @@ public class RenderSystem : SystemBase
     {
         base.OnCreate();
 
-        nativeQueueArray = new NativeQueue<RenderData>[POSITION_SLICES];
+        nativeListArray = new NativeList<RenderData>[POSITION_SLICES];
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            NativeQueue<RenderData> nativeQueue = new NativeQueue<RenderData>(Allocator.Persistent);
-            nativeQueueArray[i] = nativeQueue;
+            nativeListArray[i] = new NativeList<RenderData>(Allocator.Persistent);
         }
 
         jobHandleArray = new NativeArray<JobHandle>(POSITION_SLICES, Allocator.Persistent);
@@ -254,7 +254,8 @@ public class RenderSystem : SystemBase
         base.OnDestroy();
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            nativeQueueArray[i].Dispose();
+            //nativeQueueArray[i].Dispose();
+            nativeListArray[i].Dispose();
         }
 
         jobHandleArray.Dispose();
@@ -262,18 +263,6 @@ public class RenderSystem : SystemBase
 
     protected override void OnUpdate()
     {
-
-        for (int i = 0; i < POSITION_SLICES; i++)
-        {
-            ClearQueueJob clearQueueJob = new ClearQueueJob
-            {
-                nativeQueue = nativeQueueArray[i]
-            };
-            jobHandleArray[i] = clearQueueJob.Schedule(Dependency);
-        }
-
-        JobHandle.CompleteAll(jobHandleArray);
-
         Camera camera = Camera.main;
         float cameraWidth = camera.aspect * camera.orthographicSize;
         float3 cameraPosition = camera.transform.position;
@@ -281,9 +270,8 @@ public class RenderSystem : SystemBase
         float xMin = cameraPosition.x - cameraWidth - marginX;
         float xMax = cameraPosition.x + cameraWidth + marginX;
         float cameraSliceSize = camera.orthographicSize * 2f / POSITION_SLICES;
-        float yBottom = cameraPosition.y - camera.orthographicSize; // Bottom cull position
-        float yTop_1 = cameraPosition.y + camera.orthographicSize; // Top most cull position
-
+        float yBottom = cameraPosition.y - camera.orthographicSize;
+        float yTop_1 = cameraPosition.y + camera.orthographicSize;
         float yTop_2 = yTop_1 - cameraSliceSize * 1f;
         float yTop_3 = yTop_1 - cameraSliceSize * 2f;
         float yTop_4 = yTop_1 - cameraSliceSize * 3f;
@@ -303,17 +291,24 @@ public class RenderSystem : SystemBase
         float yTop_18 = yTop_1 - cameraSliceSize * 17f;
         float yTop_19 = yTop_1 - cameraSliceSize * 18f;
         float yTop_20 = yTop_1 - cameraSliceSize * 19f;
-
         float marginY = camera.orthographicSize / 10f;
         yTop_1 += marginY;
         yBottom -= marginY;
 
-        CullAndSortNativeQueueJob cullAndSortNativeQueueJob = new CullAndSortNativeQueueJob
+        int estimatedEntitiesTotal = GetEntityQuery(typeof(Translation)).CalculateEntityCount();
+        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES + 50;
+
+        for (int i = 0; i < POSITION_SLICES; i++)
+        {
+            if (nativeListArray[i].Capacity < estimatedPerSlice) nativeListArray[i].Capacity = estimatedPerSlice;
+            nativeListArray[i].Clear();
+        }
+
+        CullJob cullAndSortNativeListJob = new CullJob
         {
             xMin = xMin,
             xMax = xMax,
             yBottom = yBottom,
-
             yTop_1 = yTop_1,
             yTop_2 = yTop_2,
             yTop_3 = yTop_3,
@@ -334,122 +329,81 @@ public class RenderSystem : SystemBase
             yTop_18 = yTop_18,
             yTop_19 = yTop_19,
             yTop_20 = yTop_20,
-
-            nativeQueue_1 = nativeQueueArray[0].AsParallelWriter(),
-            nativeQueue_2 = nativeQueueArray[1].AsParallelWriter(),
-            nativeQueue_3 = nativeQueueArray[2].AsParallelWriter(),
-            nativeQueue_4 = nativeQueueArray[3].AsParallelWriter(),
-            nativeQueue_5 = nativeQueueArray[4].AsParallelWriter(),
-            nativeQueue_6 = nativeQueueArray[5].AsParallelWriter(),
-            nativeQueue_7 = nativeQueueArray[6].AsParallelWriter(),
-            nativeQueue_8 = nativeQueueArray[7].AsParallelWriter(),
-            nativeQueue_9 = nativeQueueArray[8].AsParallelWriter(),
-            nativeQueue_10 = nativeQueueArray[9].AsParallelWriter(),
-            nativeQueue_11 = nativeQueueArray[10].AsParallelWriter(),
-            nativeQueue_12 = nativeQueueArray[11].AsParallelWriter(),
-            nativeQueue_13 = nativeQueueArray[12].AsParallelWriter(),
-            nativeQueue_14 = nativeQueueArray[13].AsParallelWriter(),
-            nativeQueue_15 = nativeQueueArray[14].AsParallelWriter(),
-            nativeQueue_16 = nativeQueueArray[15].AsParallelWriter(),
-            nativeQueue_17 = nativeQueueArray[16].AsParallelWriter(),
-            nativeQueue_18 = nativeQueueArray[17].AsParallelWriter(),
-            nativeQueue_19 = nativeQueueArray[18].AsParallelWriter(),
-            nativeQueue_20 = nativeQueueArray[19].AsParallelWriter(),
+            nativeList_1 = nativeListArray[0].AsParallelWriter(),
+            nativeList_2 = nativeListArray[1].AsParallelWriter(),
+            nativeList_3 = nativeListArray[2].AsParallelWriter(),
+            nativeList_4 = nativeListArray[3].AsParallelWriter(),
+            nativeList_5 = nativeListArray[4].AsParallelWriter(),
+            nativeList_6 = nativeListArray[5].AsParallelWriter(),
+            nativeList_7 = nativeListArray[6].AsParallelWriter(),
+            nativeList_8 = nativeListArray[7].AsParallelWriter(),
+            nativeList_9 = nativeListArray[8].AsParallelWriter(),
+            nativeList_10 = nativeListArray[9].AsParallelWriter(),
+            nativeList_11 = nativeListArray[10].AsParallelWriter(),
+            nativeList_12 = nativeListArray[11].AsParallelWriter(),
+            nativeList_13 = nativeListArray[12].AsParallelWriter(),
+            nativeList_14 = nativeListArray[13].AsParallelWriter(),
+            nativeList_15 = nativeListArray[14].AsParallelWriter(),
+            nativeList_16 = nativeListArray[15].AsParallelWriter(),
+            nativeList_17 = nativeListArray[16].AsParallelWriter(),
+            nativeList_18 = nativeListArray[17].AsParallelWriter(),
+            nativeList_19 = nativeListArray[18].AsParallelWriter(),
+            nativeList_20 = nativeListArray[19].AsParallelWriter()
         };
-        JobHandle cullAndSortNativeQueueJobHandle = cullAndSortNativeQueueJob.Schedule(this);
-        cullAndSortNativeQueueJobHandle.Complete();
+
+        JobHandle cullJobHandle = cullAndSortNativeListJob.Schedule(this, Dependency);
+        cullJobHandle.Complete();
 
         int visibleEntityTotal = 0;
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            visibleEntityTotal += nativeQueueArray[i].Count;
+            visibleEntityTotal += nativeListArray[i].Length;
         }
-
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            NativeArray<RenderData> nativeArray = new NativeArray<RenderData>(nativeQueueArray[i].Count, Allocator.TempJob);
-            nativeArrayArray[i] = nativeArray;
-        }
-
-
-        for (int i = 0; i < POSITION_SLICES; i++)
-        {
-            NativeQueueToArrayJob nativeQueueToArrayJob = new NativeQueueToArrayJob
+            SortByPositionJob sortJob = new SortByPositionJob
             {
-                nativeQueue = nativeQueueArray[i],
-                nativeArray = nativeArrayArray[i],
-            };
-            jobHandleArray[i] = nativeQueueToArrayJob.Schedule();
-        }
-
-        JobHandle.CompleteAll(jobHandleArray);
-
-        ///Sort by position
-        for (int i = 0; i < POSITION_SLICES; i++)
-        {
-            SortByPositionJob sortByPositionJob = new SortByPositionJob
-            {
-                sortArray = nativeArrayArray[i],
+                sortList = nativeListArray[i],
                 comparer = positionComparer
             };
-            jobHandleArray[i] = sortByPositionJob.Schedule();
+            jobHandleArray[i] = sortJob.Schedule();
         }
 
         JobHandle.CompleteAll(jobHandleArray);
 
-
-        ///Fill up individual Arrays
         NativeArray<Matrix4x4> matrixArray = new NativeArray<Matrix4x4>(visibleEntityTotal, Allocator.TempJob);
         NativeArray<Vector4> uvArray = new NativeArray<Vector4>(visibleEntityTotal, Allocator.TempJob);
 
-        int startingIndex = 0;
-        JobHandle lastJobHandle = default(JobHandle); // To store the last job handle
+        int startIndex = 0;
+        JobHandle lastJobHandle = default;
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            // Create a FillArraysParallelJob instance for each slice
-            FillArraysParallelJob fillArraysParallelJob = new FillArraysParallelJob
+            FillArraysParallelJob fillJob = new FillArraysParallelJob
             {
-                nativeArray = nativeArrayArray[i],
+                nativeList= nativeListArray[i],
                 matrixArray = matrixArray,
                 uvArray = uvArray,
-                startingIndex = startingIndex
+                startingIndex = startIndex
             };
-            startingIndex += nativeArrayArray[i].Length;
+            startIndex += nativeListArray[i].Length;
 
-            // Schedule the job and make sure it depends on the previous job
-            jobHandleArray[i] = fillArraysParallelJob.Schedule(nativeArrayArray[i].Length, 10, lastJobHandle);
-
-            // Update the lastJobHandle to the current job's handle
+            jobHandleArray[i] = fillJob.Schedule(nativeListArray[i].Length, 10, lastJobHandle);
             lastJobHandle = jobHandleArray[i];
         }
 
-        // Ensure that all jobs are completed before proceeding
         JobHandle.CompleteAll(jobHandleArray);
 
-
-
-        for (int i = 0; i < POSITION_SLICES; i++)
-        {
-            nativeArrayArray[i].Dispose();
-        }
-
-
-        ///Slice Arrays and Draw
         InitDrawMeshInstancedSlicedData();
+
         for (int i = 0; i < visibleEntityTotal; i += DRAW_MESH_INSTANCED_SLICE_COUNT)
         {
             int sliceSize = math.min(visibleEntityTotal - i, DRAW_MESH_INSTANCED_SLICE_COUNT);
-            if (sliceSize == 0)
-            {
-                Debug.LogError("Invalid slice size, skipping drawing");
-                continue;
-            }
+            if (sliceSize == 0) continue;
 
             NativeArray<Matrix4x4>.Copy(matrixArray, i, matrixInstancedArray, 0, sliceSize);
             NativeArray<Vector4>.Copy(uvArray, i, uvInstancedArray, 0, sliceSize);
-
             materialPropertyBlock.SetVectorArray(shaderMainTexUVid, uvInstancedArray);
 
             Graphics.DrawMeshInstanced(mesh, 0, material, matrixInstancedArray, sliceSize, materialPropertyBlock);
@@ -457,8 +411,7 @@ public class RenderSystem : SystemBase
 
         matrixArray.Dispose();
         uvArray.Dispose();
-        //jobHandleArray.Dispose();
-
     }
+
 
 }

@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Jobs;
 using UnityEngine;
+using System.Linq;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(MovementSystem))]
@@ -46,72 +47,153 @@ public partial class CollisionDetectionSystem : SystemBase
     {
         var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
-        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag));
+        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>());
 
-        int totalEntities = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag)).CalculateEntityCount();
+        int totalEntities = entityQuery.CalculateEntityCount();
 
-        int estimatedCapacity = math.max(1024, totalEntities * 16); // Adjust multiplier based on expected density
+        const int maxCollisionsPerEntity = 16; // realistic max collisions per entity
+        int estimatedCapacity = math.max(1024, totalEntities * maxCollisionsPerEntity);
+
         if (collisionEvents.Capacity < estimatedCapacity)
         {
+            // Dispose old and allocate new only if really needed, with a max cap to avoid overflow
+            int newCapacity = math.min(estimatedCapacity, 10_000_000); // limit max allocation
             collisionEvents.Dispose();
-            collisionEvents = new NativeMultiHashMap<Entity, Entity>(estimatedCapacity, Allocator.Persistent);
+            collisionEvents = new NativeMultiHashMap<Entity, Entity>(newCapacity, Allocator.Persistent);
         }
         else
         {
             collisionEvents.Clear();
         }
 
-        var quadrantOffsetsCopy = quadrantOffsets;
-        var collisionEventsParallelWriter = collisionEvents.AsParallelWriter();
+        //var quadrantOffsetsCopy = quadrantOffsets;
+        //var collisionEventsParallelWriter = collisionEvents.AsParallelWriter();
 
-        // Get handles for job safety and performance
-        var translationType = GetComponentTypeHandle<Translation>(true);
-        var colliderType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true);
-        var entityType = GetEntityTypeHandle();
+        //// Get handles for job safety and performance
+        //var translationType = GetComponentTypeHandle<Translation>(true);
+        //var colliderType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true);
+        //var entityType = GetEntityTypeHandle();
 
-        var collisionQuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap;
+        //var collisionQuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap;
 
         // Schedule collision detection job
-        var collisionJob = new CollisionDetectionJob
-        {
-            TranslationType = translationType,
-            ColliderType = colliderType,
-            EntityType = entityType,
-            QuadrantOffsets = quadrantOffsetsCopy,
-            collisionQuadrantMap = collisionQuadrantMap,
-            CollisionEvents = collisionEventsParallelWriter
-        };
-
-        Dependency = collisionJob.ScheduleParallel(entityQuery, 64, Dependency);
-        Dependency.Complete();
-        //// Schedule job to write collision events into buffers after detection job completes
-        //var bufferFromEntity = GetBufferFromEntity<CollisionEvent2D>();
-        //var writeJob = new WriteCollisionBuffersJob
+        //var collisionJob = new CollisionDetectionJob
         //{
-        //    CollisionEvents = collisionEvents,
-        //    CollisionEventBuffers = bufferFromEntity
+        //    TranslationType = translationType,
+        //    ColliderType = colliderType,
+        //    EntityType = entityType,
+        //    QuadrantOffsets = quadrantOffsetsCopy,
+        //    collisionQuadrantMap = collisionQuadrantMap,
+        //    CollisionEvents = collisionEventsParallelWriter
         //};
 
-        //Dependency = writeJob.Schedule(collisionEvents.Count(), 64, Dependency);
-        // Collect all unique entities from collisionEvents keys
-        var keys = collisionEvents.GetKeyArray(Allocator.TempJob);
+        //Dependency = collisionJob.ScheduleParallel(entityQuery, 64, Dependency);
+        //Dependency.Complete();
 
-        // Schedule job to write collision buffers
-        var writeJob = new WriteCollisionBuffersJob
+        var collisionJob = new CollisionDetectionJob
         {
-            Keys = keys,
-            CollisionEvents = collisionEvents,
-            CollisionEventBuffers = GetBufferFromEntity<CollisionEvent2D>()
+            TranslationType = GetComponentTypeHandle<Translation>(true),
+            ColliderType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
+            EntityType = GetEntityTypeHandle(),
+            QuadrantOffsets = quadrantOffsets,
+            collisionQuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap,
+            CollisionEvents = collisionEvents.AsParallelWriter()
         };
-        Dependency = writeJob.Schedule(keys.Length, 64, Dependency);
+
+        Dependency = collisionJob.ScheduleParallel(entityQuery, Dependency);
         Dependency.Complete();
-        keys.Dispose();
+
+
+        //var bufferEntities = GetEntityQuery(typeof(CollisionEvent2D));
+        //var bufferEntitySet = bufferEntities.ToEntityArray(Allocator.TempJob);
+        //var keys = collisionEvents.GetKeyArray(Allocator.TempJob);
+
+        //var filteredKeys = new NativeList<Entity>(Allocator.TempJob);
+        //for (int i = 0; i < keys.Length; i++)
+        //{
+        //    if (bufferEntitySet.Contains(keys[i]))
+        //        filteredKeys.Add(keys[i]);
+        //}
+        //BufferFromEntity<CollisionEvent2D> entityBuffers = GetBufferFromEntity<CollisionEvent2D>();
+        //if (filteredKeys.Length > 0)
+        //{
+        //    var writeJob = new WriteCollisionBuffersJob
+        //    {
+        //        Keys = filteredKeys.AsDeferredJobArray(),
+        //        CollisionEvents = collisionEvents,
+        //        CollisionEventBuffers = entityBuffers
+        //    };
+
+        //    Dependency = writeJob.Schedule(filteredKeys.Length, 64, Dependency);
+        //    Dependency.Complete();
+        //}
+
+        //bufferEntitySet.Dispose();
+        //filteredKeys.Dispose();
+        //keys.Dispose();
+        var job = new WriteCollisionBuffersChunkJob
+        {
+            CollisionEvents = collisionEvents,
+            EntityHandle = GetEntityTypeHandle(),
+            CollisionBufferHandle = GetBufferTypeHandle<CollisionEvent2D>(false),
+        };
+
+        Dependency = job.ScheduleParallel(entityQuery, Dependency);
+
+
+
+        //// Collect all unique entities from collisionEvents keys
+        //var keys = collisionEvents.GetKeyArray(Allocator.TempJob);
+
+        //// Schedule job to write collision buffers
+        //var writeJob = new WriteCollisionBuffersJob
+        //{
+        //    Keys = keys,
+        //    CollisionEvents = collisionEvents,
+        //    CollisionEventBuffers = GetBufferFromEntity<CollisionEvent2D>()
+        //};
+        //Dependency = writeJob.Schedule(keys.Length, 64, Dependency);
+        //Dependency.Complete();
+        //keys.Dispose();
 
         ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
+    public struct WriteCollisionBuffersChunkJob : IJobChunk
+    {
+        [ReadOnly] public NativeMultiHashMap<Entity, Entity> CollisionEvents;
+        [ReadOnly] public EntityTypeHandle EntityHandle;
+        public BufferTypeHandle<CollisionEvent2D> CollisionBufferHandle;
+
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var entities = chunk.GetNativeArray(EntityHandle);
+            var buffers = chunk.GetBufferAccessor(CollisionBufferHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
+            {
+                Entity entity = entities[i];
+                var buffer = buffers[i];
+                buffer.Clear();
+
+                if (CollisionEvents.TryGetFirstValue(entity, out var other, out var it))
+                {
+                    const int MaxCollisions = 16;
+                    int count = 0;
+                    do
+                    {
+                        if (count++ < MaxCollisions)
+                            buffer.Add(new CollisionEvent2D { OtherEntity = other });
+                    }
+                    while (CollisionEvents.TryGetNextValue(out other, ref it));
+                }
+            }
+        }
+    }
+
+
     [BurstCompile]
-    struct CollisionDetectionJob : IJobEntityBatch
+    struct CollisionDetectionJob : IJobChunk
     {
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderType;
@@ -121,83 +203,187 @@ public partial class CollisionDetectionSystem : SystemBase
         [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
         public NativeMultiHashMap<Entity, Entity>.ParallelWriter CollisionEvents;
 
-        public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            var entities = batchInChunk.GetNativeArray(EntityType);
-            var positions = batchInChunk.GetNativeArray(TranslationType);
-            var colliders = batchInChunk.GetNativeArray(ColliderType);
+            var translations = chunk.GetNativeArray(TranslationType);
+            var colliders = chunk.GetNativeArray(ColliderType);
+            var entities = chunk.GetNativeArray(EntityType);
 
-            for (int i = 0; i < batchInChunk.Count; i++)
+            for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entityA = entities[i];
-                float2 posA = positions[i].Value.xy;
+                float2 posA = translations[i].Value.xy;
                 float radiusA = colliders[i].Radius;
 
                 int baseX = (int)math.floor(posA.x / CollisionQuadrantSystem.quadrantCellSize);
                 int baseY = (int)math.floor(posA.y / CollisionQuadrantSystem.quadrantCellSize);
 
-                for (int offsetIndex = 0; offsetIndex < QuadrantOffsets.Length; offsetIndex++)
+                for (int j = 0; j < QuadrantOffsets.Length; j++)
                 {
-                    int2 offset = QuadrantOffsets[offsetIndex];
+                    int2 offset = QuadrantOffsets[j];
                     int2 cell = new int2(baseX + offset.x, baseY + offset.y);
+                    int hash = cell.x + cell.y * CollisionQuadrantSystem.quadrantYMultiplier;
 
-                    int neighborKey = cell.x + cell.y * CollisionQuadrantSystem.quadrantYMultiplier;
+                    if (!collisionQuadrantMap.TryGetFirstValue(hash, out var otherData, out var it))
+                        continue;
 
-                    CollisionQuadrantData otherData;
-                    NativeMultiHashMapIterator<int> it;
-
-                    if (collisionQuadrantMap.TryGetFirstValue(neighborKey, out otherData, out it))
+                    do
                     {
-                        do
+                        Entity entityB = otherData.entity;
+                        if (entityA == entityB)
+                            continue;
+
+                        float2 posB = otherData.position;
+                        float radiusB = otherData.radius;
+
+                        float distSq = math.distancesq(posA, posB);
+                        float combinedRadius = radiusA + radiusB;
+
+                        if (distSq <= combinedRadius * combinedRadius)
                         {
-                            if (otherData.entity == entityA)
-                                continue;
-
-                            float2 posB = otherData.position;
-                            float radiusB = otherData.radius;
-
-                            float distSq = math.distancesq(posA, posB);
-                            float radiusSum = radiusA + radiusB;
-
-                            if (distSq <= radiusSum * radiusSum)
-                            {
-                                CollisionEvents.Add(entityA, otherData.entity);
-                                CollisionEvents.Add(otherData.entity, entityA);
-                            }
-                        } while (collisionQuadrantMap.TryGetNextValue(out otherData, ref it));
+                            CollisionEvents.Add(entityA, entityB);
+                            CollisionEvents.Add(entityB, entityA);
+                        }
                     }
+                    while (collisionQuadrantMap.TryGetNextValue(out otherData, ref it));
                 }
             }
         }
     }
-    [BurstCompile]
-    struct WriteCollisionBuffersJob : IJobParallelFor
-    {
-        [ReadOnly] public NativeArray<Entity> Keys;
-        [ReadOnly] public NativeMultiHashMap<Entity, Entity> CollisionEvents;
-        [NativeDisableParallelForRestriction] public BufferFromEntity<CollisionEvent2D> CollisionEventBuffers;
 
-        public void Execute(int index)
-        {
-            Entity entity = Keys[index];
 
-            if (!CollisionEventBuffers.HasComponent(entity))
-                return;
 
-            var buffer = CollisionEventBuffers[entity];
-            buffer.Clear();
+    //[BurstCompile]
+    //struct CollisionDetectionJob : IJobEntityBatch
+    //{
+    //    [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
+    //    [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderType;
+    //    [ReadOnly] public EntityTypeHandle EntityType;
 
-            NativeMultiHashMapIterator<Entity> it;
-            Entity other;
-            if (CollisionEvents.TryGetFirstValue(entity, out other, out it))
-            {
-                do
-                {
-                    buffer.Add(new CollisionEvent2D { OtherEntity = other });
-                } while (CollisionEvents.TryGetNextValue(out other, ref it));
-            }
-        }
-    }
+    //    [ReadOnly] public NativeArray<int2> QuadrantOffsets;
+    //    [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
+    //    public NativeMultiHashMap<Entity, Entity>.ParallelWriter CollisionEvents;
+
+    //    public void Execute(ArchetypeChunk batchInChunk, int batchIndex)
+    //    {
+    //        var entities = batchInChunk.GetNativeArray(EntityType);
+    //        var positions = batchInChunk.GetNativeArray(TranslationType);
+    //        var colliders = batchInChunk.GetNativeArray(ColliderType);
+
+    //        for (int i = 0; i < batchInChunk.Count; i++)
+    //        {
+    //            Entity entityA = entities[i];
+    //            float2 posA = positions[i].Value.xy;
+    //            float radiusA = colliders[i].Radius;
+
+    //            int baseX = (int)math.floor(posA.x / CollisionQuadrantSystem.quadrantCellSize);
+    //            int baseY = (int)math.floor(posA.y / CollisionQuadrantSystem.quadrantCellSize);
+
+    //            for (int offsetIndex = 0; offsetIndex < QuadrantOffsets.Length; offsetIndex++)
+    //            {
+    //                int2 offset = QuadrantOffsets[offsetIndex];
+    //                int2 cell = new int2(baseX + offset.x, baseY + offset.y);
+
+    //                int neighborKey = cell.x + cell.y * CollisionQuadrantSystem.quadrantYMultiplier;
+
+    //                CollisionQuadrantData otherData;
+    //                NativeMultiHashMapIterator<int> it;
+
+    //                if (collisionQuadrantMap.TryGetFirstValue(neighborKey, out otherData, out it))
+    //                {
+    //                    do
+    //                    {
+    //                        if (otherData.entity == entityA)
+    //                            continue;
+
+    //                        float2 posB = otherData.position;
+    //                        float radiusB = otherData.radius;
+
+    //                        float distSq = math.distancesq(posA, posB);
+    //                        float radiusSum = radiusA + radiusB;
+
+    //                        if (distSq <= radiusSum * radiusSum)
+    //                        {
+    //                            CollisionEvents.Add(entityA, otherData.entity);
+    //                            CollisionEvents.Add(otherData.entity, entityA);
+    //                        }
+    //                    } while (collisionQuadrantMap.TryGetNextValue(out otherData, ref it));
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+
+
+    //[BurstCompile]
+    //struct WriteCollisionBuffersJob : IJobParallelFor
+    //{
+    //    [ReadOnly] public NativeArray<Entity> Keys;
+    //    [ReadOnly] public NativeMultiHashMap<Entity, Entity> CollisionEvents;
+    //    [NativeDisableParallelForRestriction] public BufferFromEntity<CollisionEvent2D> CollisionEventBuffers;
+
+    //    public void Execute(int index)
+    //    {
+    //        Entity entity = Keys[index];
+
+    //        if (!CollisionEventBuffers.HasComponent(entity))
+    //            return;
+
+    //        var buffer = CollisionEventBuffers[entity];
+    //        buffer.Clear();
+
+    //        if (!CollisionEvents.TryGetFirstValue(entity, out var other, out var it))
+    //            return;
+
+    //        const int MaxCollisions = 16;
+
+    //        buffer.Add(new CollisionEvent2D { OtherEntity = other });
+
+    //        while (CollisionEvents.TryGetNextValue(out other, ref it) && buffer.Length < MaxCollisions)
+    //        {
+    //            buffer.Add(new CollisionEvent2D { OtherEntity = other });
+    //        }
+    //    }
+    //}
+
+
+    //    [BurstCompile]
+    //    struct WriteCollisionBuffersJob : IJobParallelFor
+    //    {
+    //        [ReadOnly] public NativeArray<Entity> Keys;
+    //        [ReadOnly] public NativeMultiHashMap<Entity, Entity> CollisionEvents;
+    //        [NativeDisableParallelForRestriction] public BufferFromEntity<CollisionEvent2D> CollisionEventBuffers;
+
+    //        public void Execute(int index)
+    //        {
+    //            Entity entity = Keys[index];
+
+    //            if (!CollisionEventBuffers.HasComponent(entity))
+    //                return;
+
+    //            var buffer = CollisionEventBuffers[entity];
+    //            // Extra safety: clear only if buffer is not null (should always be true)
+    //            if (buffer.IsCreated)
+    //            {
+    //                buffer.Clear();
+    //            }
+    //            else
+    //            {
+    //                // Early exit if buffer is invalid somehow
+    //                return;
+    //            }
+
+    //            NativeMultiHashMapIterator<Entity> it;
+    //            Entity other;
+    //            if (CollisionEvents.TryGetFirstValue(entity, out other, out it))
+    //            {
+    //                do
+    //                {
+    //                    buffer.Add(new CollisionEvent2D { OtherEntity = other });
+    //                } while (CollisionEvents.TryGetNextValue(out other, ref it));
+    //            }
+    //        }
+    //    }
 }
 
 

@@ -157,7 +157,18 @@ ComponentType.Exclude<CommanderComponent>());
 
         // If you're using 2D, drop the Z axis
         float2 worldMouse2D = worldPosition.xy;
-        DebugDrawQuadrant(worldMouse2D);
+        int gridSize = 25; // 25 blocks wide and tall
+        float blockSize = 5f; // each block 5x5 units
+        float halfGridSize = gridSize * blockSize * 0.5f;
+
+        for (int x = 0; x < gridSize; x++)
+        {
+            for (int y = 0; y < gridSize; y++)
+            {
+                float2 pos = new float2(x * blockSize - halfGridSize, y * blockSize - halfGridSize);
+                DebugDrawQuadrant(pos);
+            }
+        }
         //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
         //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
 

@@ -72,7 +72,6 @@ public class ProcessCommandSystem : JobComponentSystem
                     commandDataArray[i] = command;
 
                     ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                    //ECB.AddComponent(i, entity, new FindTargetCommandTag() {  });
                 }
             }
         }
