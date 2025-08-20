@@ -8,7 +8,9 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(MovementSystem))]
+//[UpdateAfter(typeof(MovementSystem))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
+[UpdateAfter(typeof(TransformSystemGroup))]
 [BurstCompile]
 public class AnimationSystem : SystemBase
 {

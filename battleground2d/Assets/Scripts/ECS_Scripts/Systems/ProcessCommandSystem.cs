@@ -63,15 +63,55 @@ public class ProcessCommandSystem : JobComponentSystem
                 var command = commandDataArray[i];
 
                 //todo: clean commandtags.....
-                if (command.Command != CommandType.FindTarget)
+                //if (command.Command != CommandType.FindTarget)
+                //{
+                //    command.Command = CommandType.FindTarget;
+                //    command.TargetEntity = Entity.Null;
+                //    command.TargetPosition = float3.zero;
+
+                //    commandDataArray[i] = command;
+
+                //    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                //}
+                switch (command.Command)
                 {
-                    command.Command = CommandType.FindTarget;
-                    command.TargetEntity = Entity.Null;
-                    command.TargetPosition = float3.zero;
-
-                    commandDataArray[i] = command;
-
-                    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                    case CommandType.Idle:
+                        break;
+                    case CommandType.FindTarget:
+                        command.TargetEntity = Entity.Null;
+                        command.TargetPosition = float2.zero;
+                        ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        break;
+                    case CommandType.MoveTo:
+                        // Check if we are moving to an entity's location or a specific point in the world
+                        if (command.TargetEntity != Entity.Null)
+                        {
+                            // We are targeting another entity (chase/follow)
+                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        }
+                        else if (math.lengthsq(command.TargetPosition) > 0) // Check if a valid position is set
+                        {
+                            // We are moving to a specific location. Add the HasTarget component directly.
+                            ECB.AddComponent(chunkIndex, entity, new HasTarget
+                            {
+                                Type = HasTarget.TargetType.Position,
+                                TargetPosition = new float2(command.TargetPosition), // Convert float2 to float3
+                                TargetEntity = Entity.Null
+                            });
+                        }
+                        //Clear the command so it doesn't keep re-triggering
+                        command.Command = CommandType.Idle;
+                        commandDataArray[i] = command;
+                        break;
+                    case CommandType.Attack:
+                        command.TargetEntity = Entity.Null;
+                        command.TargetPosition = float2.zero;
+                        ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        break;
+                    case CommandType.Defend:
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -108,6 +148,6 @@ public struct FindTargetCommandTag : IComponentData { }
 public struct CommandData : IComponentData
 {
     public CommandType Command;
-    public float3 TargetPosition; // Optional (used for MoveTo, etc.)
+    public float2 TargetPosition; // Optional (used for MoveTo, etc.)
     public Entity TargetEntity;   // Optional (used for Attack, etc.)
 }

@@ -7,6 +7,7 @@ using Unity.Transforms;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 [UpdateAfter(typeof(CollisionResolutionSystem))]
+[UpdateBefore(typeof(TransformSystemGroup))] // Before transforms are synced for rendering
 [BurstCompile]
 public class PhysicsSystem : SystemBase
 {
@@ -19,12 +20,6 @@ public class PhysicsSystem : SystemBase
                                                    //.ForEach((ref Translation translation, in Velocity2D velocity, in PhysicsBody2D body) =>
             .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent) =>
             {
-                //if (body.IsStatic)
-                //    return;
-
-
-
-
                 //// Apply force to update velocity (F = ma -> v = v0 + a * t)
                 //velocity.Value += force.Value * deltaTime;
                 //velocity.Value.z = 0;
@@ -37,14 +32,6 @@ public class PhysicsSystem : SystemBase
 
                 translation.Value.xy += movementSpeedComponent.velocity.xy * deltaTime;
                 position.Value.xy = translation.Value.xy;
-            }).ScheduleParallel();
-
-        // Clear previous collision buffers
-        Entities
-            .WithAll<CollisionEvent2D>()
-            .ForEach((DynamicBuffer<CollisionEvent2D> buffer) =>
-            {
-                buffer.Clear();
             }).ScheduleParallel();
     }
 }
@@ -66,11 +53,3 @@ public struct ECS_Velocity2D : IComponentData
     public float2 Value;
     public float2 PrevValue;
 }
-
-
-//var otherGridID = gridData[otherIndex].value; // Get the grid_id for the other unit
-//                                              // Skip if the grid IDs don't match
-//if (currentGridID != otherGridID)
-//{
-//    continue; // Skip the collision check if grid IDs don't match
-//}

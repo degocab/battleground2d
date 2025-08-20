@@ -37,8 +37,11 @@ public class MovementSystem : SystemBase
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
         if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
 
-        // Update movement x and y
-        Entities
+
+        // This job sets the desired velocity based on input or AI for commander.
+        // For most units, it might be set by an AI system, not input.
+        var inputJobHandle = Entities
+            .WithName("SetCommanderVelocity")
           .WithAll<CommanderComponent>() // Remove to let all units update
           .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
           {
@@ -46,76 +49,14 @@ public class MovementSystem : SystemBase
               //movementSpeedComponent.moveY = moveY;
               movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
               movementSpeedComponent.isRunnning = isRunnning;
-          }).ScheduleParallel();
+          }).ScheduleParallel(Dependency);
 
-        // EntityQuery for getting all the entities with position and collision bounds
-        EntityQuery query = GetEntityQuery(
-          ComponentType.ReadOnly<Translation>(),
-          ComponentType.ReadOnly<Unit>(),
-          ComponentType.ReadOnly<GridID>(),
-          ComponentType.ReadWrite<MovementSpeedComponent>(),
-          ComponentType.ReadOnly<AnimationComponent>()
-        );
-
-        int count = query.CalculateEntityCount();
-
-
-
-        Entities
-          .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref PositionComponent position, ref Translation translation, ref TargetPositionComponent targetLocationComponent) =>
-          {
-              //float3 targetPosition = targetLocationComponent.targetPosition;
-              //if (movementSpeedComponent.isBlocked == false)
-              //{
-              //    float3 direction = targetPosition - translation.Value;
-              //    direction.z = 0;
-              //    if (math.length(direction) < 0.1f)
-              //    {
-              //        movementSpeedComponent.direction = float3.zero;
-              //        movementSpeedComponent.Value = float3.zero;
-
-              //        // Increment frame counter for the unit
-              //        movementSpeedComponent.frameCounter++;
-
-              //        // If we've waited for 2-3 frames, move the unit and update target position
-              //        if (movementSpeedComponent.frameCounter >= 300) // Wait for 3 frames (or you can use 2)
-              //        {
-              //            // Move the unit by changing the target position
-              //            float newX = translation.Value.x;
-              //            newX -= 50f;
-              //            targetPosition = new float3(newX, translation.Value.y, 0f);
-              //            targetLocationComponent.targetPosition = targetPosition;
-
-              //            // Reset the frame counter after moving
-              //            movementSpeedComponent.frameCounter = 0;
-
-              //            // Recalculate direction after updating target position
-              //            direction = targetPosition - translation.Value;
-              //        }
-              //    }
-              //    else
-              //    {
-              //        direction = math.normalize(direction);
-              //        movementSpeedComponent.direction = direction;
-              //    }
-
-              //    movementSpeedComponent.moveX = direction.x;
-              //    movementSpeedComponent.moveY = direction.y;
-              //}
-
-              //float3 direction = float3.zero;
-              //movementSpeedComponent.direction = direction;
-              //movementSpeedComponent.Value = float3.zero;
-              //movementSpeedComponent.moveX = direction.x;
-              //movementSpeedComponent.moveY = direction.y;
-
-              //movementSpeedComponent.isRunnning = true;
-          }).WithBurst().ScheduleParallel();
-
+        // -- JOB 2: Apply Speed Modifiers (Burst Parallel) --
+        // This job processes EVERY moving entity to finalize its desired velocity.
         // Randomize movement speed
         float minRange = 1f;
         float maxRange = 1.125f;
-        Entities
+        var speedJobHandle = Entities.WithName("ApplyRandomSpeed")
           .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
           {
               if (movementSpeedComponent.isRunnning)
@@ -133,10 +74,13 @@ public class MovementSystem : SystemBase
               float3 vel = new float3(movementSpeedComponent.velocity.x, movementSpeedComponent.velocity.y, 0) * movementSpeedComponent.randomSpeed;
               vel.z = 0;
               movementSpeedComponent.velocity = vel;
-          }).WithBurst().ScheduleParallel();
+          }).ScheduleParallel(inputJobHandle);
 
+        // -- JOB 3: Update Animation State (Burst Parallel) --
+        // This could also be a separate system after Physics.
         // Get direction for animation
-        Entities
+               var animationJobHandle = Entities
+            .WithName("UpdateAnimationFromVelocity")
           .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
           {
               float2 velocity = movementSpeedComponent.velocity.xy;
@@ -173,9 +117,13 @@ public class MovementSystem : SystemBase
               }
 
               animationComponent.prevDirection = animationComponent.direction;
-          }).WithBurst().ScheduleParallel();
+          }).ScheduleParallel(speedJobHandle);
 
-        Dependency.Complete(); // Ensure job is completed before disposal
+        // Set the final dependency for the next system
+        Dependency = animationJobHandle;
+
+        // !!! REMOVE Dependency.Complete() !!! 
+        // Let the scheduler handle it. Your CollisionSystem should use this Dependency.
 
 
     }

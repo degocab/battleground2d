@@ -15,6 +15,8 @@ using UnityEngine;
 
 
 [UpdateAfter(typeof(AnimationSystem))]
+[UpdateInGroup(typeof(PresentationSystemGroup))]
+
 public class RenderSystem : SystemBase
 {
     public static EntitySpawner entitySpawner;

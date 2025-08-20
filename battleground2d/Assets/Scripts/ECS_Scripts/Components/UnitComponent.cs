@@ -1,17 +1,4 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
-//using Unity.Burst;
-//using Unity.Collections;
-using Unity.Entities;
-//using Unity.Jobs;
-//using Unity.Mathematics;
-//using Unity.Physics;
-//using Unity.Rendering;
-//using Unity.Transforms;
-//using UnityEngine;
+﻿using Unity.Entities;
 
 public struct Unit : IComponentData
 {

@@ -258,7 +258,7 @@ public class EntitySpawner : MonoBehaviour
 
         for (int i = 0; i < 100; i++)
         {
-            SpawnTargets(); 
+            //SpawnTargets(); 
         }
 
     }
@@ -508,14 +508,25 @@ public class EntitySpawner : MonoBehaviour
 
                 // Set additional unit components such as Health, Movement, etc.
                 //entityManager.SetComponentData(unit, new TargetPositionComponent { targetPosition = new float3(unitPosition.x + 2f, unitPosition.y, 0f) });
-                
-                ////unit commands
+
+                //////unit commands
                 //entityManager.SetComponentData(unit, new CommandData
                 //{
-                //    Command = CommandType.Idle,
+                //    Command = CommandType.FindTarget,
                 //    TargetEntity = Entity.Null,
-                //    TargetPosition = float3.zero
-                //});
+                //    TargetPosition = float2.zero
+                //});d
+
+                float3 targetPosition = unitPosition;
+                targetPosition.x -= 10.0f; // Move 2 units to the left from current position
+                                          // Add small random variation (e.g., ±0.1f) to Y position
+                targetPosition.y += UnityEngine.Random.Range(-0.1f, 0.1f);
+                entityManager.SetComponentData(unit, new CommandData
+                {
+                    Command = CommandType.MoveTo, // Use MoveTo command
+                    TargetEntity = Entity.Null,   // No entity target
+                    TargetPosition = targetPosition.xy // Set the target position
+                });
 
                 SetUnitComponents(unit, unitPosition, unitType, rank);
                 entityManager.SetComponentData(unit,

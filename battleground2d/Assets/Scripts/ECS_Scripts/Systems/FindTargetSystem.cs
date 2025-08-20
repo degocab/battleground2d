@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using TMPro.EditorUtilities;
 using static UnityEngine.EventSystems.EventTrigger;
 using Unity.Burst;
+using System.Text;
 
 
 
@@ -105,13 +106,14 @@ public class FindTargetSystem : JobComponentSystem
         }
     }
 
+    [BurstCompile]
     private struct AddComponentJob : IJobChunk
     {
 
         public EntityCommandBuffer.ParallelWriter entityCommandBuffer;
         [DeallocateOnJobCompletion]
         [ReadOnly]
-        public NativeArray<Entity> closestTargetEntityArray;
+        public NativeArray<EntityWithPosition> closestTargetEntityArray;
         [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
@@ -120,9 +122,9 @@ public class FindTargetSystem : JobComponentSystem
             {
                 Entity entity = chunkEntities[index];
                 int flatIndex = firstEntityIndex + index;
-                if (closestTargetEntityArray[flatIndex] != Entity.Null)
+                if (closestTargetEntityArray[flatIndex].entity != Entity.Null)
                 {
-                    entityCommandBuffer.AddComponent(index, entity, new HasTarget() { targetEntity = closestTargetEntityArray[flatIndex] });
+                    entityCommandBuffer.AddComponent(index, entity, new HasTarget() { TargetEntity = closestTargetEntityArray[flatIndex].entity, TargetPosition = closestTargetEntityArray[flatIndex].position, Type = HasTarget.TargetType.Entity });
                 }
             }
         }
@@ -151,7 +153,7 @@ public class FindTargetSystem : JobComponentSystem
                 {
                     command.Command = CommandType.Idle;
                     command.TargetEntity = Entity.Null;
-                    command.TargetPosition = float3.zero;
+                    command.TargetPosition = float2.zero;
 
                     commandDataArray[i] = command;
 
@@ -167,7 +169,7 @@ public class FindTargetSystem : JobComponentSystem
     private struct FindTargetQuadrantSystemob : IJobChunk
     {
         [ReadOnly] public NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap;
-        public NativeArray<Entity> closestTargetEntityArray;
+        public NativeArray<EntityWithPosition> closestTargetEntityArray;
 
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
@@ -189,20 +191,24 @@ public class FindTargetSystem : JobComponentSystem
                 float closestTargetDistance = float.MaxValue;
                 int hashMapKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
 
-                FindTarget(hashMapKey, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
 
                 //corners
-                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
-                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap);
+                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
 
 
-                closestTargetEntityArray[firstEntityIndex + i] = closestTargetEntity;
+                closestTargetEntityArray[firstEntityIndex + i] = new EntityWithPosition
+                {
+                    entity = closestTargetEntity,
+                    position = closestTargetPosition // <- CRITICAL: Store the position here
+                };
             }
 
         }
@@ -213,7 +219,8 @@ public class FindTargetSystem : JobComponentSystem
         , QuadrantEntity quadrantEntity
         , ref Entity closestTargetEntity
         , ref float closestTargetDistance
-        , ref NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap)
+        , ref NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap,
+ref float2 closestTargetPosition)
     {
         QuadrantData quadrantData;
         NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
@@ -229,7 +236,7 @@ public class FindTargetSystem : JobComponentSystem
                         // no target
                         closestTargetEntity = quadrantData.entity;
                         closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
-                        //closestTargetPosition = quadrantData.position;
+                        closestTargetPosition = quadrantData.position;
                     }
                     else
                     {
@@ -238,7 +245,7 @@ public class FindTargetSystem : JobComponentSystem
                             //target is closer
                             closestTargetEntity = quadrantData.entity;
                             closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
-                            //closestTargetPosition = quadrantData.position;
+                            closestTargetPosition = quadrantData.position;
                         }
                     }
                 }
@@ -287,7 +294,7 @@ public class FindTargetSystem : JobComponentSystem
         targetEntityArray.Dispose();
         targetTranslationArray.Dispose();
         EntityQuery unitQuery = GetEntityQuery(typeof(Unit), ComponentType.Exclude<HasTarget>(), ComponentType.Exclude<CommanderComponent>());
-        NativeArray<Entity> closestTargetEntityArray = new NativeArray<Entity>(unitQuery.CalculateEntityCount(), Allocator.TempJob);
+        NativeArray<EntityWithPosition> closestTargetEntityArray = new NativeArray<EntityWithPosition>(unitQuery.CalculateEntityCount(), Allocator.TempJob);
 
         FindTargetQuadrantSystemob findTargetQuadrantSystemob = new FindTargetQuadrantSystemob
         {
@@ -298,19 +305,6 @@ public class FindTargetSystem : JobComponentSystem
             entityTypeHandle = GetEntityTypeHandle(),
         };
         var jobHandle = findTargetQuadrantSystemob.ScheduleParallel(m_Query, inputDeps);
-
-        /*
-        var job = new FindTargetBurstJob()
-        {
-            targetArray = targetArray,
-            closestTargetEntityArray = closestTargetEntityArray,
-            UnitTypeHandle = GetComponentTypeHandle<Unit>(true),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            entityTypeHandle = GetEntityTypeHandle(),
-        };
-
-        var jobHandle = job.ScheduleParallel(m_Query, inputDeps);
-        */
 
         AddComponentJob addComponentJob = new AddComponentJob()
         {
@@ -330,3 +324,59 @@ public class FindTargetSystem : JobComponentSystem
 }
 
 
+[UpdateInGroup(typeof(SimulationSystemGroup))] // Or InitializationSystemGroup
+public class SystemOrderLogger : ComponentSystem
+{
+    private bool hasLogged = false;
+
+    protected override void OnUpdate()
+    {
+        if (hasLogged)
+            return;
+
+        hasLogged = true;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("=== ECS System Order Dump ===");
+
+        var world = World.DefaultGameObjectInjectionWorld;
+        if (world == null)
+        {
+            Debug.LogWarning("No active World found.");
+            return;
+        }
+
+        var rootGroups = new List<ComponentSystemGroup>
+        {
+            world.GetOrCreateSystem<InitializationSystemGroup>(),
+            world.GetOrCreateSystem<SimulationSystemGroup>(),
+            world.GetOrCreateSystem<PresentationSystemGroup>()
+        };
+
+        foreach (var group in rootGroups)
+        {
+            DumpGroup(group, sb, 0);
+        }
+
+        Debug.Log(sb.ToString());
+    }
+
+    private void DumpGroup(ComponentSystemGroup group, StringBuilder sb, int indent)
+    {
+        string indentStr = new string(' ', indent * 2);
+        sb.AppendLine($"{indentStr}- {group.GetType().Name}");
+
+        var systems = group.Systems;
+        foreach (var system in systems)
+        {
+            if (system is ComponentSystemGroup subgroup)
+            {
+                DumpGroup(subgroup, sb, indent + 1);
+            }
+            else
+            {
+                sb.AppendLine($"{indentStr}  - {system.GetType().Name}");
+            }
+        }
+    }
+}
