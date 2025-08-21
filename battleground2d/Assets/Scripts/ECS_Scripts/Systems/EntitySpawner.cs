@@ -664,8 +664,8 @@ public class EntitySpawner : MonoBehaviour
             {
                 unitFactory = new UnitFactory(entityManager);
                 //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
-                unitFactory.SpawnUnits(5000 , UnitType.Default,CommandFactory.CreateIdleCommand());
-                unitFactory.SpawnUnits(5000, UnitType.Enemy, CommandFactory.CreateIdleCommand());
+                unitFactory.SpawnUnits(50 , UnitType.Default,CommandFactory.CreateIdleCommand());
+                unitFactory.SpawnUnits(50, UnitType.Enemy, CommandFactory.CreateIdleCommand());
                 unitFactory.SpawnCommander();
 
                 hasSpawnedUnits = true; // ← MARK AS SPAWNED

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6c7b2f5b4800f745bcf15735e87c315, type: 3}
   m_Name: SpawnConfig
   m_EditorClassIdentifier: 
-  UnitCountToSpawn: 20000
+  UnitCountToSpawn: 6897
   UnitsPerPhalanx: 256
   UnitSpacing: 0.25
   PhalanxSpacing: 1
