@@ -3,10 +3,10 @@ using UnityEngine;
 
 public struct AnimationComponent : IComponentData
 {
-    public int currentFrame;
-    public int frameCount;
-    public float frameTimer;
-    public float frameTimerMax;
+    public int CurrentFrame;
+    public int FrameCount;
+    public float FrameTimer;
+    public float FrameTimerMax;
 
     public int animationHeightOffset;
     public int animationWidthOffset;
@@ -14,9 +14,9 @@ public struct AnimationComponent : IComponentData
     public Vector4 uv;
     public Matrix4x4 matrix;
 
-    public EntitySpawner.UnitType unitType;
-    public EntitySpawner.Direction direction;
-    public EntitySpawner.AnimationType animationType;
+    public EntitySpawner.UnitType UnitType;
+    public EntitySpawner.Direction Direction;
+    public EntitySpawner.AnimationType AnimationType;
 
     public EntitySpawner.Direction prevDirection;
     public EntitySpawner.AnimationType prevAnimationType;

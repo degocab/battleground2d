@@ -189,79 +189,90 @@ public class EntitySpawner : MonoBehaviour
         return Resources.LoadAll<UnityEngine.Material>(path);
     }
 
+
+
+    [SerializeField] private SpawnConfig spawnConfig;
+
+    private UnitFactory unitFactory;
+
+
     // Start is called before the first frame update
-    void Start()
-    {
-        instance = this;
+    //void Start()
+    //{
+    //    instance = this;
 
-        LoadMaterials();
+    //    LoadMaterials();
 
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+    //    entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-        //define unit archetype
-        unitArchetype = entityManager.CreateArchetype(
-            typeof(PositionComponent),
-            typeof(VelocityComponent),
-            typeof(MovementSpeedComponent),
-            typeof(HealthComponent),
-            typeof(AttackComponent),
-            typeof(AttackCooldownComponent),
+    //    //define unit archetype
+    //    unitArchetype = entityManager.CreateArchetype(
+    //        typeof(PositionComponent),
+    //        typeof(VelocityComponent),
+    //        typeof(MovementSpeedComponent),
+    //        typeof(HealthComponent),
+    //        typeof(AttackComponent),
+    //        typeof(AttackCooldownComponent),
+    //        typeof(CombatState),
+    //        typeof(TargetComponent),
 
-            typeof(TargetPositionComponent),
-            typeof(AnimationComponent),
-            typeof(IsDeadComponent),
-            typeof(UnitMaterialComponent),
-            typeof(Translation),
-            typeof(Unit),
-            typeof(GridID),
-            typeof(CircleCollider2D),
-            typeof(ECS_CircleCollider2DAuthoring),
-            typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(CollidableTag),
-            typeof(QuadrantEntity),
-            typeof(CommandData),
-            typeof(ECS_Velocity2D)
-            //,typeof(Radius)
-            //,typeof(HasNeighbor)
-            );
+    //        typeof(TargetPositionComponent),
+    //        typeof(AnimationComponent),
+    //        typeof(IsDeadComponent),
+    //        typeof(UnitMaterialComponent),
+    //        typeof(Translation),
+    //        typeof(Unit),
+    //        typeof(GridID),
+    //        typeof(CircleCollider2D),
+    //        typeof(ECS_CircleCollider2DAuthoring),
+    //        typeof(ECS_PhysicsBody2DAuthoring),
+    //        typeof(CollidableTag),
+    //        typeof(QuadrantEntity),
+    //        typeof(CommandData),
+    //        typeof(ECS_Velocity2D)
+    //        //,typeof(Radius)
+    //        //,typeof(HasNeighbor)
+    //        );
 
 
-        //define commander archetype
-        commanderArchetype = entityManager.CreateArchetype(
-            typeof(CommanderComponent),
-            typeof(PlayerInputComponent),
-            typeof(PositionComponent),
-            typeof(VelocityComponent),
-            typeof(MovementSpeedComponent),
-            typeof(HealthComponent),
-            typeof(AttackComponent),
-            typeof(AttackCooldownComponent),
+    //    //define commander archetype
+    //    commanderArchetype = entityManager.CreateArchetype(
+    //        typeof(CommanderComponent),
+    //        typeof(PlayerInputComponent),
+    //        typeof(PositionComponent),
+    //        typeof(VelocityComponent),
+    //        typeof(MovementSpeedComponent),
+    //        typeof(HealthComponent),
+    //        typeof(AttackComponent),
+    //        typeof(AttackCooldownComponent),
+    //        typeof(CombatState),
+    //        typeof(TargetComponent),
 
-            typeof(AnimationComponent),
-            typeof(IsDeadComponent),
-            typeof(UnitMaterialComponent),
-            typeof(Translation),
-            typeof(Unit),
-            typeof(GridID),
-            typeof(ECS_CircleCollider2DAuthoring),
-            typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(QuadrantEntity),
-            typeof(CollidableTag),
-            typeof(ECS_Velocity2D)
-            //,typeof(Radius)
-            //,typeof(HasNeighbor)
-            );
+    //        typeof(AnimationComponent),
+    //        typeof(IsDeadComponent),
+    //        typeof(UnitMaterialComponent),
+    //        typeof(Translation),
+    //        typeof(Unit),
+    //        typeof(GridID),
+    //        typeof(ECS_CircleCollider2DAuthoring),
+    //        typeof(ECS_PhysicsBody2DAuthoring),
+    //        typeof(QuadrantEntity),
+    //        typeof(CollidableTag),
+    //        typeof(ECS_Velocity2D)
+    //        //,typeof(Radius)
+    //        //,typeof(HasNeighbor)
+    //        );
 
-        SpawnCommander();
+    //    SpawnCommander();
 
-        SpawnUnits(UnitCountToSpawn);
+    //    SpawnUnits(UnitCountToSpawn);
 
-        for (int i = 0; i < 100; i++)
-        {
-            //SpawnTargets(); 
-        }
+    //    for (int i = 0; i < 100; i++)
+    //    {
+    //        //SpawnTargets(); 
+    //    }
 
-    }
+    //}
 
     private void SpawnTargets()
     {
@@ -276,21 +287,21 @@ public class EntitySpawner : MonoBehaviour
 
         Entity entity = entityManager.CreateEntity(targetArchetype);
         float3 pos = new float3(UnityEngine.Random.Range(-11f, -2f), UnityEngine.Random.Range(-2f, 2), 0f);
-        entityManager.SetComponentData(entity, new PositionComponent {  Value = pos});
-        entityManager.SetComponentData(entity, new Translation {  Value = pos});
-        entityManager.SetComponentData(entity, new QuadrantEntity {  typeEnum = QuadrantEntity.TypeEnum.Target});
+        entityManager.SetComponentData(entity, new PositionComponent { Value = pos });
+        entityManager.SetComponentData(entity, new Translation { Value = pos });
+        entityManager.SetComponentData(entity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Target });
         entityManager.SetComponentData(entity,
             new AnimationComponent
             {
-                currentFrame = UnityEngine.Random.Range(0, 5),
-                frameCount = 2,
-                frameTimer = UnityEngine.Random.Range(0f, 1f),
-                frameTimerMax = .1f,
+                CurrentFrame = UnityEngine.Random.Range(0, 5),
+                FrameCount = 2,
+                FrameTimer = UnityEngine.Random.Range(0f, 1f),
+                FrameTimerMax = .1f,
                 animationHeightOffset = 0,
                 animationWidthOffset = 1,
-                unitType = UnitType.Enemy,
-                direction = Direction.Right,
-                animationType = AnimationType.Idle,
+                UnitType = UnitType.Enemy,
+                Direction = Direction.Right,
+                AnimationType = AnimationType.Idle,
                 prevAnimationType = AnimationType.Idle,
                 finishAnimation = false
             });
@@ -518,12 +529,12 @@ public class EntitySpawner : MonoBehaviour
                 //});d
 
                 float3 targetPosition = unitPosition;
-                targetPosition.x -= 10.0f; // Move 2 units to the left from current position
+                targetPosition.x -= 1.0f; // Move 2 units to the left from current position
                                           // Add small random variation (e.g., ±0.1f) to Y position
                 targetPosition.y += UnityEngine.Random.Range(-0.1f, 0.1f);
                 entityManager.SetComponentData(unit, new CommandData
                 {
-                    Command = CommandType.MoveTo, // Use MoveTo command
+                    Command = CommandType.Attack, // Use MoveTo command
                     TargetEntity = Entity.Null,   // No entity target
                     TargetPosition = targetPosition.xy // Set the target position
                 });
@@ -532,15 +543,15 @@ public class EntitySpawner : MonoBehaviour
                 entityManager.SetComponentData(unit,
     new AnimationComponent
     {
-        currentFrame = UnityEngine.Random.Range(0, 5),
-        frameCount = 2,
-        frameTimer = UnityEngine.Random.Range(0f, 1f),
-        frameTimerMax = .1f,
+        CurrentFrame = UnityEngine.Random.Range(0, 5),
+        FrameCount = 2,
+        FrameTimer = UnityEngine.Random.Range(0f, 1f),
+        FrameTimerMax = .1f,
         animationHeightOffset = 0,
         animationWidthOffset = 1,
-        unitType = UnitType.Default,
-        direction = Direction.Right,
-        animationType = AnimationType.Idle,
+        UnitType = UnitType.Enemy,
+        Direction = Direction.Right,
+        AnimationType = AnimationType.Idle,
         prevAnimationType = AnimationType.Idle,
         finishAnimation = false
     }
@@ -553,11 +564,13 @@ public class EntitySpawner : MonoBehaviour
 
     private void SetUnitComponents(Entity unit, float3 unitPosition, UnitType unitType, int rank)
     {
-        entityManager.SetComponentData(unit, new HealthComponent { health = 100f, maxHealth = 100f });
-        entityManager.SetComponentData(unit, new MovementSpeedComponent { velocity = 3f, isBlocked = false, isKnockedBack = false });
+        entityManager.SetComponentData(unit, new CombatState { CurrentState = CombatState.State.Idle });
+
+
+        entityManager.SetComponentData(unit, new HealthComponent { Health = 100f, maxHealth = 100f });
         entityManager.SetComponentData(unit, new AttackComponent { damage = 10f, range = 1f, isAttacking = false, isDefending = false });
         entityManager.SetComponentData(unit, new AttackCooldownComponent { cooldownDuration = .525f, timeRemaining = 0f, takeDamageCooldownDuration = .225f });
-        entityManager.SetComponentData(unit, new Unit { isMounted = false, rank = rank });
+        entityManager.SetComponentData(unit, new Unit { isMounted = false, Rank = rank });
         entityManager.SetComponentData(unit, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Unit });
         entityManager.SetComponentData(unit, new ECS_CircleCollider2DAuthoring
         {
@@ -611,15 +624,15 @@ public class EntitySpawner : MonoBehaviour
         entityManager.SetComponentData(commanderEntity,
             new AnimationComponent
             {
-                currentFrame = UnityEngine.Random.Range(0, 5),
-                frameCount = 2,
-                frameTimer = UnityEngine.Random.Range(0f, 1f),
-                frameTimerMax = .1f,
+                CurrentFrame = UnityEngine.Random.Range(0, 5),
+                FrameCount = 2,
+                FrameTimer = UnityEngine.Random.Range(0f, 1f),
+                FrameTimerMax = .1f,
                 animationHeightOffset = 0,
                 animationWidthOffset = 1,
-                unitType = UnitType.Default,
-                direction = Direction.Right,
-                animationType = AnimationType.Idle,
+                UnitType = UnitType.Default,
+                Direction = Direction.Right,
+                AnimationType = AnimationType.Idle,
                 prevAnimationType = AnimationType.Idle,
                 finishAnimation = false
             }
@@ -627,9 +640,37 @@ public class EntitySpawner : MonoBehaviour
 
     }
     // Update is called once per frame
-    void Update()
-    {
+    // Now you can use this anywhere!
+    private bool hasSpawnedUnits = false;
 
+    private void Start()
+    {
+        //entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        //unitFactory = new UnitFactory(entityManager);
+
+        //unitFactory.SpawnCommander();
+        //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
+    }
+
+    private void Update()
+    {
+        if (hasSpawnedUnits) return; // ← CRITICAL: Don't spawn again
+
+        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+        if (entityManager.TryGetSingleton<GameStateComponent>(out var gameState))
+        {
+            if (gameState.CurrentState == GameState.Playing)
+            {
+                unitFactory = new UnitFactory(entityManager);
+                //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
+                unitFactory.SpawnUnits(5000 , UnitType.Default,CommandFactory.CreateIdleCommand());
+                unitFactory.SpawnUnits(5000, UnitType.Enemy, CommandFactory.CreateIdleCommand());
+                unitFactory.SpawnCommander();
+
+                hasSpawnedUnits = true; // ← MARK AS SPAWNED
+            }
+        }
     }
     public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? walkRandom = null, Unity.Mathematics.Random? runRandom = default)
     {
@@ -637,73 +678,73 @@ public class EntitySpawner : MonoBehaviour
 
 
         // Depending on the animationType, set the specific frame-related values
-        switch (animationComponent.animationType)
+        switch (animationComponent.AnimationType)
         {
             case EntitySpawner.AnimationType.Attack:
                 animationComponent.finishAnimation = true;
-                animationComponent.frameCount = 6; // Example: 6 frames for the attack animation
-                animationComponent.currentFrame = 0; // Start at the first frame
-                animationComponent.frameTimerMax = 0.12f; // Example: 0.2 seconds per frame
-                animationComponent.frameTimer = 0f; // Reset the frame timer
+                animationComponent.FrameCount = 6; // Example: 6 frames for the attack animation
+                animationComponent.CurrentFrame = 0; // Start at the first frame
+                animationComponent.FrameTimerMax = 0.12f; // Example: 0.2 seconds per frame
+                animationComponent.FrameTimer = 0f; // Reset the frame timer
                 animationComponent.animationHeightOffset = 7;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Run:
-                animationComponent.frameCount = 6;
-                animationComponent.currentFrame = runRandom.Value.NextInt(0, 5);
-                animationComponent.frameTimerMax = .1f;
-                animationComponent.frameTimer = 0f; // Reset the frame timer
+                animationComponent.FrameCount = 6;
+                animationComponent.CurrentFrame = runRandom.Value.NextInt(0, 5);
+                animationComponent.FrameTimerMax = .1f;
+                animationComponent.FrameTimer = 0f; // Reset the frame timer
                 animationComponent.animationHeightOffset = 5;
                 //animationComponent.animationWidthOffset =  horizontalMultiplier;
                 break;
             default:
             case EntitySpawner.AnimationType.Idle:
-                animationComponent.frameCount = 2;
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = .0875f;
-                animationComponent.frameTimer = 0f; // Reset the frame timer
+                animationComponent.FrameCount = 2;
+                animationComponent.CurrentFrame = 0;
+                animationComponent.FrameTimerMax = .0875f;
+                animationComponent.FrameTimer = 0f; // Reset the frame timer
                 animationComponent.animationHeightOffset = 0;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Walk:
-                animationComponent.frameCount = 4;
-                animationComponent.currentFrame = walkRandom.Value.NextInt(0, 3);
-                animationComponent.frameTimerMax = 0.15f;
-                animationComponent.frameTimer = 0f;
+                animationComponent.FrameCount = 4;
+                animationComponent.CurrentFrame = walkRandom.Value.NextInt(0, 3);
+                animationComponent.FrameTimerMax = 0.15f;
+                animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 1;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
 
                 break;
             case EntitySpawner.AnimationType.Defend:
-                animationComponent.frameCount = 3;
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = .1f;
-                animationComponent.frameTimer = 0f;
+                animationComponent.FrameCount = 3;
+                animationComponent.CurrentFrame = 0;
+                animationComponent.FrameTimerMax = .1f;
+                animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 2;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.Block:
-                animationComponent.frameCount = 3;
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = .0875f;
-                animationComponent.frameTimer = 0f;
+                animationComponent.FrameCount = 3;
+                animationComponent.CurrentFrame = 0;
+                animationComponent.FrameTimerMax = .0875f;
+                animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 3;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
             case EntitySpawner.AnimationType.TakeDamage:
-                animationComponent.frameCount = 3;
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = .0875f;
-                animationComponent.frameTimer = 0f;
+                animationComponent.FrameCount = 3;
+                animationComponent.CurrentFrame = 0;
+                animationComponent.FrameTimerMax = .0875f;
+                animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 6;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
 
                 break;
             case EntitySpawner.AnimationType.Die:
-                animationComponent.frameCount = 6;
-                animationComponent.currentFrame = 0;
-                animationComponent.frameTimerMax = 0.12f;
-                animationComponent.frameTimer = 0f;
+                animationComponent.FrameCount = 6;
+                animationComponent.CurrentFrame = 0;
+                animationComponent.FrameTimerMax = 0.12f;
+                animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 4;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
@@ -718,3 +759,5 @@ public struct UnitPhysicsData : IComponentData
     public float3 velocity;
     public float radius;
 }
+
+

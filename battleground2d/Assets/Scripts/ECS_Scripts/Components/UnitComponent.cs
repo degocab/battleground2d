@@ -12,6 +12,6 @@ public struct Unit : IComponentData
     /// rank 6: commander's personal guard
     /// rank 7: commander - player or AI commander
     /// </summary>
-    public int rank;
+    public int Rank;
 
 }

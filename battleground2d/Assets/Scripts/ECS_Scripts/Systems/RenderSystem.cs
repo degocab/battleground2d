@@ -20,6 +20,7 @@ using UnityEngine;
 public class RenderSystem : SystemBase
 {
     public static EntitySpawner entitySpawner;
+    private MaterialReferences materialRefs;
     protected override void OnStartRunning()
     {
         entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
@@ -213,7 +214,7 @@ public class RenderSystem : SystemBase
         materialPropertyBlock = new MaterialPropertyBlock();
         shaderMainTexUVid = Shader.PropertyToID("_MainTex_UV");
         mesh = entitySpawner.quadMesh;
-        material = entitySpawner.walkingSpriteSheetMaterial;
+        material = materialRefs.WalkingSpriteSheetMaterial;
 
         if (mesh == null)
         {
@@ -236,7 +237,7 @@ public class RenderSystem : SystemBase
     protected override void OnCreate()
     {
         base.OnCreate();
-
+        materialRefs = Resources.Load<MaterialReferences>("MaterialReferences");
         nativeListArray = new NativeList<RenderData>[POSITION_SLICES];
 
         for (int i = 0; i < POSITION_SLICES; i++)
@@ -265,6 +266,9 @@ public class RenderSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+
         Camera camera = Camera.main;
         float cameraWidth = camera.aspect * camera.orthographicSize;
         float3 cameraPosition = camera.transform.position;
@@ -298,7 +302,7 @@ public class RenderSystem : SystemBase
         yBottom -= marginY;
 
         int estimatedEntitiesTotal = GetEntityQuery(typeof(Translation)).CalculateEntityCount();
-        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES + 50;
+        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES + 100;
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {

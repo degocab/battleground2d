@@ -28,6 +28,7 @@ public struct QuadrantData
     public Entity entity;
     public float2 position;
     public QuadrantEntity quadrantEntity;
+    public AnimationComponent animationComponent;
 }
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
@@ -97,6 +98,7 @@ ComponentType.Exclude<CommanderComponent>());
 
         [ReadOnly] public ComponentTypeHandle<Translation> translationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> quadrantEntityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentTypeHandle;
         [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public NativeMultiHashMap<int, QuadrantData>.ParallelWriter quadrantMultiHashMap;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -104,14 +106,19 @@ ComponentType.Exclude<CommanderComponent>());
             var translations = chunk.GetNativeArray(translationTypeHandle);
             var entities = chunk.GetNativeArray(entityTypeHandle);
             var quadrantEntities = chunk.GetNativeArray(quadrantEntityTypeHandle);
+            NativeArray<AnimationComponent> chunkAnimationComponents = chunk.GetNativeArray(AnimationComponentTypeHandle);
+
             for (int i = 0; i < chunk.Count; i++)
             {
+                var animationComponent = chunkAnimationComponents[i];
+
                 float2 translation2d = translations[i].Value.xy;
                 int hashMapKey = GetPositionHashMapKey(translation2d);
                 quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
                 {
                     entity = entities[i],
                     position = translation2d,
+                    animationComponent = animationComponent,
                     quadrantEntity = quadrantEntities[i]
                 });
             }
@@ -123,7 +130,9 @@ ComponentType.Exclude<CommanderComponent>());
 
     protected override void OnUpdate()
     {
-        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity));
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity), typeof(AnimationComponent));
         quadrantMultiHashMap.Clear();
         var entityCount = entityQuery.CalculateEntityCount();
         if (entityCount > quadrantMultiHashMap.Capacity)
@@ -135,7 +144,8 @@ ComponentType.Exclude<CommanderComponent>());
             translationTypeHandle = GetComponentTypeHandle<Translation>(true),
             quadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             entityTypeHandle = GetEntityTypeHandle(),
-            quadrantMultiHashMap = quadrantMultiHashMap.AsParallelWriter()
+            quadrantMultiHashMap = quadrantMultiHashMap.AsParallelWriter(),
+            AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true)
         };
         Dependency = job.ScheduleParallel(entityQuery, Dependency);
         Dependency.Complete();

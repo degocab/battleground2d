@@ -636,7 +636,7 @@ MonoBehaviour:
     state: 2
     show: 0
     deleteQuestion: 0
-  - s: "Gameplay v1\r\n[] Add simple movement using HasTarget\r\n[] Add enemy spawning\r\n[]
+  - s: "Gameplay v1\r\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
       Make units search for each other\r\n[] Make units fight(for now just swing)\r\n\t[]
       add unit damage\r\n\t[] add combat collision resolution\r\n"
     state: 2
@@ -1096,7 +1096,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1877706034}
   - component: {fileID: 1877706033}
-  - component: {fileID: 1877706035}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1316,6 +1315,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 872cb392047bed94b98e6b5b4fa54717, type: 2}
   - {fileID: 2100000, guid: 29ae43844a9856d4584e54f4f7d1032d, type: 2}
   unitPrefab: {fileID: 952375374}
+  spawnConfig: {fileID: 11400000, guid: 7500725a709982945b1f94e40b07aa93, type: 2}
 --- !u!4 &1877706034
 Transform:
   m_ObjectHideFlags: 0
@@ -1330,19 +1330,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1877706035
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1877706032}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcf5ca8168dcb70468128d32bf3724d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  disableSimulationGroup: 1
 --- !u!1 &1985584785
 GameObject:
   m_ObjectHideFlags: 0

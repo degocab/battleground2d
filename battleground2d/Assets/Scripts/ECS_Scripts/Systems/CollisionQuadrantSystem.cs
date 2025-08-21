@@ -76,6 +76,8 @@ public partial class CollisionQuadrantSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         collisionQuadrantMap.Clear();
         int count = _collisionQuery.CalculateEntityCount();
 

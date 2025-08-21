@@ -1,8 +1,11 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEditor.SceneManagement;
 using UnityEngine;
-[UpdateBefore(typeof(CombatSystem))]
+using static UnityEngine.EventSystems.EventTrigger;
+//[UpdateBefore(typeof(GridSystem))]
+[UpdateBefore(typeof(ProcessCommandSystem))]
 public class PlayerControlSystem : SystemBase
 {
     public Transform cameraMain;
@@ -13,8 +16,55 @@ public class PlayerControlSystem : SystemBase
         if (cameraMain == null)
             cameraMain = Camera.main.transform;
     }
+
+    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+
+    protected override void OnCreate()
+    {
+        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+    }
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+
+
+        // Check if we have a commander
+        if (!HasSingleton<CommanderComponent>())
+            return;
+
+
+        var ecb = _ecbSystem.CreateCommandBuffer();
+        var commanderEntity = GetSingletonEntity<CommanderComponent>();
+        var commanderTranslation = GetComponent<Translation>(commanderEntity);
+
+        // Number keys 1-9
+        for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
+        {
+            if (Input.GetKeyDown((KeyCode)key))
+            {
+                int commandType = key - (int)KeyCode.Alpha1; // 0-8
+
+                // Create command based on number pressed
+                var command = CreateCommandFromNumber(commandType, commanderTranslation.Value);
+
+
+                // Apply to all selected units (for now, just commander - extend later)
+                var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+                Entities
+                    .WithName("ApplyMouseCommand")
+                    .WithAll<Unit>()
+                    .WithNone<CommanderComponent>()
+                    .ForEach((Entity entity, int entityInQueryIndex) =>
+                    {
+                        parallelEcb.SetComponent(entityInQueryIndex, entity, command);
+                    }).ScheduleParallel();
+
+                Debug.Log($"Assigned command: {command.Command} to all units");
+            }
+        }
+                                    
+
         float moveX = 0f;
         float moveY = 0f;
         if (Input.GetKey(KeyCode.W)) moveY = 1f;
@@ -28,45 +78,11 @@ public class PlayerControlSystem : SystemBase
         //will be needed for riding horse
         // should give you more zoomed out vision!
         if (Input.GetKey(KeyCode.Tab))
-            Camera.main.orthographicSize = 7f;
+            Camera.main.orthographicSize = 10f;
         else
             Camera.main.orthographicSize = 4f;
         var time = Time.DeltaTime;
 
-
-        ////update camera location 
-        //float horizontal = Input.GetAxis("Horizontal");  // Left/Right input
-        //float vertical = Input.GetAxis("Vertical");      // Up/Down inputw
-        //Vector3 targetPosition = new Vector3();
-
-        //Vector3 moveDirection = new Vector3(horizontal, vertical, 0).normalized;
-        //targetPosition += moveDirection * 3f * time;
-        //targetPosition.z = -13f;
-
-
-        //Entities.WithAll<CommanderComponent>().ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-        //{
-        //    movementSpeedComponent.moveX = moveX;
-        //    movementSpeedComponent.moveY = moveY;
-        //    movementSpeedComponent.isRunnning = isRunnning;
-        //}).ScheduleParallel();
-
-        //Entities.WithAll<CommanderComponent>().ForEach((ref PositionComponent position, ref MovementSpeedComponent velocity, in PlayerInputComponent input) => 
-        //{
-
-        //    if (velocity.isRunnning)
-        //    {
-        //        velocity.randomSpeed = 2f;// 1.25f;
-        //    }
-        //    else
-        //    {
-        //        velocity.randomSpeed = .525f;
-        //    }
-        //    float3 vel = (new float3(velocity.moveX, velocity.moveY, 0) * velocity.randomSpeed);
-
-        //    vel.z = 0;
-        //    velocity.value = vel;
-        //}).ScheduleParallel();
 
         Vector3 newCamPos = new Vector3();
         Entities.ForEach((ref PlayerInputComponent playerInputComponent, ref Translation translation) =>
@@ -76,42 +92,51 @@ public class PlayerControlSystem : SystemBase
             cameraMain.position = newCamPos;
         }).WithoutBurst().Run();
 
-
-
-
-        //get direction
-        //Entities
-        //    .WithAll<CommanderComponent>()//remove to allow all units to move from wasd
-        //    .ForEach((ref PlayerInputComponent playerInputComponent,ref MovementSpeedComponent velocity, ref AnimationComponent animationComponent) =>
-        //    {
-        //        if (velocity.value.x > 0)
-        //        {
-        //            animationComponent.direction = EntitySpawner.Direction.Right;
-        //        }
-        //        else if (velocity.value.x < 0)
-        //        {
-        //            animationComponent.direction = EntitySpawner.Direction.Left;
-        //        }
-        //        else if (velocity.value.y > 0)
-        //        {
-        //            animationComponent.direction = EntitySpawner.Direction.Up;
-        //        }
-        //        else if (velocity.value.y < 0)
-        //        {
-        //            animationComponent.direction = EntitySpawner.Direction.Down;
-        //        }
-        //        else
-        //        {
-        //            // In case of the entity being at the origin (0, 0)
-        //            if (!animationComponent.finishAnimation)
-        //            {
-        //                animationComponent.direction = animationComponent.prevDirection; // Or some default direction 
-        //            }
-        //        }
-        //        animationComponent.prevDirection = animationComponent.direction;
-
-        //    }).ScheduleParallel();
-
     }
 
+    private CommandData CreateCommandFromNumber(int number, float3 commanderPosition)
+    {
+        Debug.Log("Commander Number" + number);
+
+        switch (number)
+        {
+            case 0: // Move
+                return CommandFactory.CreateMoveCommand(commanderPosition, 5f, 0.5f);
+
+            case 1: // Find target
+                return CommandFactory.CreateFindTargetCommand();
+
+            case 2: // Attack position
+                return CommandFactory.CreateAttackCommand(GetMouseWorldPosition());
+
+            case 3: // Defend
+                return CommandFactory.CreateCommand(CommandType.Defend);
+
+            case 4: // Long move
+                return CommandFactory.CreateMoveCommand(commanderPosition, 10f, 1f);
+
+            case 5: // Stop
+                return CommandFactory.CreateCommand(CommandType.Idle);
+
+            case 6: // Custom command 1
+                return CommandFactory.CreateCommand(CommandType.FindTarget);
+
+            case 7: // Custom command 2
+                return CommandFactory.CreateMoveCommand(commanderPosition, 3f, 0.2f);
+
+            case 8: // Custom command 3
+                return CommandFactory.CreateAttackCommand(Entity.Null); // Attack anything
+
+            default: // Fallback
+                return CommandFactory.CreateCommand(CommandType.Idle);
+        }
+    }
+
+    private float2 GetMouseWorldPosition()
+    {
+        Vector3 mousePos = Input.mousePosition;
+        mousePos.z = Camera.main.nearClipPlane;
+        Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
+        return new float2(worldPos.x, worldPos.y);
+    }
 }

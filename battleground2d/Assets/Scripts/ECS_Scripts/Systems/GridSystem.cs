@@ -16,7 +16,7 @@ using UnityEditor.U2D.Path;
 using System.Collections.Generic;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
-[UpdateBefore(typeof(CombatSystem))]
+[UpdateBefore(typeof(QuadrantSystem))]
 [BurstCompile]
 public class GridSystem : SystemBase
 {
@@ -26,7 +26,8 @@ public class GridSystem : SystemBase
 
     protected override void OnUpdate()
     {
-
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         //draw rectangle and store first qaudtree
         var boundary = new Rectangle(500f, 500f, 1000f, 1000f);
         var qtree = new QuadTree(boundary, 4);

@@ -9,6 +9,8 @@ public class CollisionResolutionSystem : SystemBase
 {
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         EntityManager entityManager = EntityManager;
 
         Entities

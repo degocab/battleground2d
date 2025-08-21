@@ -5,6 +5,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(FindTargetSystem))]
@@ -29,7 +30,8 @@ public class ProcessCommandSystem : JobComponentSystem
         //});
         _query = GetEntityQuery(
         ComponentType.ReadOnly<Unit>(),
-        ComponentType.ReadOnly<CommandData>(),
+        ComponentType.ReadWrite<CommandData>(),
+        ComponentType.ReadWrite<CombatState>(),
         ComponentType.Exclude<CommanderComponent>());
 
 
@@ -38,41 +40,29 @@ public class ProcessCommandSystem : JobComponentSystem
     }
 
     [BurstCompile]
-    private struct AssignFindTargetCommandJob : IJobChunk
+    private struct AssignCommandJob : IJobChunk
     {
         //public float Time;
 
         public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
+
             var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-
-            //bool shouldAssign = (Time % 5f < 0.1f); // simulate assignment every 5 seconds
-
-            //if (!shouldAssign)
-            //    return;         
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = entities[i];
                 var command = commandDataArray[i];
+                var combatState = combatStateArray[i];
 
-                //todo: clean commandtags.....
-                //if (command.Command != CommandType.FindTarget)
-                //{
-                //    command.Command = CommandType.FindTarget;
-                //    command.TargetEntity = Entity.Null;
-                //    command.TargetPosition = float3.zero;
-
-                //    commandDataArray[i] = command;
-
-                //    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                //}
                 switch (command.Command)
                 {
                     case CommandType.Idle:
@@ -104,9 +94,30 @@ public class ProcessCommandSystem : JobComponentSystem
                         commandDataArray[i] = command;
                         break;
                     case CommandType.Attack:
-                        command.TargetEntity = Entity.Null;
-                        command.TargetPosition = float2.zero;
-                        ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0)
+                        {
+                            // This is a move-then-attack command
+                            // First, move to the position
+                            ECB.AddComponent(chunkIndex, entity, new HasTarget
+                            {
+                                Type = HasTarget.TargetType.Position,
+                                TargetPosition = command.TargetPosition,
+                                TargetEntity = Entity.Null
+                            });
+                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+
+                            // Then add a tag to find targets after arriving
+                            ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                        }
+                        else if (command.TargetEntity != Entity.Null)
+                        {
+                            // This is a direct attack command on a specific entity
+                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                            ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                        }
+
+                        command.Command = CommandType.Idle;
+                        commandDataArray[i] = command;
                         break;
                     case CommandType.Defend:
                         break;
@@ -119,10 +130,16 @@ public class ProcessCommandSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        var job = new AssignFindTargetCommandJob
+
+        //get commander 
+        // Check if we have a commander
+
+
+        var job = new AssignCommandJob
         {
             //Time = UnityEngine.Time.deltaTime,
             CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
         };
@@ -151,3 +168,22 @@ public struct CommandData : IComponentData
     public float2 TargetPosition; // Optional (used for MoveTo, etc.)
     public Entity TargetEntity;   // Optional (used for Attack, etc.)
 }
+
+// Add to existing components
+public struct AttackCommandTag : IComponentData { }
+
+public struct IsAttacking : IComponentData { }
+
+//public struct HealthComponent : IComponentData
+//{
+//    public float CurrentHealth;
+//    public float MaxHealth;
+//}
+
+public struct DamageComponent : IComponentData
+{
+    public float Value;
+    public Entity SourceEntity;
+}
+
+public struct DeathTag : IComponentData { }

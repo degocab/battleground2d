@@ -35,7 +35,7 @@ public class UIManager : MonoBehaviour
 
             if (healthSlider != null)
             {
-                healthSlider.value = health.health / health.maxHealth;
+                healthSlider.value = health.Health / health.maxHealth;
             }
         }
 

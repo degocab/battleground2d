@@ -22,6 +22,8 @@ public class AnimationSystem : SystemBase
     //}
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         var deltaTime = Time.DeltaTime;
 
         Entities.ForEach((ref AnimationComponent spriteSheetAnimationData, ref Translation translation) =>
@@ -32,23 +34,24 @@ public class AnimationSystem : SystemBase
                 // Do nothing or handle frozen state (keep the last frame as it is)
                 return;
             }
-            spriteSheetAnimationData.frameTimer += deltaTime;
+            spriteSheetAnimationData.FrameTimer += deltaTime;
 
-            if (spriteSheetAnimationData.frameCount > 0)
+            if (spriteSheetAnimationData.FrameCount > 0)
             {
                 //float frameTimerMax = entitySpawner.frameTimerMaxDebug;
-                float frameTimerMax = spriteSheetAnimationData.frameTimerMax;
-                while (spriteSheetAnimationData.frameTimer >= frameTimerMax)
+                float frameTimerMax = spriteSheetAnimationData.FrameTimerMax;
+                while (spriteSheetAnimationData.FrameTimer >= frameTimerMax)
                 {
-                    spriteSheetAnimationData.frameTimer -= frameTimerMax;
-                    spriteSheetAnimationData.currentFrame = (spriteSheetAnimationData.currentFrame + 1) % spriteSheetAnimationData.frameCount;
+                    spriteSheetAnimationData.FrameTimer -= frameTimerMax;
+                    spriteSheetAnimationData.CurrentFrame = (spriteSheetAnimationData.CurrentFrame + 1) % spriteSheetAnimationData.FrameCount;
 
                     //float uvWidth = 1f / spriteSheetAnimationData.frameCount;
                     //float uvHeight = 1f;
-                    float uvWidth = 1f / 24f;// divide by num of sprites horizontally
-                    float uvHeight = 1f / 24f;// divide by num of sprites vertically
-                    float uvOffsetX = uvWidth * (spriteSheetAnimationData.currentFrame  +  ((spriteSheetAnimationData.animationWidthOffset -1 )* spriteSheetAnimationData.frameCount));
-                    float uvOffsetY = uvHeight * (spriteSheetAnimationData.animationHeightOffset);
+                    var cellHeight = 1f / 24f;// => 24 is grid count of pixel art frames
+                    float uvWidth = cellHeight;// divide by num of sprites horizontally
+                    float uvHeight = cellHeight;// divide by num of sprites vertically
+                    float uvOffsetX = uvWidth * (spriteSheetAnimationData.CurrentFrame  +  (((spriteSheetAnimationData.animationWidthOffset -1 ))* spriteSheetAnimationData.FrameCount));
+                    float uvOffsetY = uvHeight * (spriteSheetAnimationData.animationHeightOffset + (spriteSheetAnimationData.UnitType == EntitySpawner.UnitType.Enemy ?  16 : 0)) ;
                     spriteSheetAnimationData.uv = new Vector4(uvWidth, uvHeight, uvOffsetX, uvOffsetY);
 
                     float3 position = translation.Value;

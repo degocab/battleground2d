@@ -18,6 +18,8 @@ public partial class UnitMoveToTargetSystem : SystemBase
     [BurstCompile]
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         float reachThreshold = 0.125f;
 

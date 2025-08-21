@@ -11,6 +11,7 @@ using TMPro.EditorUtilities;
 using static UnityEngine.EventSystems.EventTrigger;
 using Unity.Burst;
 using System.Text;
+using RTSToolkit;
 
 
 
@@ -20,6 +21,7 @@ using System.Text;
 // finished separating find targets and add component into two jobs.
 // need to implement quadrant system
 // https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
+// Entities 0.16.0-preview.21
 
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
@@ -40,6 +42,7 @@ public class FindTargetSystem : JobComponentSystem
     {
         m_Query = GetEntityQuery(
         ComponentType.ReadOnly<Unit>(),
+        ComponentType.ReadOnly<AnimationComponent>(),
         ComponentType.ReadOnly<Translation>(),
         ComponentType.ReadWrite<FindTargetCommandTag>(),
         ComponentType.Exclude<CommanderComponent>(), // <== exclude commanders
@@ -173,16 +176,19 @@ public class FindTargetSystem : JobComponentSystem
 
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentTypeHandle;
         [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkTranslations = chunk.GetNativeArray(TranslationTypeHandle);
             NativeArray<QuadrantEntity> chunkQuadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
+            NativeArray<AnimationComponent> chunkAnimationComponents = chunk.GetNativeArray(AnimationComponentTypeHandle);
             var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
             for (var i = 0; i < chunk.Count; i++)
             {
                 //Entity entity = chunkEntities[i];
                 var unitTranslation = chunkTranslations[i];
+                var animationComponent = chunkAnimationComponents[i];
                 //var chunkUNit = chunkUnits[i];
                 float2 unitPosition = unitTranslation.Value.xy;
                 Entity closestTargetEntity = Entity.Null;
@@ -191,17 +197,17 @@ public class FindTargetSystem : JobComponentSystem
                 float closestTargetDistance = float.MaxValue;
                 int hashMapKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
 
-                FindTarget(hashMapKey, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
 
                 //corners
-                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
 
 
                 closestTargetEntityArray[firstEntityIndex + i] = new EntityWithPosition
@@ -217,7 +223,8 @@ public class FindTargetSystem : JobComponentSystem
     private static void FindTarget(int hashMapKey
         , float2 unitPosition
         , QuadrantEntity quadrantEntity
-        , ref Entity closestTargetEntity
+, AnimationComponent animationComponent,
+ref Entity closestTargetEntity
         , ref float closestTargetDistance
         , ref NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap,
 ref float2 closestTargetPosition)
@@ -229,24 +236,29 @@ ref float2 closestTargetPosition)
         {
             do
             {
+                // CRITICAL: Check if target is an enemy (different UnitType)
+                bool isEnemy = (animationComponent.UnitType != quadrantData.animationComponent .UnitType);
                 if (quadrantEntity.typeEnum != quadrantData.quadrantEntity.typeEnum)
                 {
-                    if (closestTargetEntity == Entity.Null)
+                    if (isEnemy)
                     {
-                        // no target
-                        closestTargetEntity = quadrantData.entity;
-                        closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
-                        closestTargetPosition = quadrantData.position;
-                    }
-                    else
-                    {
-                        if (math.distancesq(unitPosition, quadrantData.position) < closestTargetDistance)
+                        if (closestTargetEntity == Entity.Null)
                         {
-                            //target is closer
+                            // no target
                             closestTargetEntity = quadrantData.entity;
                             closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
                             closestTargetPosition = quadrantData.position;
                         }
+                        else
+                        {
+                            if (math.distancesq(unitPosition, quadrantData.position) < closestTargetDistance)
+                            {
+                                //target is closer
+                                closestTargetEntity = quadrantData.entity;
+                                closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
+                                closestTargetPosition = quadrantData.position;
+                            }
+                        } 
                     }
                 }
 
@@ -263,6 +275,7 @@ ref float2 closestTargetPosition)
 
         if (targetArray.Length == 0)
         {
+            Debug.Log("No Targets!");
             targetEntityArray.Dispose();
             targetTranslationArray.Dispose();
             targetArray.Dispose();
@@ -302,6 +315,7 @@ ref float2 closestTargetPosition)
             closestTargetEntityArray = closestTargetEntityArray,
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
+            AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             entityTypeHandle = GetEntityTypeHandle(),
         };
         var jobHandle = findTargetQuadrantSystemob.ScheduleParallel(m_Query, inputDeps);
@@ -331,6 +345,8 @@ public class SystemOrderLogger : ComponentSystem
 
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         if (hasLogged)
             return;
 

@@ -11,6 +11,11 @@ public class AddCollisionBufferSystem : SystemBase
 {
     protected override void OnUpdate()
     {
+        // Check if game is in playing state
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+
+
         // Use a single ForEach to add the buffer only if it's missing
         Entities
             .WithNone<CollisionEvent2D>() // Only entities that don't have the buffer

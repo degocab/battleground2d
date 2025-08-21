@@ -47,6 +47,8 @@ public partial class CollisionDetectionSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
         //EntityQuery _entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>());

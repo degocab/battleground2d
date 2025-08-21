@@ -13,6 +13,8 @@ public class PhysicsSystem : SystemBase
 {
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         float deltaTime = Time.DeltaTime;
 
         Entities

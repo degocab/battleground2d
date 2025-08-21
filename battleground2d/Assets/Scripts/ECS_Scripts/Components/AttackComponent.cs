@@ -8,6 +8,11 @@ public struct AttackComponent : IComponentData
     public bool isAttacking;
     public bool isDefending;
     public bool isTakingDamage;
+
+    public float Damage;
+    public float Range;
+    public float AttackRate; // Attacks per second
+    public float LastAttackTime;
 }
 
 public struct AttackCooldownComponent : IComponentData

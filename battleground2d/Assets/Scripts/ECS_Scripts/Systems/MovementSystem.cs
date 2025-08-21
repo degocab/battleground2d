@@ -26,6 +26,8 @@ public class MovementSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
         var deltaTime = Time.DeltaTime;
         float moveX = 0f;
         float moveY = 0f;
@@ -56,6 +58,8 @@ public class MovementSystem : SystemBase
         // Randomize movement speed
         float minRange = 1f;
         float maxRange = 1.125f;
+        //float minRange = 1.75f;
+        //float maxRange = 1.875f;
         var speedJobHandle = Entities.WithName("ApplyRandomSpeed")
           .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
           {
@@ -92,12 +96,12 @@ public class MovementSystem : SystemBase
                   {
                       if (velocity.x > 0)
                       {
-                          animationComponent.direction = EntitySpawner.Direction.Right;
+                          animationComponent.Direction = EntitySpawner.Direction.Right;
                           animationComponent.animationWidthOffset = 1;
                       }
                       else
                       {
-                          animationComponent.direction = EntitySpawner.Direction.Left;
+                          animationComponent.Direction = EntitySpawner.Direction.Left;
                           animationComponent.animationWidthOffset = 2;
                       }
                   }
@@ -105,18 +109,18 @@ public class MovementSystem : SystemBase
                   {
                       if (velocity.y > 0)
                       {
-                          animationComponent.direction = EntitySpawner.Direction.Up;
+                          animationComponent.Direction = EntitySpawner.Direction.Up;
                           animationComponent.animationWidthOffset = 3;
                       }
                       else
                       {
-                          animationComponent.direction = EntitySpawner.Direction.Down;
+                          animationComponent.Direction = EntitySpawner.Direction.Down;
                           animationComponent.animationWidthOffset = 4;
                       }
                   }
               }
 
-              animationComponent.prevDirection = animationComponent.direction;
+              animationComponent.prevDirection = animationComponent.Direction;
           }).ScheduleParallel(speedJobHandle);
 
         // Set the final dependency for the next system
