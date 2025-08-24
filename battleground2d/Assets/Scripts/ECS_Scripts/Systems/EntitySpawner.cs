@@ -8,6 +8,7 @@ using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 using static EntitySpawner;
+using static FormationGenerator;
 using static UnityEngine.EventSystems.EventTrigger;
 using static UnityEngine.UI.CanvasScaler;
 
@@ -664,8 +665,8 @@ public class EntitySpawner : MonoBehaviour
             {
                 unitFactory = new UnitFactory(entityManager);
                 //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
-                unitFactory.SpawnUnits(50 , UnitType.Default,CommandFactory.CreateIdleCommand());
-                unitFactory.SpawnUnits(50, UnitType.Enemy, CommandFactory.CreateIdleCommand());
+                unitFactory.SpawnUnits(5000 , UnitType.Default,CommandFactory.CreateIdleCommand(), new float2(5,0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(5000, UnitType.Enemy, CommandFactory.CreateIdleCommand(), new float2(-5, 0), FormationType.Horde);
                 unitFactory.SpawnCommander();
 
                 hasSpawnedUnits = true; // ← MARK AS SPAWNED

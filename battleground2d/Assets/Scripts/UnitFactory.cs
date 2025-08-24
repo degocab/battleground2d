@@ -1,7 +1,9 @@
-﻿using Unity.Entities;
+﻿using System.Collections.Generic;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static EntitySpawner;
 
 public class UnitFactory
@@ -15,41 +17,52 @@ public class UnitFactory
         this.archetypeFactory = new UnitArchetypeFactory(entityManager);
     }
 
-    public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, CommandData? initialCommand = null)
+    public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
     {
         var formationGenerator = new FormationGenerator();
-        var positions = formationGenerator.GeneratePhalanxFormation(count);
+
+        List<float2> positions = new List<float2>();
+        switch (formationType)
+        {
+            case FormationGenerator.FormationType.Phalanx:
+                positions = formationGenerator.GeneratePhalanxFormation(count);
+                break;
+            case FormationGenerator.FormationType.Horde:
+            default:
+                positions = formationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.3f, 12345, spawnPosition);
+                break;
+        }
 
         for (int i = 0; i < positions.Count; i++)
         {
-            SpawnUnit(positions[i], unitType, GetRank(i), initialCommand);
+            SpawnUnit(positions[i], unitType, GetRank(i), initialCommand, spawnPosition);
         }
     }
 
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float3(0, 0, 0), UnitType.Default, 7);
+        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
-    private Entity SpawnUnit(float3 position, UnitType unitType, int rank, CommandData? initialCommand = null)
+    private Entity SpawnUnit(float2 position, UnitType unitType, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
         var unit = CreateUnitBase(position, unitType, rank);
 
         // Use provided command or create default move command
-        CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(position);
+        CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
         entityManager.SetComponentData(unit, command);
 
         return unit;
     }
 
     // Overload for specific command types
-    private Entity SpawnUnit(float3 position, UnitType unitType, int rank, CommandType commandType)
+    private Entity SpawnUnit(float2 position, UnitType unitType, int rank, CommandType commandType)
     {
         return SpawnUnit(position, unitType, rank, CommandFactory.CreateCommand(commandType));
     }
 
-    private Entity CreateUnitBase(float3 position, UnitType unitType, int rank)
+    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank)
     {
         var archetype = archetypeFactory.GetArchetype(rank);
         var unit = entityManager.CreateEntity(archetype);
@@ -83,7 +96,8 @@ public class UnitFactory
             damage = 10f,
             range = 1f,
             isAttacking = false,
-            isDefending = false
+            isDefending = false,
+            AttackRate = .1f,
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
@@ -173,7 +187,7 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(CommandData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent)
         );
     }
 
@@ -185,7 +199,7 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent)
         );
     }
 }

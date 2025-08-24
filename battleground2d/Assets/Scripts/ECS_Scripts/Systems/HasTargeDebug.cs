@@ -1,6 +1,7 @@
-﻿//using Unity.Entities;
-//using Unity.Transforms;
-//using UnityEngine;
+﻿using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
+using UnityEngine;
 
 //[UpdateBefore(typeof(UnitMoveToTargetSystem))]
 //public class HasTargetDebug : ComponentSystem
@@ -11,8 +12,8 @@
 //        {
 //            if (entity != Entity.Null)
 //            {
-//                Translation targetTranslation = EntityManager.GetComponentData<Translation>(hasTarget.targetEntity);
-//                Debug.DrawLine(translation.Value, targetTranslation.Value, Color.red);
+//                float2 targetTranslation = hasTarget.TargetPosition;// EntityManager.GetComponentData<Translation>(hasTarget.TargetEntity);
+//                Debug.DrawLine(translation.Value, new float3(targetTranslation,0), Color.red);
 //                // https://youtu.be/t11uB7Gl6m8?t=823
 //            }
 

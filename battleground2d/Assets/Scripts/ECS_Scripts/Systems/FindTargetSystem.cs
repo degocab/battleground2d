@@ -1,140 +1,93 @@
-﻿using Unity.Transforms;
-using Unity.Entities;
+﻿using Unity.Entities;
 using Unity.Mathematics;
-using System;
-using UnityEngine;
-using UnityEngine.PlayerLoop;
+using Unity.Transforms;
 using Unity.Jobs;
 using Unity.Collections;
-using System.Collections.Generic;
-using TMPro.EditorUtilities;
-using static UnityEngine.EventSystems.EventTrigger;
 using Unity.Burst;
 using System.Text;
-using RTSToolkit;
-
-
-
-//https://youtu.be/hP4Vu6JbzSo?t=198
-//working on setting up this to match codemoney
-// use IJobChunk instead of Ijobforeach....
-// finished separating find targets and add component into two jobs.
-// need to implement quadrant system
-// https://docs.unity3d.com/Packages/com.unity.entities@0.16/manual/chunk_iteration_job.html
-// Entities 0.16.0-preview.21
-
-
-[UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
+using UnityEngine;
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitMoveToTargetSystem))]
 [UpdateAfter(typeof(ProcessCommandSystem))]
-public class FindTargetSystem : JobComponentSystem
+public partial class FindTargetSystem : SystemBase
 {
+    private EntityQuery _findTargetQuery;
+    private EntityQuery _targetQuery;
+    private EndSimulationEntityCommandBufferSystem _endSimulationECBSystem;
+    private int _updateCounter;
+    private const int UpdateInterval = 2;
+
+    // Double buffer for closest targets
+    private NativeArray<EntityWithPosition> _closestTargetsBuffer1;
+    private NativeArray<EntityWithPosition> _closestTargetsBuffer2;
+    private bool _useBuffer1 = true;
+
     private struct EntityWithPosition
     {
-        public Entity entity;
-        public float2 position;
+        public Entity Entity;
+        public float2 Position;
     }
-
-    private EntityQuery m_Query;
-    private EndSimulationEntityCommandBufferSystem endSimlationEntityCommandBufferSystem;
 
     protected override void OnCreate()
     {
-        m_Query = GetEntityQuery(
-        ComponentType.ReadOnly<Unit>(),
-        ComponentType.ReadOnly<AnimationComponent>(),
-        ComponentType.ReadOnly<Translation>(),
-        ComponentType.ReadWrite<FindTargetCommandTag>(),
-        ComponentType.Exclude<CommanderComponent>(), // <== exclude commanders
-        ComponentType.Exclude<HasTarget>());
+        _findTargetQuery = GetEntityQuery(
+            ComponentType.ReadOnly<Unit>(),
+            ComponentType.ReadOnly<AnimationComponent>(),
+            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadWrite<FindTargetCommandTag>(),
+            ComponentType.Exclude<CommanderComponent>(),
+            ComponentType.Exclude<HasTarget>()
+        );
 
+        _targetQuery = GetEntityQuery(
+            ComponentType.ReadOnly<TargetComponent>(),
+            ComponentType.ReadOnly<Translation>()
+        );
 
-        endSimlationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        base.OnCreate();
+        _endSimulationECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        RequireForUpdate(_findTargetQuery);
+    }
 
+    protected override void OnDestroy()
+    {
+        // Clean up both buffers
+        if (_closestTargetsBuffer1.IsCreated) _closestTargetsBuffer1.Dispose();
+        if (_closestTargetsBuffer2.IsCreated) _closestTargetsBuffer2.Dispose();
+        base.OnDestroy();
     }
 
     [BurstCompile]
-    private struct FindTargetBurstJob : IJobChunk
+    private struct AddTargetComponentJob : IJobChunk
     {
-        [DeallocateOnJobCompletion]
-        [ReadOnly]
-        public NativeArray<EntityWithPosition> targetArray;
-        public NativeArray<Entity> closestTargetEntityArray;
+        [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        public EntityCommandBuffer.ParallelWriter ECB;
 
-        [ReadOnly] public ComponentTypeHandle<Unit> UnitTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
-        [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            var chunkUnits = chunk.GetNativeArray(UnitTypeHandle);
-            var chunkTranslations = chunk.GetNativeArray(TranslationTypeHandle);
-            var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
-            for (var i = 0; i < chunk.Count; i++)
+            var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = chunkEntities[i];
-                var unitTranslation = chunkTranslations[i];
-                var chunkUNit = chunkUnits[i];
-                float2 unitPosition = unitTranslation.Value.xy;
-                Entity closestTargetEntity = Entity.Null;
-                float2 closestTargetPosition = float2.zero;
-                float closestDistance = float.MaxValue;
+                int flatIndex = firstEntityIndex + i;
 
-                for (var j = 0; j < targetArray.Length; j++)
+                if (ClosestTargets[flatIndex].Entity != Entity.Null)
                 {
-                    // Cycling through all entities with "Target" tagg
-
-                    EntityWithPosition targetEntityWithPosition = targetArray[j];
-
-                    float2 targetPos = targetEntityWithPosition.position.xy;
-                    if (closestTargetEntity == Entity.Null)
+                    ECB.AddComponent(chunkIndex, entity, new HasTarget
                     {
-                        // no target
-                        closestTargetEntity = targetEntityWithPosition.entity;
-                        closestTargetPosition = targetPos;
-                    }
-                    else
-                    {
-                        if (math.distance(unitPosition, targetEntityWithPosition.position.xy) < math.distance(unitPosition, closestTargetPosition))
-                        {
-                            closestTargetEntity = targetEntityWithPosition.entity;
-                            closestTargetPosition = targetPos;
-                        }
-                    }
-                }
-
-                closestTargetEntityArray[firstEntityIndex + i] = closestTargetEntity;
-            }
-
-        }
-    }
-
-    [BurstCompile]
-    private struct AddComponentJob : IJobChunk
-    {
-
-        public EntityCommandBuffer.ParallelWriter entityCommandBuffer;
-        [DeallocateOnJobCompletion]
-        [ReadOnly]
-        public NativeArray<EntityWithPosition> closestTargetEntityArray;
-        [ReadOnly] public EntityTypeHandle entityTypeHandle;
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-        {
-            var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
-            for (var index = 0; index < chunk.Count; index++)
-            {
-                Entity entity = chunkEntities[index];
-                int flatIndex = firstEntityIndex + index;
-                if (closestTargetEntityArray[flatIndex].entity != Entity.Null)
-                {
-                    entityCommandBuffer.AddComponent(index, entity, new HasTarget() { TargetEntity = closestTargetEntityArray[flatIndex].entity, TargetPosition = closestTargetEntityArray[flatIndex].position, Type = HasTarget.TargetType.Entity });
+                        TargetEntity = ClosestTargets[flatIndex].Entity,
+                        TargetPosition = ClosestTargets[flatIndex].Position,
+                        Type = HasTarget.TargetType.Entity
+                    });
                 }
             }
         }
     }
 
+
     [BurstCompile]
-    private struct ClearCommandJob : IJobChunk
+    private struct ClearCommandsJob : IJobChunk
     {
         public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
@@ -157,10 +110,8 @@ public class FindTargetSystem : JobComponentSystem
                     command.Command = CommandType.Idle;
                     command.TargetEntity = Entity.Null;
                     command.TargetPosition = float2.zero;
-
                     commandDataArray[i] = command;
 
-                    // Remove HasTarget if present
                     ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
                     ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
                 }
@@ -169,230 +120,295 @@ public class FindTargetSystem : JobComponentSystem
     }
 
     [BurstCompile]
-    private struct FindTargetQuadrantSystemob : IJobChunk
+    private struct FindTargetsJob : IJobChunk
     {
-        [ReadOnly] public NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap;
-        public NativeArray<EntityWithPosition> closestTargetEntityArray;
+        [ReadOnly] public NativeMultiHashMap<int, QuadrantData> QuadrantHashMap;
+        public NativeArray<EntityWithPosition> ClosestTargets;
 
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentTypeHandle;
-        [ReadOnly] public EntityTypeHandle entityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            var chunkTranslations = chunk.GetNativeArray(TranslationTypeHandle);
-            NativeArray<QuadrantEntity> chunkQuadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
-            NativeArray<AnimationComponent> chunkAnimationComponents = chunk.GetNativeArray(AnimationComponentTypeHandle);
-            var chunkEntities = chunk.GetNativeArray(entityTypeHandle);
-            for (var i = 0; i < chunk.Count; i++)
+            var translations = chunk.GetNativeArray(TranslationTypeHandle);
+            var quadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
+            var animations = chunk.GetNativeArray(AnimationTypeHandle);
+            var entities = chunk.GetNativeArray(EntityTypeHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
             {
-                //Entity entity = chunkEntities[i];
-                var unitTranslation = chunkTranslations[i];
-                var animationComponent = chunkAnimationComponents[i];
-                //var chunkUNit = chunkUnits[i];
-                float2 unitPosition = unitTranslation.Value.xy;
-                Entity closestTargetEntity = Entity.Null;
-                QuadrantEntity quadrantEntity = chunkQuadrantEntities[i];
-                float2 closestTargetPosition = float2.zero;
-                float closestTargetDistance = float.MaxValue;
-                int hashMapKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
+                float2 unitPosition = translations[i].Value.xy;
+                var quadrantEntity = quadrantEntities[i];
+                var animation = animations[i];
 
-                FindTarget(hashMapKey, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + 1, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + -1, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                Entity closestTarget = Entity.Null;
+                float2 closestPosition = float2.zero;
+                float closestDistanceSq = float.MaxValue;
 
-                //corners
-                FindTarget(hashMapKey + 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - 1 + QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey + 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
-                FindTarget(hashMapKey - 1 - QuadrantSystem.quadrantYMultiplier, unitPosition, quadrantEntity, animationComponent, ref closestTargetEntity, ref closestTargetDistance, ref quadrantMultiHashMap, ref closestTargetPosition);
+                int hashKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
 
+                // Check surrounding quadrants
+                CheckQuadrant(hashKey, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey + 1, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey - 1, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
 
-                closestTargetEntityArray[firstEntityIndex + i] = new EntityWithPosition
+                // Check corners
+                CheckQuadrant(hashKey + 1 + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey - 1 + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey + 1 - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+                CheckQuadrant(hashKey - 1 - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
+
+                ClosestTargets[firstEntityIndex + i] = new EntityWithPosition
                 {
-                    entity = closestTargetEntity,
-                    position = closestTargetPosition // <- CRITICAL: Store the position here
+                    Entity = closestTarget,
+                    Position = closestPosition
                 };
             }
-
         }
-    }
 
-    private static void FindTarget(int hashMapKey
-        , float2 unitPosition
-        , QuadrantEntity quadrantEntity
-, AnimationComponent animationComponent,
-ref Entity closestTargetEntity
-        , ref float closestTargetDistance
-        , ref NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap,
-ref float2 closestTargetPosition)
-    {
-        QuadrantData quadrantData;
-        NativeMultiHashMapIterator<int> nativeMultiHashMapIterator;
-
-        if (quadrantMultiHashMap.TryGetFirstValue(hashMapKey, out quadrantData, out nativeMultiHashMapIterator))
+        private void CheckQuadrant(int hashKey, float2 unitPosition, QuadrantEntity quadrantEntity,
+            AnimationComponent animation, ref Entity closestTarget, ref float closestDistanceSq, ref float2 closestPosition)
         {
-            do
+            if (closestDistanceSq < 4.0f) return; // Early exit if already very close
+
+            if (QuadrantHashMap.TryGetFirstValue(hashKey, out QuadrantData data, out var iterator))
             {
-                // CRITICAL: Check if target is an enemy (different UnitType)
-                bool isEnemy = (animationComponent.UnitType != quadrantData.animationComponent .UnitType);
-                if (quadrantEntity.typeEnum != quadrantData.quadrantEntity.typeEnum)
+                do
                 {
-                    if (isEnemy)
-                    {
-                        if (closestTargetEntity == Entity.Null)
-                        {
-                            // no target
-                            closestTargetEntity = quadrantData.entity;
-                            closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
-                            closestTargetPosition = quadrantData.position;
-                        }
-                        else
-                        {
-                            if (math.distancesq(unitPosition, quadrantData.position) < closestTargetDistance)
-                            {
-                                //target is closer
-                                closestTargetEntity = quadrantData.entity;
-                                closestTargetDistance = math.distancesq(unitPosition, quadrantData.position);
-                                closestTargetPosition = quadrantData.position;
-                            }
-                        } 
-                    }
-                }
+                    float distanceSq = math.distancesq(unitPosition, data.Position);
+                    if (distanceSq >= closestDistanceSq) continue;
 
-            } while (quadrantMultiHashMap.TryGetNextValue(out quadrantData, ref nativeMultiHashMapIterator));
+                    bool isEnemy = animation.UnitType != data.AnimationComponent.UnitType;
+                    if (!isEnemy) continue;
+
+                    closestTarget = data.Entity;
+                    closestDistanceSq = distanceSq;
+                    closestPosition = data.Position;
+
+                } while (QuadrantHashMap.TryGetNextValue(out data, ref iterator));
+            }
         }
     }
-
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        EntityQuery targetQuery = GetEntityQuery(typeof(TargetComponent), ComponentType.ReadOnly<Translation>());
-        NativeArray<Entity> targetEntityArray = targetQuery.ToEntityArray(Allocator.TempJob);
-        NativeArray<Translation> targetTranslationArray = targetQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
-        NativeArray<EntityWithPosition> targetArray = new NativeArray<EntityWithPosition>(targetEntityArray.Length, Allocator.TempJob);
-
-        if (targetArray.Length == 0)
-        {
-            Debug.Log("No Targets!");
-            targetEntityArray.Dispose();
-            targetTranslationArray.Dispose();
-            targetArray.Dispose();
-
-            var commandDataTypeHandle = GetComponentTypeHandle<CommandData>(false);
-            var entityTypeHandle = GetEntityTypeHandle();
-            var ecb = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter();
-
-            var clearJob = new ClearCommandJob
-            {
-                CommandDataTypeHandle = commandDataTypeHandle,
-                EntityTypeHandle = entityTypeHandle,
-                ECB = ecb,
-            };
-
-            var handle = clearJob.ScheduleParallel(m_Query, inputDeps);
-            endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(handle);
-            return handle;
-        }
-
-        for (int i = 0; i < targetEntityArray.Length; i++)
-        {
-            targetArray[i] = new EntityWithPosition
-            {
-                entity = targetEntityArray[i],
-                position = targetTranslationArray[i].Value.xy
-            };
-        }
-        targetEntityArray.Dispose();
-        targetTranslationArray.Dispose();
-        EntityQuery unitQuery = GetEntityQuery(typeof(Unit), ComponentType.Exclude<HasTarget>(), ComponentType.Exclude<CommanderComponent>());
-        NativeArray<EntityWithPosition> closestTargetEntityArray = new NativeArray<EntityWithPosition>(unitQuery.CalculateEntityCount(), Allocator.TempJob);
-
-        FindTargetQuadrantSystemob findTargetQuadrantSystemob = new FindTargetQuadrantSystemob
-        {
-            quadrantMultiHashMap = QuadrantSystem.quadrantMultiHashMap,
-            closestTargetEntityArray = closestTargetEntityArray,
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
-            AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
-            entityTypeHandle = GetEntityTypeHandle(),
-        };
-        var jobHandle = findTargetQuadrantSystemob.ScheduleParallel(m_Query, inputDeps);
-
-        AddComponentJob addComponentJob = new AddComponentJob()
-        {
-            entityTypeHandle = GetEntityTypeHandle(),
-            closestTargetEntityArray = closestTargetEntityArray,
-            entityCommandBuffer = endSimlationEntityCommandBufferSystem.CreateCommandBuffer().AsParallelWriter()
-        };
-        var addComponentJobHandler = addComponentJob.ScheduleParallel(m_Query, jobHandle);
-
-        endSimlationEntityCommandBufferSystem.AddJobHandleForProducer(addComponentJobHandler);
-        targetArray.Dispose();
-
-        return addComponentJobHandler;
-    }
-
-
-}
-
-
-[UpdateInGroup(typeof(SimulationSystemGroup))] // Or InitializationSystemGroup
-public class SystemOrderLogger : ComponentSystem
-{
-    private bool hasLogged = false;
 
     protected override void OnUpdate()
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
-        if (hasLogged)
+
+        _updateCounter++;
+        if (_updateCounter % UpdateInterval != 0)
             return;
 
-        hasLogged = true;
-
-        var sb = new StringBuilder();
-        sb.AppendLine("=== ECS System Order Dump ===");
-
-        var world = World.DefaultGameObjectInjectionWorld;
-        if (world == null)
+        // Check if there are any targets
+        if (_targetQuery.CalculateEntityCount() == 0)
         {
-            Debug.LogWarning("No active World found.");
+            ClearCommands();
             return;
         }
 
-        var rootGroups = new List<ComponentSystemGroup>
-        {
-            world.GetOrCreateSystem<InitializationSystemGroup>(),
-            world.GetOrCreateSystem<SimulationSystemGroup>(),
-            world.GetOrCreateSystem<PresentationSystemGroup>()
-        };
-
-        foreach (var group in rootGroups)
-        {
-            DumpGroup(group, sb, 0);
-        }
-
-        Debug.Log(sb.ToString());
+        FindTargets();
     }
 
-    private void DumpGroup(ComponentSystemGroup group, StringBuilder sb, int indent)
+    private void ClearCommands()
     {
-        string indentStr = new string(' ', indent * 2);
-        sb.AppendLine($"{indentStr}- {group.GetType().Name}");
-
-        var systems = group.Systems;
-        foreach (var system in systems)
+        var clearJob = new ClearCommandsJob
         {
-            if (system is ComponentSystemGroup subgroup)
-            {
-                DumpGroup(subgroup, sb, indent + 1);
-            }
+            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            EntityTypeHandle = GetEntityTypeHandle(),
+            ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter()
+        };
+
+        var handle = clearJob.ScheduleParallel(_findTargetQuery, Dependency);
+        _endSimulationECBSystem.AddJobHandleForProducer(handle);
+        Dependency = handle;
+    }
+
+    private void FindTargets()
+    {
+        int entityCount = _findTargetQuery.CalculateEntityCount();
+
+        // Get the current buffer to write to
+        NativeArray<EntityWithPosition> writeBuffer = _useBuffer1 ? _closestTargetsBuffer1 : _closestTargetsBuffer2;
+
+        // Resize or create buffer if needed
+        if (!writeBuffer.IsCreated || writeBuffer.Length != entityCount)
+        {
+            if (writeBuffer.IsCreated) writeBuffer.Dispose();
+            writeBuffer = new NativeArray<EntityWithPosition>(entityCount, Allocator.Persistent);
+
+            // Update the appropriate buffer reference
+            if (_useBuffer1)
+                _closestTargetsBuffer1 = writeBuffer;
             else
+                _closestTargetsBuffer2 = writeBuffer;
+        }
+
+        var findJob = new FindTargetsJob
+        {
+            QuadrantHashMap = QuadrantSystem.QuadrantMultiHashMap,
+            ClosestTargets = writeBuffer,
+            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            EntityTypeHandle = GetEntityTypeHandle()
+        };
+
+        var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);
+
+        var addComponentJob = new AddTargetComponentJob
+        {
+            ClosestTargets = writeBuffer,
+            EntityTypeHandle = GetEntityTypeHandle(),
+            ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter()
+        };
+
+        var addHandle = addComponentJob.ScheduleParallel(_findTargetQuery, findHandle);
+        _endSimulationECBSystem.AddJobHandleForProducer(addHandle);
+
+        // Switch buffers for next frame
+        _useBuffer1 = !_useBuffer1;
+
+        Dependency = addHandle;
+    }
+}
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(FindTargetSystem))]
+public partial class TargetReevaluationSystem : SystemBase
+{
+    private float _nextReevaluationTime;
+    private const float ReevaluationInterval = 5f;
+    private EntityQuery _reevaluationQuery;
+    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+
+    protected override void OnCreate()
+    {
+        _reevaluationQuery = GetEntityQuery(
+            ComponentType.ReadOnly<HasTarget>(),
+            ComponentType.Exclude<FindTargetCommandTag>()
+        );
+
+        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        RequireForUpdate(_reevaluationQuery);
+    }
+
+    protected override void OnUpdate()
+    {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+
+        float currentTime = (float)Time.ElapsedTime;
+        if (currentTime < _nextReevaluationTime)
+            return;
+
+        _nextReevaluationTime = currentTime + ReevaluationInterval;
+
+        // Use EntityCommandBuffer for structural changes instead of EntityManager
+        var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+        //var random = new Unity.Mathematics.Random((uint)(currentTime * 1000));
+
+        // Option 1: Using Entities.ForEach with proper Burst compatibility
+        //Entities
+        //    .WithName("ReevaluateTargets")
+        //    .WithAll<HasTarget>()
+        //    .WithNone<FindTargetCommandTag>()
+        //    .ForEach((Entity entity, int entityInQueryIndex) =>
+        //    {
+        //        if (random.NextFloat() < 0.2f)
+        //        {
+        //            ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+        //        }
+        //    }).ScheduleParallel();
+
+        //_ecbSystem.AddJobHandleForProducer(Dependency);
+
+        // Option 2: Alternative approach using IJobChunk (more performant)
+
+        var reevaluateJob = new ReevaluateTargetsJob
+        {
+            ECB = ecb,
+            RandomSeed = (uint)(currentTime * 1000)
+        };
+
+        Dependency = reevaluateJob.ScheduleParallel(_reevaluationQuery, Dependency);
+        _ecbSystem.AddJobHandleForProducer(Dependency);
+
+    }
+
+    // Option 2: Burst-compiled job version (recommended for performance)
+    [BurstCompile]
+    private struct ReevaluateTargetsJob : IJobChunk
+    {
+        public EntityCommandBuffer.ParallelWriter ECB;
+        public uint RandomSeed;
+
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+
+        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        {
+            var random = new Unity.Mathematics.Random(RandomSeed + (uint)chunkIndex);
+            var entities = chunk.GetNativeArray(EntityTypeHandle);
+
+            for (int i = 0; i < chunk.Count; i++)
             {
-                sb.AppendLine($"{indentStr}  - {system.GetType().Name}");
+                if (random.NextFloat() < 0.2f)
+                {
+                    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entities[i]);
+                }
             }
         }
     }
 }
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateBefore(typeof(FindTargetSystem))]
+    public partial class TargetValidationSystem : SystemBase
+    {
+        private EndSimulationEntityCommandBufferSystem _ecbSystem;
+
+        protected override void OnCreate()
+        {
+            _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        }
+
+        protected override void OnUpdate()
+        {
+            if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+                return;
+
+            var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+
+            Entities
+                .WithName("ValidateTargets")
+                .WithReadOnly(translationFromEntity)
+                .WithAll<HasTarget>()
+                .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
+                {
+                    if (hasTarget.Type == HasTarget.TargetType.Entity &&
+                        hasTarget.TargetEntity != Entity.Null &&
+                        !translationFromEntity.HasComponent(hasTarget.TargetEntity))
+                    {
+                        ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                    }
+                }).ScheduleParallel();
+
+            _ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+    }
+
+    // Removed SystemOrderLogger as it's likely debug-only code

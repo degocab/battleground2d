@@ -5,6 +5,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -13,7 +14,7 @@ using static UnityEngine.EventSystems.EventTrigger;
 public class ProcessCommandSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
-    private EntityQuery _query;
+    //private EntityQuery _query;
 
     protected override void OnCreate()
     {
@@ -28,11 +29,7 @@ public class ProcessCommandSystem : JobComponentSystem
 
         //    None = new ComponentType[] { typeof(CommanderComponent) }
         //});
-        _query = GetEntityQuery(
-        ComponentType.ReadOnly<Unit>(),
-        ComponentType.ReadWrite<CommandData>(),
-        ComponentType.ReadWrite<CombatState>(),
-        ComponentType.Exclude<CommanderComponent>());
+
 
 
 
@@ -49,6 +46,7 @@ public class ProcessCommandSystem : JobComponentSystem
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
+        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
@@ -56,12 +54,16 @@ public class ProcessCommandSystem : JobComponentSystem
             var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
             var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
+            var translations = chunk.GetNativeArray(TranslationTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = entities[i];
+                Translation translation = translations[i];
+                float2 entityPos = translation.Value.xy;
                 var command = commandDataArray[i];
                 var combatState = combatStateArray[i];
+
 
                 switch (command.Command)
                 {
@@ -71,21 +73,34 @@ public class ProcessCommandSystem : JobComponentSystem
                         command.TargetEntity = Entity.Null;
                         command.TargetPosition = float2.zero;
                         ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        command.Command = CommandType.Idle;
+                        commandDataArray[i] = command;
                         break;
                     case CommandType.MoveTo:
                         // Check if we are moving to an entity's location or a specific point in the world
-                        if (command.TargetEntity != Entity.Null)
-                        {
-                            // We are targeting another entity (chase/follow)
-                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                        }
-                        else if (math.lengthsq(command.TargetPosition) > 0) // Check if a valid position is set
+                        //if (command.TargetEntity != Entity.Null)
+                        //{
+                        //    // We are targeting another entity (chase/follow)
+                        //    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        //}
+                        //else 
+                        if (math.lengthsq(command.TargetPosition) > .25) // Check if a valid position is set
                         {
                             // We are moving to a specific location. Add the HasTarget component directly.
                             ECB.AddComponent(chunkIndex, entity, new HasTarget
                             {
                                 Type = HasTarget.TargetType.Position,
                                 TargetPosition = new float2(command.TargetPosition), // Convert float2 to float3
+                                TargetEntity = Entity.Null
+                            });
+                        }
+                        else
+                        {
+                            // We are moving to a specific location. Add the HasTarget component directly.
+                            ECB.AddComponent(chunkIndex, entity, new HasTarget
+                            {
+                                Type = HasTarget.TargetType.Position,
+                                TargetPosition = new float2(entityPos + command.TargetPosition), // Convert float2 to float3
                                 TargetEntity = Entity.Null
                             });
                         }
@@ -98,26 +113,29 @@ public class ProcessCommandSystem : JobComponentSystem
                         {
                             // This is a move-then-attack command
                             // First, move to the position
-                            ECB.AddComponent(chunkIndex, entity, new HasTarget
-                            {
-                                Type = HasTarget.TargetType.Position,
-                                TargetPosition = command.TargetPosition,
-                                TargetEntity = Entity.Null
-                            });
+
                             ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
 
                             // Then add a tag to find targets after arriving
                             ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                            command.Command = CommandType.Idle;
+                            commandDataArray[i] = command;
                         }
                         else if (command.TargetEntity != Entity.Null)
                         {
+                            ECB.AddComponent(chunkIndex, entity, new HasTarget
+                            {
+                                Type = HasTarget.TargetType.Entity,
+                                TargetEntity = command.TargetEntity, // ← Specific entity
+                                TargetPosition = float2.zero
+                            });
                             // This is a direct attack command on a specific entity
-                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
                             ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                            command.Command = CommandType.Idle;
+                            commandDataArray[i] = command;
                         }
 
-                        command.Command = CommandType.Idle;
-                        commandDataArray[i] = command;
+
                         break;
                     case CommandType.Defend:
                         break;
@@ -133,7 +151,12 @@ public class ProcessCommandSystem : JobComponentSystem
 
         //get commander 
         // Check if we have a commander
-
+        EntityQuery _query = GetEntityQuery(
+ComponentType.ReadOnly<Unit>(),
+ComponentType.ReadWrite<CommandData>(),
+ComponentType.ReadWrite<CombatState>(),
+ComponentType.ReadOnly<Translation>(),
+ComponentType.Exclude<CommanderComponent>());
 
         var job = new AssignCommandJob
         {
@@ -141,6 +164,7 @@ public class ProcessCommandSystem : JobComponentSystem
             CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
+            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
         };
 

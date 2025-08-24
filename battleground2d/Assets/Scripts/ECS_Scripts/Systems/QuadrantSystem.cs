@@ -25,22 +25,22 @@ public struct QuadrantEntity : IComponentData
 
 public struct QuadrantData
 {
-    public Entity entity;
-    public float2 position;
-    public QuadrantEntity quadrantEntity;
-    public AnimationComponent animationComponent;
+    public Entity Entity;
+    public float2 Position;
+    public QuadrantEntity QuadrantEntity;
+    public AnimationComponent AnimationComponent;
 }
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 [UpdateBefore(typeof(MovementSystem))]
 public class QuadrantSystem : SystemBase
 {
-    public const int quadrantYMultiplier = 1000;
+    public const int QuadrantYMultiplier = 1000;
     public const int quadrantCellSize = 5;
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _query;
 
-    public static NativeMultiHashMap<int, QuadrantData> quadrantMultiHashMap;
+    public static NativeMultiHashMap<int, QuadrantData> QuadrantMultiHashMap;
 
     protected override void OnCreate()
     {
@@ -50,21 +50,21 @@ public class QuadrantSystem : SystemBase
 ComponentType.ReadOnly<Translation>(),
 ComponentType.ReadOnly<CommandData>(),
 ComponentType.Exclude<CommanderComponent>());
-        quadrantMultiHashMap = new NativeMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
+        QuadrantMultiHashMap = new NativeMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
 
 
         base.OnCreate();
     }
     protected override void OnDestroy()
     {
-        quadrantMultiHashMap.Dispose();
+        QuadrantMultiHashMap.Dispose();
         base.OnDestroy();
     }
 
     //convert position to quadrant
     public static int GetPositionHashMapKey(float2 position)
     {
-        return (int)(math.floor(position.x / quadrantCellSize) + (quadrantYMultiplier * math.floor(position.y / quadrantCellSize)));
+        return (int)(math.floor(position.x / quadrantCellSize) + (QuadrantYMultiplier * math.floor(position.y / quadrantCellSize)));
     }
 
     private static void DebugDrawQuadrant(float2 position)
@@ -110,16 +110,16 @@ ComponentType.Exclude<CommanderComponent>());
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                var animationComponent = chunkAnimationComponents[i];
+                var animationComponent = chunkAnimationComponents[i];  
 
                 float2 translation2d = translations[i].Value.xy;
                 int hashMapKey = GetPositionHashMapKey(translation2d);
                 quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
                 {
-                    entity = entities[i],
-                    position = translation2d,
-                    animationComponent = animationComponent,
-                    quadrantEntity = quadrantEntities[i]
+                    Entity = entities[i],
+                    Position = translation2d,
+                    AnimationComponent = animationComponent,
+                    QuadrantEntity = quadrantEntities[i]
                 });
             }
         }
@@ -133,18 +133,18 @@ ComponentType.Exclude<CommanderComponent>());
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity), typeof(AnimationComponent));
-        quadrantMultiHashMap.Clear();
+        QuadrantMultiHashMap.Clear();
         var entityCount = entityQuery.CalculateEntityCount();
-        if (entityCount > quadrantMultiHashMap.Capacity)
+        if (entityCount > QuadrantMultiHashMap.Capacity)
         {
-            quadrantMultiHashMap.Capacity = entityCount;
+            QuadrantMultiHashMap.Capacity = entityCount;
         }
         var job = new SetQuadrantDataHashMapJob
         {
             translationTypeHandle = GetComponentTypeHandle<Translation>(true),
             quadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             entityTypeHandle = GetEntityTypeHandle(),
-            quadrantMultiHashMap = quadrantMultiHashMap.AsParallelWriter(),
+            quadrantMultiHashMap = QuadrantMultiHashMap.AsParallelWriter(),
             AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true)
         };
         Dependency = job.ScheduleParallel(entityQuery, Dependency);

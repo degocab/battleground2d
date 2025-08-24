@@ -32,7 +32,7 @@ public class LoadingSystem : SystemBase
             SetSingleton(gameState);
 
             // Debug log to see loading progress
-            Debug.Log($"Loading: {gameState.LoadingTimer:F1}/{gameState.LoadingDuration:F1}s");
+            //Debug.Log($"Loading: {gameState.LoadingTimer:F1}/{gameState.LoadingDuration:F1}s");
 
             if (gameState.LoadingTimer >= gameState.LoadingDuration)
             {
@@ -65,10 +65,14 @@ public class LoadingUISystem : ComponentSystem
         var textObj = new GameObject("LoadingText");
         textObj.transform.SetParent(loadingCanvas.transform);
         loadingText = textObj.AddComponent<Text>();
+
+        // Set anchors to center but use position offset
         loadingText.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
         loadingText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         loadingText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        loadingText.rectTransform.anchoredPosition = new Vector2(0, 0); // Center of screen
         loadingText.rectTransform.sizeDelta = new Vector2(400, 100);
+
         loadingText.alignment = TextAnchor.MiddleCenter;
         loadingText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         loadingText.fontSize = 24;

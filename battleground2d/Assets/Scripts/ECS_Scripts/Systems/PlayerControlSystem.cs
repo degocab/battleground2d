@@ -37,7 +37,6 @@ public class PlayerControlSystem : SystemBase
         var ecb = _ecbSystem.CreateCommandBuffer();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
         var commanderTranslation = GetComponent<Translation>(commanderEntity);
-
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
@@ -46,7 +45,7 @@ public class PlayerControlSystem : SystemBase
                 int commandType = key - (int)KeyCode.Alpha1; // 0-8
 
                 // Create command based on number pressed
-                var command = CreateCommandFromNumber(commandType, commanderTranslation.Value);
+                var command = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
 
 
                 // Apply to all selected units (for now, just commander - extend later)
@@ -94,45 +93,60 @@ public class PlayerControlSystem : SystemBase
 
     }
 
-    private CommandData CreateCommandFromNumber(int number, float3 commanderPosition)
+    private CommandData CreateCommandFromNumber(int number, float3 commanderPosition, float2 moveToPosition)
     {
-        Debug.Log("Commander Number" + number);
-
+        CommandData comm = new CommandData();
         switch (number)
         {
             case 0: // Move
-                return CommandFactory.CreateMoveCommand(commanderPosition, 5f, 0.5f);
+                comm =  CommandFactory.CreateMoveCommand( moveToPosition);
+                break;
 
             case 1: // Find target
-                return CommandFactory.CreateFindTargetCommand();
+                comm =  CommandFactory.CreateFindTargetCommand();
+                break;
 
             case 2: // Attack position
-                return CommandFactory.CreateAttackCommand(GetMouseWorldPosition());
+                comm =  CommandFactory.CreateAttackCommand(moveToPosition);
+                break;
 
             case 3: // Defend
-                return CommandFactory.CreateCommand(CommandType.Defend);
+                comm =  CommandFactory.CreateCommand(CommandType.Defend);
+                break;
 
             case 4: // Long move
-                return CommandFactory.CreateMoveCommand(commanderPosition, 10f, 1f);
+                comm =  CommandFactory.CreateMoveCommand( moveToPosition);
+                break;
 
             case 5: // Stop
-                return CommandFactory.CreateCommand(CommandType.Idle);
+                comm =  CommandFactory.CreateCommand(CommandType.Idle);
+                break;
 
             case 6: // Custom command 1
-                return CommandFactory.CreateCommand(CommandType.FindTarget);
+                comm =  CommandFactory.CreateCommand(CommandType.FindTarget);
+                break;
 
             case 7: // Custom command 2
-                return CommandFactory.CreateMoveCommand(commanderPosition, 3f, 0.2f);
+                comm =  CommandFactory.CreateMoveCommand(moveToPosition);
+                break;
 
             case 8: // Custom command 3
-                return CommandFactory.CreateAttackCommand(Entity.Null); // Attack anything
+                Debug.Log("create find comand");
+                comm =  CommandFactory.CreateFindTargetCommand(); // Attack anything
+                break;
 
             default: // Fallback
-                return CommandFactory.CreateCommand(CommandType.Idle);
+                comm =  CommandFactory.CreateCommand(CommandType.Idle);
+                break;
+
+
         }
+        Debug.Log("Command#" + comm);
+
+        return comm;
     }
 
-    private float2 GetMouseWorldPosition()
+    public static float2 GetMouseWorldPosition()
     {
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = Camera.main.nearClipPlane;

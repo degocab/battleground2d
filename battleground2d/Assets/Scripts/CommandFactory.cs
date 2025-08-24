@@ -12,15 +12,16 @@ public static class CommandFactory
             TargetEntity = Entity.Null
         };
     }
-    public static CommandData CreateMoveCommand(float3 startPosition, float moveDistance = 1.0f, float randomVariation = 0.1f)
+    public static CommandData CreateMoveCommand( float2? targetPosition = null)
     {
         return new CommandData
         {
             Command = CommandType.MoveTo,
             TargetPosition = new float2(
-                startPosition.x - moveDistance,
-                startPosition.y + UnityEngine.Random.Range(-randomVariation, randomVariation)
-            )
+                targetPosition.Value.x,
+                targetPosition.Value.y
+            ),
+
         };
     }
 
