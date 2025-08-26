@@ -17,15 +17,17 @@ public class UnitFactory
         this.archetypeFactory = new UnitArchetypeFactory(entityManager);
     }
 
-    public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
+    public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
     {
         var formationGenerator = new FormationGenerator();
+
+        if (spawnPosition == null) spawnPosition = float2.zero;
 
         List<float2> positions = new List<float2>();
         switch (formationType)
         {
             case FormationGenerator.FormationType.Phalanx:
-                positions = formationGenerator.GeneratePhalanxFormation(count);
+                positions = formationGenerator.GeneratePhalanxFormation(count, spawnPosition.Value);
                 break;
             case FormationGenerator.FormationType.Horde:
             default:
@@ -35,19 +37,20 @@ public class UnitFactory
 
         for (int i = 0; i < positions.Count; i++)
         {
-            SpawnUnit(positions[i], unitType, GetRank(i), initialCommand, spawnPosition);
+            SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
         }
     }
 
+    //TODO: add bool for setting AI commander component
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7);
+        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
-    private Entity SpawnUnit(float2 position, UnitType unitType, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
+    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
-        var unit = CreateUnitBase(position, unitType, rank);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection);
 
         // Use provided command or create default move command
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
@@ -57,25 +60,25 @@ public class UnitFactory
     }
 
     // Overload for specific command types
-    private Entity SpawnUnit(float2 position, UnitType unitType, int rank, CommandType commandType)
+    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand, CommandType commandType)
     {
-        return SpawnUnit(position, unitType, rank, CommandFactory.CreateCommand(commandType));
+        return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateCommand(commandType));
     }
 
-    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank)
+    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection)
     {
         var archetype = archetypeFactory.GetArchetype(rank);
         var unit = entityManager.CreateEntity(archetype);
 
         // Set common components
         if (unitType == UnitType.Default)
-            SetTransformComponents(unit, new float3(position.x + 5f, position.y, 0));
+            SetTransformComponents(unit, new float3(position.x, position.y, 0));
         else
-            SetTransformComponents(unit, new float3( position.x - 3f, position.y, 0));
+            SetTransformComponents(unit, new float3( position.x, position.y, 0));
 
         SetCombatComponents(unit);
         SetPhysicsComponents(unit);
-        SetAnimationComponent(unit, unitType);
+        SetAnimationComponent(unit, unitType, unitDirection);
         SetUnitIdentity(unit, unitType, rank);
 
         return unit;
@@ -90,11 +93,11 @@ public class UnitFactory
     private void SetCombatComponents(Entity entity)
     {
         entityManager.SetComponentData(entity, new CombatState { CurrentState = CombatState.State.Idle });
-        entityManager.SetComponentData(entity, new HealthComponent { Health = 100f, MaxHealth = 100f });
+        entityManager.SetComponentData(entity, new HealthComponent { Health = 1000f, MaxHealth = 1000f });
         entityManager.SetComponentData(entity, new AttackComponent
         {
             damage = 10f,
-            range = 1f,
+            range = .125f,
             isAttacking = false,
             isDefending = false,
             AttackRate = .1f,
@@ -124,12 +127,12 @@ public class UnitFactory
         });
     }
 
-    private void SetAnimationComponent(Entity entity, UnitType unitType)
+    private void SetAnimationComponent(Entity entity, UnitType unitType, Direction unitDirection)
     {
         entityManager.SetComponentData(entity, new AnimationComponent
         {
             UnitType = unitType,
-            Direction = Direction.Right,
+            Direction = unitDirection,
             AnimationType = AnimationType.Idle,
             CurrentFrame = UnityEngine.Random.Range(0, 5),
             FrameCount = 2,
@@ -199,7 +202,8 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent)
+            typeof(ECS_Velocity2D), typeof(CollidableTag)
+            //, typeof(TargetComponent)
         );
     }
 }

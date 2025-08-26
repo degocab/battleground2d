@@ -337,10 +337,14 @@ public partial class TargetReevaluationSystem : SystemBase
 
         // Option 2: Alternative approach using IJobChunk (more performant)
 
+
+        if (!(_reevaluationQuery.CalculateEntityCount() > 0))
+            return;
         var reevaluateJob = new ReevaluateTargetsJob
         {
             ECB = ecb,
-            RandomSeed = (uint)(currentTime * 1000)
+            RandomSeed = (uint)(currentTime * 1000),
+            EntityTypeHandle = GetEntityTypeHandle()
         };
 
         Dependency = reevaluateJob.ScheduleParallel(_reevaluationQuery, Dependency);

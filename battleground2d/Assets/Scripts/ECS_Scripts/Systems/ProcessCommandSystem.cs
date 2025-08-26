@@ -19,20 +19,6 @@ public class ProcessCommandSystem : JobComponentSystem
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-
-        //_query = GetEntityQuery(new EntityQueryDesc
-        //{
-        //    All = new ComponentType[] {
-        //          ComponentType.ReadOnly<Unit>(),
-        //                                ComponentType.ReadOnly<CommandData>(),
-        //    },
-
-        //    None = new ComponentType[] { typeof(CommanderComponent) }
-        //});
-
-
-
-
         base.OnCreate();
     }
 
@@ -48,6 +34,9 @@ public class ProcessCommandSystem : JobComponentSystem
         public EntityCommandBuffer.ParallelWriter ECB;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
 
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
+
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
 
@@ -55,19 +44,86 @@ public class ProcessCommandSystem : JobComponentSystem
             var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
+            var animations = chunk.GetNativeArray(AnimationTypeHandle);
+            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = entities[i];
                 Translation translation = translations[i];
+                AnimationComponent animationData = animations[i];
+                MovementSpeedComponent movementSpeed = movementSpeeds[i];
                 float2 entityPos = translation.Value.xy;
                 var command = commandDataArray[i];
                 var combatState = combatStateArray[i];
 
-
+                
                 switch (command.Command)
                 {
                     case CommandType.Idle:
+                        break;
+                    case CommandType.March:
+
+                        float2 direction = float2.zero;
+                        switch (animationData.Direction)
+                        {
+                            case EntitySpawner.Direction.Up:
+                                direction = new float2(0, 1);
+                                break;
+                            case EntitySpawner.Direction.Down:
+                                direction = new float2(0, -1);
+                                break;
+                            case EntitySpawner.Direction.Left:
+                                direction = new float2(-1, 0); // Left direction
+                                break;
+                            case EntitySpawner.Direction.Right:
+                            default:
+                                direction = new float2(1, 0);
+                                break;
+                        }
+
+                        // Set a very far target position for endless movement
+                        float endlessDistance = 1000f; // Large distance for "endless" movement
+                        float2 targetPos = entityPos + (direction * endlessDistance);
+
+                        ECB.AddComponent(chunkIndex, entity, new HasTarget
+                        {
+                            Type = HasTarget.TargetType.Position,
+                            TargetPosition = targetPos, // Convert float2 to float3
+                            TargetEntity = Entity.Null
+                        });
+                        movementSpeed.isRunnning = false;
+                        break;
+                    case CommandType.Charge:
+                        float2 direction2 = float2.zero;
+                        switch (animationData.Direction)
+                        {
+                            case EntitySpawner.Direction.Up:
+                                direction = new float2(0, 1);
+                                break;
+                            case EntitySpawner.Direction.Down:
+                                direction = new float2(0, -1);
+                                break;
+                            case EntitySpawner.Direction.Left:
+                                direction = new float2(-1, 0); // Left direction
+                                break;
+                            case EntitySpawner.Direction.Right:
+                            default:
+                                direction = new float2(1, 0);
+                                break;
+                        }
+
+                        // Set a very far target position for endless movement
+                        float endlessDistance2 = 1000f; // Large distance for "endless" movement
+                        float2 targetPos2 = entityPos + (direction * endlessDistance2);
+
+                        ECB.AddComponent(chunkIndex, entity, new HasTarget
+                        {
+                            Type = HasTarget.TargetType.Position,
+                            TargetPosition = targetPos2, // Convert float2 to float3
+                            TargetEntity = Entity.Null
+                        });
+                        movementSpeed.isRunnning = true;
                         break;
                     case CommandType.FindTarget:
                         command.TargetEntity = Entity.Null;
@@ -156,6 +212,8 @@ ComponentType.ReadOnly<Unit>(),
 ComponentType.ReadWrite<CommandData>(),
 ComponentType.ReadWrite<CombatState>(),
 ComponentType.ReadOnly<Translation>(),
+ComponentType.ReadOnly<AnimationComponent>(),
+ComponentType.ReadWrite<MovementSpeedComponent>(),
 ComponentType.Exclude<CommanderComponent>());
 
         var job = new AssignCommandJob
@@ -165,6 +223,8 @@ ComponentType.Exclude<CommanderComponent>());
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
         };
 
@@ -181,6 +241,8 @@ public enum CommandType : byte
     Idle,
     FindTarget,
     MoveTo,
+    March, //march forward endlesslly, take 
+    Charge, //charge in facing direction until 
     Attack,
     Defend
 }

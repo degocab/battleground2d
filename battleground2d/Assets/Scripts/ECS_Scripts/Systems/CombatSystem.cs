@@ -215,6 +215,8 @@ public partial class AutonomousCombatSystem : SystemBase
             ComponentType.ReadWrite<AnimationComponent>(),
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<HasTarget>()
+
+            , ComponentType.Exclude<CommanderComponent>()
         );
     }
 

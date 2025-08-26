@@ -59,6 +59,16 @@ public class PlayerControlSystem : SystemBase
                         parallelEcb.SetComponent(entityInQueryIndex, entity, command);
                     }).ScheduleParallel();
 
+                Entities
+    .WithName("ApplyMouseCommandCleanHastarget")
+    .WithAll<Unit>()
+    .WithAll<HasTarget>()
+    .WithNone<CommanderComponent>()
+    .ForEach((Entity entity, int entityInQueryIndex) =>
+    {
+        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+    }).ScheduleParallel();
+
                 Debug.Log($"Assigned command: {command.Command} to all units");
             }
         }
@@ -99,11 +109,11 @@ public class PlayerControlSystem : SystemBase
         switch (number)
         {
             case 0: // Move
-                comm =  CommandFactory.CreateMoveCommand( moveToPosition);
+                comm =  CommandFactory.CreateChargeCommand();
                 break;
 
             case 1: // Find target
-                comm =  CommandFactory.CreateFindTargetCommand();
+                comm =  CommandFactory.CreateMarchCommand();
                 break;
 
             case 2: // Attack position
@@ -123,7 +133,7 @@ public class PlayerControlSystem : SystemBase
                 break;
 
             case 6: // Custom command 1
-                comm =  CommandFactory.CreateCommand(CommandType.FindTarget);
+                comm = CommandFactory.CreateFindTargetCommand();
                 break;
 
             case 7: // Custom command 2

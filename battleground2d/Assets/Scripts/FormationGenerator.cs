@@ -10,44 +10,44 @@ public class FormationGenerator
         SinglePhalanx,
         Horde
     }
-    public List<float2> GeneratePhalanxFormation(int unitCount, int unitsPerPhalanx = 256,
+    public List<float2> GeneratePhalanxFormation(int unitCount, float2 spawnPosition, int unitsPerPhalanx = 256,
         float unitSpacing = 0.25f, float phalanxSpacing = 1f)
     {
         var positions = new List<float2>();
         int numFullPhalanxes = unitCount / unitsPerPhalanx;
         int remainingUnits = unitCount % unitsPerPhalanx;
 
-        float currentY = 0f;
+        float currentY = spawnPosition.y; // Start from spawn position's Y
 
         for (int i = 0; i < numFullPhalanxes; i++)
         {
-            positions.AddRange(GenerateSinglePhalanx(unitsPerPhalanx, unitSpacing, currentY));
+            positions.AddRange(GenerateSinglePhalanx(unitsPerPhalanx, unitSpacing, currentY, spawnPosition.x));
             currentY += Mathf.CeilToInt(Mathf.Sqrt(unitsPerPhalanx)) * unitSpacing + phalanxSpacing;
         }
 
         if (remainingUnits > 0)
         {
-            positions.AddRange(GenerateSinglePhalanx(remainingUnits, unitSpacing, currentY));
+            positions.AddRange(GenerateSinglePhalanx(remainingUnits, unitSpacing, currentY, spawnPosition.x));
         }
 
         return positions;
     }
 
-    private List<float2> GenerateSinglePhalanx(int unitCount, float unitSpacing, float startY)
+    // Update GenerateSinglePhalanx to accept X offset
+    private List<float2> GenerateSinglePhalanx(int unitCount, float unitSpacing, float yOffset, float xOffset = 0f)
     {
         var positions = new List<float2>();
-        int gridSize = Mathf.CeilToInt(Mathf.Sqrt(unitCount));
+        int unitsPerRow = Mathf.CeilToInt(Mathf.Sqrt(unitCount));
 
-        for (int row = 0; row < gridSize; row++)
+        for (int i = 0; i < unitCount; i++)
         {
-            for (int col = 0; col < gridSize; col++)
-            {
-                if (positions.Count >= unitCount) break;
+            int row = i / unitsPerRow;
+            int col = i % unitsPerRow;
 
-                float x = col * unitSpacing * -1; // Negative for left movement
-                float y = startY + row * unitSpacing;
-                positions.Add(new float2(x, y));
-            }
+            float x = col * unitSpacing + xOffset;
+            float y = row * unitSpacing + yOffset;
+
+            positions.Add(new float2(x, y));
         }
 
         return positions;

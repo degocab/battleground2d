@@ -65,6 +65,25 @@ public static class CommandFactory
         };
     }
 
+    public static CommandData CreateMarchCommand(/*float3 defendPosition*/)
+    {
+        return new CommandData
+        {
+            Command = CommandType.March,
+            // You could add defend radius to your CommandData if needed
+        };
+    }
+    
+
+    public static CommandData CreateChargeCommand(/*float3 defendPosition*/)
+    {
+        return new CommandData
+        {
+            Command = CommandType.Charge,
+            // You could add defend radius to your CommandData if needed
+        };
+    }
+
     // Generic method for any command type
     public static CommandData CreateCommand(CommandType commandType, Entity targetEntity = default, float2 targetPosition = default)
     {
