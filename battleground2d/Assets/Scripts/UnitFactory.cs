@@ -17,17 +17,17 @@ public class UnitFactory
         this.archetypeFactory = new UnitArchetypeFactory(entityManager);
     }
 
-    public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
+    //public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
+    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationGenerator.FormationType formationType)
     {
         var formationGenerator = new FormationGenerator();
 
-        if (spawnPosition == null) spawnPosition = float2.zero;
 
         List<float2> positions = new List<float2>();
         switch (formationType)
         {
             case FormationGenerator.FormationType.Phalanx:
-                positions = formationGenerator.GeneratePhalanxFormation(count, spawnPosition.Value);
+                positions = formationGenerator.GeneratePhalanxFormation(count, spawnPosition);
                 break;
             case FormationGenerator.FormationType.Horde:
             default:
@@ -96,15 +96,15 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new HealthComponent { Health = 1000f, MaxHealth = 1000f });
         entityManager.SetComponentData(entity, new AttackComponent
         {
-            damage = 10f,
-            range = .125f,
+            Damage = 10f,
+            range = .25f,
             isAttacking = false,
             isDefending = false,
-            AttackRate = .1f,
+            AttackRate = 5f,
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
-            cooldownDuration = .525f,
+            cooldownDuration = .75f,
             timeRemaining = 0f,
             takeDamageCooldownDuration = .225f
         });
@@ -133,6 +133,7 @@ public class UnitFactory
         {
             UnitType = unitType,
             Direction = unitDirection,
+            prevDirection = unitDirection,
             AnimationType = AnimationType.Idle,
             CurrentFrame = UnityEngine.Random.Range(0, 5),
             FrameCount = 2,

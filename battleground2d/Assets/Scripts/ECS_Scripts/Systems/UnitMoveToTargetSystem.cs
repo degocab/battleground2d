@@ -5,6 +5,7 @@ using Unity.Burst;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(MovementSystem))]
+[UpdateAfter(typeof(DeathSystem))]
 [BurstCompile]
 public partial class UnitMoveToTargetSystem : SystemBase
 {
@@ -33,7 +34,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
             .WithAll<HasTarget>()
             // *** ANOTHER KEY CHANGE: You must explicitly declare your read-only dependency ***
             //.WithReadOnly(translationFromEntity) // This is crucial for safety!
-            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget) =>
+            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget, ref CombatState combatState, ref CommandData commandData) =>
             {
                 float2 targetPos = float2.zero;
                 bool targetIsValid = false;
@@ -69,21 +70,29 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
                     {
                         // Only destroy if it's an entity target and the entity is valid
-                        if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
-                        {
-                            ecb.DestroyEntity(entityInQueryIndex, hasTarget.TargetEntity);
-                        }
-                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                        //if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
+                        //{
+                        //    ecb.DestroyEntity(entityInQueryIndex, hasTarget.TargetEntity);
+                        //}
+                        //ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                         movementSpeed.velocity = float3.zero;
-
+                        if (hasTarget.TargetEntity != Entity.Null)
+                        {
+                            combatState.CurrentState = CombatState.State.Attacking;
+                            commandData.Command = CommandType.Attack; 
+                            commandData.TargetEntity = hasTarget.TargetEntity;
+                            commandData.TargetPosition = targetPos;
+                        }
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
                     }
                 }
                 else
                 {
+                    combatState.CurrentState = CombatState.State.Idle;
                     // Target is invalid (entity was destroyed). Cancel the command.
                     ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                     movementSpeed.velocity = float3.zero;
+                    commandData.Command = CommandType.FindTarget;
                 }
 
             }).ScheduleParallel();

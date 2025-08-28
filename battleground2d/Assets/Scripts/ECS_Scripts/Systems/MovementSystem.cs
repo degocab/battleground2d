@@ -12,8 +12,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
-[UpdateBefore(typeof(CollisionDetectionSystem))]
-[UpdateAfter(typeof(QuadrantSystem))]
+[UpdateBefore(typeof(CollisionQuadrantSystem))]
+[UpdateAfter(typeof(UnitMoveToTargetSystem))]
 [BurstCompile]
 public class MovementSystem : SystemBase
 {

@@ -3,11 +3,15 @@ using Unity.Transforms;
 using Unity.Burst;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
 
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 public class LoadingSystem : SystemBase
 {
     private BeginInitializationEntityCommandBufferSystem _ecbSystem;
+    private float timeSinceLastLog = 0f;
+    private const float LogIntervalSeconds = 60f; // 5 minutes
+    private string logPath;
 
     protected override void OnCreate()
     {
@@ -40,6 +44,44 @@ public class LoadingSystem : SystemBase
                 gameState.CurrentState = GameState.Playing;
                 SetSingleton(gameState);
                 Debug.Log("Game started!");
+            }
+        }
+
+
+        timeSinceLastLog += Time.DeltaTime;
+        if (timeSinceLastLog >= LogIntervalSeconds)
+        {
+            timeSinceLastLog = 0f;
+            var sb = new StringBuilder();
+            sb.AppendLine($"=== ECS SYSTEM UPDATE ORDER [{System.DateTime.Now}] ===");
+
+            // Traverse main system groups
+            LogGroup(World.GetOrCreateSystem<InitializationSystemGroup>(), sb, 0);
+            LogGroup(World.GetOrCreateSystem<SimulationSystemGroup>(), sb, 0);
+            LogGroup(World.GetOrCreateSystem<PresentationSystemGroup>(), sb, 0);
+
+            string output = sb.ToString();
+            Debug.Log(output);
+
+            string logOutput = sb.ToString();
+
+            Debug.Log(logOutput);
+        }
+    }
+    private void LogGroup(ComponentSystemGroup group, StringBuilder sb, int indentLevel)
+    {
+        string indent = new string(' ', indentLevel * 2);
+        sb.AppendLine($"{indent}{group.GetType().Name}");
+
+        foreach (var system in group.Systems)
+        {
+            if (system is ComponentSystemGroup subgroup)
+            {
+                LogGroup(subgroup, sb, indentLevel + 1);
+            }
+            else
+            {
+                sb.AppendLine($"{indent}  - {system.GetType().Name}");
             }
         }
     }

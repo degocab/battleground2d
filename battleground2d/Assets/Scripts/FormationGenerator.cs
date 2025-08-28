@@ -56,7 +56,6 @@ public class FormationGenerator
     public List<float2> GenerateHordeFormation(int unitCount, float frontWidth = 20f,
         float depthVariation = 1f, float spacingNoise = 0.3f, uint seed = 12345, float2? position = null)
     {
-        Debug.Log("horde mode");
         var positions = new List<float2>();
         var random = new Unity.Mathematics.Random(seed);
 
@@ -96,8 +95,6 @@ public class FormationGenerator
             positions.Add(finalPosition);
         }
 
-        Debug.Log($"horde mode: {unitCount} units, {maxUnitsPerRow} wide, {rows} deep");
-        Debug.Log("horde mode position count " + positions.Count);
         return positions;
     }
 }

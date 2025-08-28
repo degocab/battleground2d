@@ -9,8 +9,8 @@ using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(FindTargetSystem))]
-[UpdateAfter(typeof(GridSystem))]
+[UpdateBefore(typeof(TargetValidationSystem))]
+[UpdateAfter(typeof(PlayerControlSystem))]
 public class ProcessCommandSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
@@ -123,12 +123,14 @@ public class ProcessCommandSystem : JobComponentSystem
                             TargetPosition = targetPos2, // Convert float2 to float3
                             TargetEntity = Entity.Null
                         });
+                        combatState.CurrentState = CombatState.State.SeekingTarget;
                         movementSpeed.isRunnning = true;
                         break;
                     case CommandType.FindTarget:
                         command.TargetEntity = Entity.Null;
                         command.TargetPosition = float2.zero;
                         ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                        combatState.CurrentState = CombatState.State.SeekingTarget;
                         command.Command = CommandType.Idle;
                         commandDataArray[i] = command;
                         break;
@@ -165,11 +167,12 @@ public class ProcessCommandSystem : JobComponentSystem
                         commandDataArray[i] = command;
                         break;
                     case CommandType.Attack:
-                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0)
+
+                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.25)
                         {
                             // This is a move-then-attack command
                             // First, move to the position
-
+                            combatState.CurrentState = CombatState.State.SeekingTarget;
                             ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
 
                             // Then add a tag to find targets after arriving
@@ -179,6 +182,7 @@ public class ProcessCommandSystem : JobComponentSystem
                         }
                         else if (command.TargetEntity != Entity.Null)
                         {
+                            combatState.CurrentState = CombatState.State.Attacking;
                             ECB.AddComponent(chunkIndex, entity, new HasTarget
                             {
                                 Type = HasTarget.TargetType.Entity,

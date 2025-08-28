@@ -7,7 +7,7 @@ using Unity.Transforms;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 [UpdateAfter(typeof(CollisionResolutionSystem))]
-[UpdateBefore(typeof(TransformSystemGroup))] // Before transforms are synced for rendering
+[UpdateBefore(typeof(Animation2System))] // Before transforms are synced for rendering
 [BurstCompile]
 public class PhysicsSystem : SystemBase
 {

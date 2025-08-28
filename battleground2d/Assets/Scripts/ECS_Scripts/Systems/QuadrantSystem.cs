@@ -11,6 +11,9 @@ using static UnityEngine.EventSystems.EventTrigger;
 // following code monkey quadrant system
 // working to grab all units
 // next is convert it to jobs
+//com.unity.entities@0.16.0-preview.21
+//unity 2020.1.1f1
+
 
 public struct QuadrantEntity : IComponentData
 {
@@ -32,7 +35,9 @@ public struct QuadrantData
 }
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
-[UpdateBefore(typeof(MovementSystem))]
+//[UpdateBefore(typeof(MovementSystem))]
+[UpdateBefore(typeof(PlayerControlSystem))]
+[UpdateAfter(typeof(GridSystem))]
 public class QuadrantSystem : SystemBase
 {
     public const int QuadrantYMultiplier = 1000;

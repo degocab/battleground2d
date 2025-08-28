@@ -4,7 +4,8 @@ using Unity.Transforms;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
-//[UpdateBefore(typeof(GridSystem))]
+
+[UpdateAfter(typeof(QuadrantSystem))]
 [UpdateBefore(typeof(ProcessCommandSystem))]
 public class PlayerControlSystem : SystemBase
 {
@@ -33,10 +34,20 @@ public class PlayerControlSystem : SystemBase
         if (!HasSingleton<CommanderComponent>())
             return;
 
-
         var ecb = _ecbSystem.CreateCommandBuffer();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
         var commanderTranslation = GetComponent<Translation>(commanderEntity);
+        bool attack = false;
+        bool defend = false;
+        //if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
+        if (Input.GetMouseButtonDown(0)) // Detect spacebar press only
+            attack = true;
+
+        if (Input.GetMouseButton(1)) // Detect spacebar press only
+            defend = true;
+        else
+            defend = false;
+
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
@@ -72,34 +83,50 @@ public class PlayerControlSystem : SystemBase
                 Debug.Log($"Assigned command: {command.Command} to all units");
             }
         }
-                                    
 
-        float moveX = 0f;
-        float moveY = 0f;
-        if (Input.GetKey(KeyCode.W)) moveY = 1f;
-        if (Input.GetKey(KeyCode.S)) moveY = -1f;
-        if (Input.GetKey(KeyCode.A)) moveX = -1f;
-        if (Input.GetKey(KeyCode.D)) moveX = 1f;
-        bool isRunnning = false;
-        if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
+        float deltaTime = Time.DeltaTime;
+        bool isRunning = Input.GetKey(KeyCode.LeftShift);
+        bool isAttacking = Input.GetMouseButtonDown(0);
+        bool isDefending = Input.GetMouseButtonDown(1);
 
-        //zoom camera
-        //will be needed for riding horse
-        // should give you more zoomed out vision!
-        if (Input.GetKey(KeyCode.Tab))
-            Camera.main.orthographicSize = 10f;
-        else
-            Camera.main.orthographicSize = 4f;
-        var time = Time.DeltaTime;
+        UpdateCameraZoom();
+
+        Entities
+            .WithoutBurst()
+            .ForEach((
+                ref PlayerInputComponent playerInput,
+                ref Translation translation,
+                ref CombatState combatState,
+                ref AttackComponent attackComponent,
+                ref AttackCooldownComponent attackCooldown,
+                ref MovementSpeedComponent movementSpeedComponent
+            ) =>
+            {
+                // NO MOVEMENT DURING ATTACKS - PERIOD
+                if (combatState.CurrentState == CombatState.State.Attacking)
+                {
+                    movementSpeedComponent.velocity = float3.zero;
+                    movementSpeedComponent.isRunnning = false;
+                    UpdateCameraPosition(translation.Value);
+                    return;
+                }
+                else
+                {
+                    // Process combat and movement normally when not attacking
+                    if (!ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown,
+                                   isAttacking, isDefending, deltaTime))
+                    {
+                        movementSpeedComponent.velocity = float3.zero;
+                        movementSpeedComponent.isRunnning = false;
+                        UpdateCameraPosition(translation.Value);
+                        return; ; 
+                    }
+                    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                    UpdateCameraPosition(translation.Value);
+                }
 
 
-        Vector3 newCamPos = new Vector3();
-        Entities.ForEach((ref PlayerInputComponent playerInputComponent, ref Translation translation) =>
-        {
-            newCamPos = translation.Value;
-            newCamPos.z = -13f;
-            cameraMain.position = newCamPos;
-        }).WithoutBurst().Run();
+            }).Run();
 
     }
 
@@ -109,27 +136,27 @@ public class PlayerControlSystem : SystemBase
         switch (number)
         {
             case 0: // Move
-                comm =  CommandFactory.CreateChargeCommand();
+                comm = CommandFactory.CreateChargeCommand();
                 break;
 
             case 1: // Find target
-                comm =  CommandFactory.CreateMarchCommand();
+                comm = CommandFactory.CreateMarchCommand();
                 break;
 
             case 2: // Attack position
-                comm =  CommandFactory.CreateAttackCommand(moveToPosition);
+                comm = CommandFactory.CreateAttackCommand(moveToPosition);
                 break;
 
             case 3: // Defend
-                comm =  CommandFactory.CreateCommand(CommandType.Defend);
+                comm = CommandFactory.CreateCommand(CommandType.Defend);
                 break;
 
             case 4: // Long move
-                comm =  CommandFactory.CreateMoveCommand( moveToPosition);
+                comm = CommandFactory.CreateMoveCommand(moveToPosition);
                 break;
 
             case 5: // Stop
-                comm =  CommandFactory.CreateCommand(CommandType.Idle);
+                comm = CommandFactory.CreateCommand(CommandType.Idle);
                 break;
 
             case 6: // Custom command 1
@@ -137,16 +164,16 @@ public class PlayerControlSystem : SystemBase
                 break;
 
             case 7: // Custom command 2
-                comm =  CommandFactory.CreateMoveCommand(moveToPosition);
+                comm = CommandFactory.CreateMoveCommand(moveToPosition);
                 break;
 
             case 8: // Custom command 3
                 Debug.Log("create find comand");
-                comm =  CommandFactory.CreateFindTargetCommand(); // Attack anything
+                comm = CommandFactory.CreateFindTargetCommand(); // Attack anything
                 break;
 
             default: // Fallback
-                comm =  CommandFactory.CreateCommand(CommandType.Idle);
+                comm = CommandFactory.CreateCommand(CommandType.Idle);
                 break;
 
 
@@ -162,5 +189,74 @@ public class PlayerControlSystem : SystemBase
         mousePos.z = Camera.main.nearClipPlane;
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
         return new float2(worldPos.x, worldPos.y);
+    }
+
+    private Vector2 GetMovementInput()
+    {
+        float moveX = 0f;
+        float moveY = 0f;
+
+        if (Input.GetKey(KeyCode.W)) moveY = 1f;
+        if (Input.GetKey(KeyCode.S)) moveY = -1f;
+        if (Input.GetKey(KeyCode.A)) moveX = -1f;
+        if (Input.GetKey(KeyCode.D)) moveX = 1f;
+
+        return new Vector2(moveX, moveY);
+    }
+
+    private void UpdateCameraZoom()
+    {
+        float targetSize = Input.GetKey(KeyCode.Tab) ? 10f : 4f;
+        Camera.main.orthographicSize = targetSize;
+    }
+
+    private void UpdateCameraPosition(float3 playerPosition)
+    {
+        Vector3 cameraPosition = playerPosition;
+        cameraPosition.z = -13f;
+        Camera.main.transform.position = cameraPosition;
+    }
+
+    private bool ProcessCombatActions(ref CombatState combatState, ref AttackComponent attackComponent,
+                                    ref AttackCooldownComponent attackCooldown, bool isAttacking,
+                                    bool isDefending, float deltaTime)
+    {
+        // Handle attack input
+        if (isAttacking && combatState.CurrentState != CombatState.State.Attacking)
+        {
+            combatState.CurrentState = CombatState.State.Attacking;
+            return false;
+        }
+
+        // Handle defend input
+        if (isDefending)
+        {
+            combatState.CurrentState = CombatState.State.Defending;
+        }
+        else if (combatState.CurrentState == CombatState.State.Defending)
+        {
+            combatState.CurrentState = CombatState.State.Idle;
+        }
+        return true;
+    }
+
+    private bool CanAttack(CombatState combatState, AttackCooldownComponent attackCooldown)
+    {
+        return combatState.CurrentState != CombatState.State.Attacking &&
+               attackCooldown.timeRemaining <= 0f;
+    }
+
+    private void StartAttack(ref CombatState combatState,
+                           ref AttackCooldownComponent attackCooldown)
+    {
+        combatState.CurrentState = CombatState.State.Attacking;
+        attackCooldown.timeRemaining = attackCooldown.cooldownDuration;
+    }
+
+    private void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
+    {
+        playerInput.velocity.x = movementInput.x;
+        playerInput.velocity.y = movementInput.y;
+        playerInput.isRunnning = isRunning;
     }
 }

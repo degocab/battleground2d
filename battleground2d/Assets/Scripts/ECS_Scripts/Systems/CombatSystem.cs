@@ -30,7 +30,9 @@ using UnityEngine;
 //        if (Input.GetKeyDown(KeyCode.Y)) // Detect spacebar press only
 //            isDying = true;
 
-//        Entities.ForEach((ref Entity entity, ref Translation translation, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref AnimationComponent animationComponent, ref HealthComponent healthComponent) =>
+//        Entities
+//            .WithAll<AttackCommandTag>()
+//            .ForEach((ref Entity entity, ref Unit unit, ref CombatState combatState, ref Translation translation, ref AttackComponent attackComponent, ref AttackCooldownComponent attackCooldown, ref AnimationComponent animationComponent, ref HealthComponent healthComponent) =>
 //        {
 
 
@@ -40,9 +42,9 @@ using UnityEngine;
 //                {
 //                    attackComponent.isTakingDamage = true;
 //                    attackCooldown.timeRemaining = attackCooldown.takeDamageCooldownDuration;
-//                    healthComponent.health -= 50f;
+//                    healthComponent.Health -= 50f;
 
-//                    if (healthComponent.health <= 0)
+//                    if (healthComponent.Health <= 0)
 //                    {
 //                        healthComponent.isDying = true;
 //                    }
@@ -50,7 +52,7 @@ using UnityEngine;
 //            }
 //            else
 //            {
-//                if (attack)
+//                if ((attack && unit.Rank == 7) || combatState.CurrentState == CombatState.State.Attacking)
 //                {
 //                    if (!attackComponent.isAttacking) //dont reset until we are done
 //                    {
@@ -87,7 +89,7 @@ using UnityEngine;
 //            {
 //                if (healthComponent.timeRemaining == healthComponent.deathAnimationDuration) //on attack trigger?
 //                {
-//                    animationComponent.animationType = EntitySpawner.AnimationType.Die;
+//                    animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
 //                }
 //                if (healthComponent.timeRemaining > 0f)
 //                {
@@ -95,7 +97,7 @@ using UnityEngine;
 //                }
 //                else
 //                {
-//                    if (animationComponent.currentFrame == animationComponent.frameCount - 1)
+//                    if (animationComponent.CurrentFrame == animationComponent.FrameCount - 1)
 //                    {
 //                        //animationComponent.finishAnimation = false; // Reset finish flag after animation is done
 //                        //attackComponent.isTakingDamage = false; // Reset finish flag after animation is done
@@ -108,7 +110,7 @@ using UnityEngine;
 //            {
 //                if (attackCooldown.timeRemaining == attackCooldown.takeDamageCooldownDuration) //on attack trigger?
 //                {
-//                    animationComponent.animationType = EntitySpawner.AnimationType.TakeDamage;
+//                    animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
 //                }
 //                if (attackCooldown.timeRemaining > 0f)
 //                {
@@ -124,7 +126,7 @@ using UnityEngine;
 //            {
 //                if (attackCooldown.timeRemaining == attackCooldown.cooldownDuration) //on attack trigger?
 //                {
-//                    animationComponent.animationType = EntitySpawner.AnimationType.Attack;
+//                    animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
 //                }
 //                if (attackCooldown.timeRemaining > 0f)
 //                {
@@ -138,7 +140,7 @@ using UnityEngine;
 //            }
 //            else if (attackComponent.isDefending)
 //            {
-//                animationComponent.animationType = EntitySpawner.AnimationType.Defend;
+//                animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
 //            }
 //            else
 //            {
@@ -147,7 +149,7 @@ using UnityEngine;
 //                            //&& movementSpeedComponent.isKnockedBack == false
 //                            ) //not moving
 //                {
-//                    animationComponent.animationType = EntitySpawner.AnimationType.Idle;
+//                    animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
 //                    //EntitySpawner.UpdateAnimationFields(ref animationComponent);
 //                    movementSpeedComponent.randomSpeed = 0f;
 //                }
@@ -155,17 +157,17 @@ using UnityEngine;
 //                {
 //                    if (movementSpeedComponent.isRunnning)
 //                    {
-//                        animationComponent.animationType = EntitySpawner.AnimationType.Run;
+//                        animationComponent.AnimationType = EntitySpawner.AnimationType.Run;
 //                    }
 //                    else
 //                    {
-//                        animationComponent.animationType = EntitySpawner.AnimationType.Walk;
+//                        animationComponent.AnimationType = EntitySpawner.AnimationType.Walk;
 //                    }
 //                }
 
 //            }
 
-//            if (animationComponent.prevAnimationType != animationComponent.animationType)
+//            if (animationComponent.prevAnimationType != animationComponent.AnimationType)
 //            {
 //                //if (animationComponent.animationType == EntitySpawner.AnimationType.Idle)
 //                //{
@@ -178,7 +180,7 @@ using UnityEngine;
 //                Unity.Mathematics.Random runRandom = new Unity.Mathematics.Random((uint)entity.Index * 1000);
 //                EntitySpawner.UpdateAnimationFields(ref animationComponent, walkRandom, runRandom);
 //                //}
-//                animationComponent.prevAnimationType = animationComponent.animationType;
+//                animationComponent.prevAnimationType = animationComponent.AnimationType;
 //            }
 
 //        }).WithBurst().ScheduleParallel();
@@ -195,8 +197,8 @@ public struct CombatState : IComponentData
 }
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(FindTargetSystem))]
-[UpdateBefore(typeof(MovementSystem))]
+[UpdateAfter(typeof(TargetReevaluationSystem))]
+[UpdateBefore(typeof(ApplyDamageSystem))]
 [BurstCompile]
 public partial class AutonomousCombatSystem : SystemBase
 {
@@ -332,19 +334,31 @@ public partial class AutonomousCombatSystem : SystemBase
 
                     case CombatState.State.Attacking:
                         combatState.StateTimer += DeltaTime;
-
+                        // Check if target is still valid BEFORE trying to attack
+                        if (combatState.TargetEntity == Entity.Null ||
+                            !TranslationFromEntity.HasComponent(combatState.TargetEntity))
+                        {
+                            combatState.CurrentState = CombatState.State.SeekingTarget;
+                            combatState.TargetEntity = Entity.Null;
+                            break;
+                        }
                         // Check if we can attack based on cooldown
                         if (CurrentTime - attack.LastAttackTime >= 1f / attack.AttackRate)
                         {
                             // Execute attack
-                            attack.LastAttackTime = CurrentTime;
-                            animation.AnimationType = EntitySpawner.AnimationType.Attack;
+
 
                             // Apply damage to target
-                            if (combatState.TargetEntity != Entity.Null &&
-                                TranslationFromEntity.HasComponent(combatState.TargetEntity))
+                            if (combatState.TargetEntity != Entity.Null 
+                                && TranslationFromEntity.HasComponent(combatState.TargetEntity)
+                                )
                             {
-                                ECB.AddComponent(chunkIndex, combatState.TargetEntity, new DamageComponent
+
+
+                            attack.LastAttackTime = CurrentTime;
+                            animation.AnimationType = EntitySpawner.AnimationType.Attack;
+                            attack.isAttacking = true;
+                            ECB.AddComponent(chunkIndex, combatState.TargetEntity, new DamageComponent
                                 {
                                     Value = attack.Damage,
                                     SourceEntity = entity
@@ -372,8 +386,8 @@ public partial class AutonomousCombatSystem : SystemBase
     }
 }
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(MovementSystem))] // After movement determines velocity
-[UpdateAfter(typeof(AutonomousCombatSystem))] // After combat determines state
+[UpdateAfter(typeof(PhysicsSystem))] // After movement determines velocity
+[UpdateBefore(typeof(TransformSystemGroup))] // After movement determines velocity
 [BurstCompile]
 public partial class Animation2System : SystemBase
 {
@@ -386,7 +400,8 @@ public partial class Animation2System : SystemBase
         Entities
             .WithName("UpdateAllAnimations")
             .ForEach((Entity entity,
-                     ref AnimationComponent animation,
+                     ref AnimationComponent animationComponent,
+                     ref AttackComponent attackComponent,
                      ref AttackCooldownComponent cooldown,
                      in MovementSpeedComponent movement,
                      in CombatState combatState,
@@ -401,43 +416,64 @@ public partial class Animation2System : SystemBase
                 // 2. Handle death animation (highest priority)
                 if (health.isDying)
                 {
-                    animation.AnimationType = EntitySpawner.AnimationType.Die;
-                    animation.finishAnimation = false;
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
+                    animationComponent.finishAnimation = false;
+                    return; // Death overrides everything else
+                }
+                
+
+                // 2. Handle death animation (highest priority)
+                if (attackComponent.isTakingDamage)
+                {
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
+                    animationComponent.finishAnimation = true;
                     return; // Death overrides everything else
                 }
 
                 // 3. Handle combat animations (medium priority)
                 if (combatState.CurrentState == CombatState.State.Attacking)
                 {
-                    animation.AnimationType = EntitySpawner.AnimationType.Attack;
+                    if (cooldown.timeRemaining == cooldown.cooldownDuration) //on attack trigger?
+                    {
+                        animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
+                    }
+                    if (cooldown.timeRemaining > 0f)
+                    {
+                        cooldown.timeRemaining -= deltaTime; // Reduce cooldown
+                    }
+                    else
+                    {
+                        animationComponent.finishAnimation = false; // Reset finish flag after animation is done
+                        attackComponent.isAttacking = false; // Reset finish flag after animation is done
+                    }
                 }
                 else if (combatState.CurrentState == CombatState.State.Defending)
                 {
-                    animation.AnimationType = EntitySpawner.AnimationType.Defend;
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
                 }
                 else if (cooldown.timeRemaining > 0 && cooldown.timeRemaining == cooldown.takeDamageCooldownDuration)
                 {
-                    animation.AnimationType = EntitySpawner.AnimationType.TakeDamage;
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                 }
                 // 4. Handle movement animations (lowest priority)
                 else if (movement.velocity.x != 0f || movement.velocity.y != 0f)
                 {
-                    animation.AnimationType = movement.isRunnning ?
+                    animationComponent.AnimationType = movement.isRunnning ?
                         EntitySpawner.AnimationType.Run :
                         EntitySpawner.AnimationType.Walk;
                 }
                 else
                 {
-                    animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
                 }
 
                 // 5. YOUR EXISTING ANIMATION LOGIC (keep what works)
-                if (animation.prevAnimationType != animation.AnimationType)
+                if (animationComponent.prevAnimationType != animationComponent.AnimationType)
                 {
                     Unity.Mathematics.Random walkRandom = new Unity.Mathematics.Random((uint)entity.Index);
                     Unity.Mathematics.Random runRandom = new Unity.Mathematics.Random((uint)entity.Index * 1000);
-                    EntitySpawner.UpdateAnimationFields(ref animation, walkRandom, runRandom);
-                    animation.prevAnimationType = animation.AnimationType;
+                    EntitySpawner.UpdateAnimationFields(ref animationComponent, walkRandom, runRandom);
+                    animationComponent.prevAnimationType = animationComponent.AnimationType;
                 }
 
             }).ScheduleParallel();
@@ -446,6 +482,7 @@ public partial class Animation2System : SystemBase
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(AutonomousCombatSystem))]
+[UpdateBefore(typeof(DeathSystem))]
 [BurstCompile]
 public partial class ApplyDamageSystem : SystemBase
 {
@@ -465,12 +502,16 @@ public partial class ApplyDamageSystem : SystemBase
 
         Entities
             .WithName("ApplyDamage")
+            .WithAll<DamageComponent>()
             .ForEach((Entity entity, int entityInQueryIndex,
+            ref AttackComponent attackComponent,
                      ref HealthComponent health,
                      in DamageComponent damage) =>
             {
                 health.Health -= damage.Value;
-                ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
+
+                attackComponent.isTakingDamage = true;
+                //ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
 
                 if (health.Health <= 0)
                 {
@@ -486,6 +527,7 @@ public partial class ApplyDamageSystem : SystemBase
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(ApplyDamageSystem))]
+[UpdateBefore(typeof(UnitMoveToTargetSystem))]
 public partial class DeathSystem : SystemBase
 {
     private BeginSimulationEntityCommandBufferSystem _ecbSystem;

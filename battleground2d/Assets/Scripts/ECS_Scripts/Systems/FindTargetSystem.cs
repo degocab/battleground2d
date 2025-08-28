@@ -7,8 +7,8 @@ using Unity.Burst;
 using System.Text;
 using UnityEngine;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(UnitMoveToTargetSystem))]
-[UpdateAfter(typeof(ProcessCommandSystem))]
+[UpdateBefore(typeof(TargetReevaluationSystem))]
+[UpdateAfter(typeof(TargetValidationSystem))]
 public partial class FindTargetSystem : SystemBase
 {
     private EntityQuery _findTargetQuery;
@@ -287,6 +287,7 @@ public partial class FindTargetSystem : SystemBase
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(FindTargetSystem))]
+[UpdateBefore(typeof(AutonomousCombatSystem))]
 public partial class TargetReevaluationSystem : SystemBase
 {
     private float _nextReevaluationTime;
@@ -379,6 +380,7 @@ public partial class TargetReevaluationSystem : SystemBase
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(FindTargetSystem))]
+    [UpdateAfter(typeof(ProcessCommandSystem))]
     public partial class TargetValidationSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem _ecbSystem;

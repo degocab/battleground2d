@@ -10,6 +10,7 @@ using System.Linq;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(CollisionDetectionSystem))]
+[UpdateAfter(typeof(MovementSystem))]
 public partial class CollisionQuadrantSystem : SystemBase
 {
     public const int quadrantYMultiplier = 1000;
