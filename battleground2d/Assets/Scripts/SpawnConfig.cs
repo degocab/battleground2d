@@ -6,6 +6,6 @@ public class SpawnConfig : ScriptableObject
 {
     [Range(1, 20000)] public int UnitCountToSpawn = 256;
     public int UnitsPerPhalanx = 256;
-    public float UnitSpacing = 0.25f;
+    public float UnitSpacing = 0.4f;
     public float PhalanxSpacing = 1f;
 }

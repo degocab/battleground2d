@@ -61,24 +61,30 @@ public class PlayerControlSystem : SystemBase
 
                 // Apply to all selected units (for now, just commander - extend later)
                 var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+
+
                 Entities
-                    .WithName("ApplyMouseCommand")
+                    .WithName("ApplyMouseCommandCleanHastarget")
                     .WithAll<Unit>()
+                    .WithAll<HasTarget>()
                     .WithNone<CommanderComponent>()
                     .ForEach((Entity entity, int entityInQueryIndex) =>
                     {
-                        parallelEcb.SetComponent(entityInQueryIndex, entity, command);
+                        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                     }).ScheduleParallel();
 
                 Entities
-    .WithName("ApplyMouseCommandCleanHastarget")
-    .WithAll<Unit>()
-    .WithAll<HasTarget>()
-    .WithNone<CommanderComponent>()
-    .ForEach((Entity entity, int entityInQueryIndex) =>
-    {
-        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-    }).ScheduleParallel();
+                    .WithName("ApplyMouseCommand")
+                    .WithAll<Unit>()
+                    .WithAll<CommandData>()
+                    .WithNone<CommanderComponent>()
+                    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData) =>
+                    {
+                        commandData = command;
+                        //parallelEcb.SetComponent(entityInQueryIndex, entity, command);
+                    }).ScheduleParallel();
+
+
 
                 Debug.Log($"Assigned command: {command.Command} to all units");
             }
@@ -87,10 +93,10 @@ public class PlayerControlSystem : SystemBase
         float deltaTime = Time.DeltaTime;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);
-        bool isDefending = Input.GetMouseButtonDown(1);
+        bool isDefending = Input.GetMouseButton(1);
 
         UpdateCameraZoom();
-
+        float currentTime = (float)Time.ElapsedTime;
         Entities
             .WithoutBurst()
             .ForEach((
@@ -99,31 +105,94 @@ public class PlayerControlSystem : SystemBase
                 ref CombatState combatState,
                 ref AttackComponent attackComponent,
                 ref AttackCooldownComponent attackCooldown,
+                ref AnimationComponent animationComponent,
                 ref MovementSpeedComponent movementSpeedComponent
             ) =>
             {
-                // NO MOVEMENT DURING ATTACKS - PERIOD
-                if (combatState.CurrentState == CombatState.State.Attacking)
+                Debug.Log($"AttackRate: {attackComponent.AttackRate}");
+
+                // Step 1: Reduce only attack rate cooldown (we don't touch animation cooldown)
+                if (attackComponent.AttackRateRemaining > 0f)
+                    attackComponent.AttackRateRemaining -= deltaTime;
+
+                // Step 2: Determine whether we are allowed to attack
+                bool animationReady = attackCooldown.timeRemaining <= 0f;
+                bool attackReady = attackComponent.AttackRateRemaining <= 0f;
+                bool canAttack = animationReady && attackReady;
+
+                // Step 3: Handle state transitions
+                if (canAttack)
                 {
-                    movementSpeedComponent.velocity = float3.zero;
-                    movementSpeedComponent.isRunnning = false;
-                    UpdateCameraPosition(translation.Value);
-                    return;
-                }
-                else
-                {
-                    // Process combat and movement normally when not attacking
-                    if (!ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown,
-                                   isAttacking, isDefending, deltaTime))
+                    if (isAttacking)
                     {
-                        movementSpeedComponent.velocity = float3.zero;
-                        movementSpeedComponent.isRunnning = false;
-                        UpdateCameraPosition(translation.Value);
-                        return; ; 
+                        PerformAttack(ref combatState, ref attackComponent, ref animationComponent);
+                        StartAttack(ref combatState, ref attackCooldown); // animation system will handle timeRemaining now
                     }
-                    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
-                    UpdateCameraPosition(translation.Value);
+                    else
+                    {
+                        SetToIdle(ref combatState, ref animationComponent);
+                    }
                 }
+                else if (animationReady && !attackReady)
+                {
+                    // We’ve recovered from animation but are still waiting on attack rate cooldown
+                    SetToIdle(ref combatState, ref animationComponent);
+                }
+
+
+                ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                UpdateCameraPosition(translation.Value);
+
+
+                //ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown, ref animationComponent,
+                //                   isAttacking, isDefending, currentTime);
+                //ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                //UpdateCameraPosition(translation.Value);
+                //// NO MOVEMENT DURING ATTACKS - PERIOD
+                //if (combatState.CurrentState == CombatState.State.Attacking)
+                //{
+
+                //    if (deltaTime - attackComponent.LastAttackTime >= 1f / attackComponent.AttackRate)
+                //    {
+                //        // Execute attack
+
+
+                //        // Apply damage to target
+                //        //if (combatState.TargetEntity != Entity.Null
+                //        //    && TranslationFromEntity.HasComponent(combatState.TargetEntity)
+                //        //    )
+                //        //{
+
+
+                //        attackComponent.LastAttackTime = deltaTime;
+                //        attackComponent.isAttacking = true;
+                //        //ECB.AddComponent(chunkIndex, combatState.TargetEntity, new DamageComponent
+                //        //{
+                //        //    Value = attackComponent.Damage,
+                //        //    SourceEntity = entity
+                //        //});
+                //        //}
+                //    }
+                //    Debug.Log("IS attacking");
+                //    movementSpeedComponent.velocity = float3.zero;
+                //    movementSpeedComponent.isRunnning = false;
+                //    UpdateCameraPosition(translation.Value);
+                //    return;
+                //}
+                //else
+                //{
+                //    // Process combat and movement normally when not attacking
+                //    if (!ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown,
+                //                   isAttacking, isDefending, deltaTime))
+                //    {
+                //        movementSpeedComponent.velocity = float3.zero;
+                //        movementSpeedComponent.isRunnning = false;
+                //        UpdateCameraPosition(translation.Value);
+                //        return; ;
+                //    }
+                //    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                //    UpdateCameraPosition(translation.Value);
+                //}
 
 
             }).Run();
@@ -217,35 +286,6 @@ public class PlayerControlSystem : SystemBase
         Camera.main.transform.position = cameraPosition;
     }
 
-    private bool ProcessCombatActions(ref CombatState combatState, ref AttackComponent attackComponent,
-                                    ref AttackCooldownComponent attackCooldown, bool isAttacking,
-                                    bool isDefending, float deltaTime)
-    {
-        // Handle attack input
-        if (isAttacking && combatState.CurrentState != CombatState.State.Attacking)
-        {
-            combatState.CurrentState = CombatState.State.Attacking;
-            return false;
-        }
-
-        // Handle defend input
-        if (isDefending)
-        {
-            combatState.CurrentState = CombatState.State.Defending;
-        }
-        else if (combatState.CurrentState == CombatState.State.Defending)
-        {
-            combatState.CurrentState = CombatState.State.Idle;
-        }
-        return true;
-    }
-
-    private bool CanAttack(CombatState combatState, AttackCooldownComponent attackCooldown)
-    {
-        return combatState.CurrentState != CombatState.State.Attacking &&
-               attackCooldown.timeRemaining <= 0f;
-    }
-
     private void StartAttack(ref CombatState combatState,
                            ref AttackCooldownComponent attackCooldown)
     {
@@ -258,5 +298,23 @@ public class PlayerControlSystem : SystemBase
         playerInput.velocity.x = movementInput.x;
         playerInput.velocity.y = movementInput.y;
         playerInput.isRunnning = isRunning;
+    }
+
+
+    private void PerformAttack(ref CombatState combatState, ref AttackComponent attackComponent, ref AnimationComponent animationComponent)
+    {
+        attackComponent.AttackRateRemaining = 1f; // or attackComponent.AttackRate;
+        combatState.CurrentState = CombatState.State.Attacking;
+        attackComponent.isAttacking = true;
+        animationComponent.finishAnimation = true;
+        animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
+
+        Debug.Log("Player attacked!");
+    }
+
+    private void SetToIdle(ref CombatState combatState, ref AnimationComponent animationComponent)
+    {
+        combatState.CurrentState = CombatState.State.Idle;
+        animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
     }
 }

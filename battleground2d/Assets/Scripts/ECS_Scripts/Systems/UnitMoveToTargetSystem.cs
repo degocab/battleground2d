@@ -22,7 +22,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        float reachThreshold = .25f;
+        float reachThreshold = 0.275f;
 
         // *** THE KEY CHANGE FOR ENTITIES 0.16.0 ***
         // Get a ComponentDataFromEntity for Translation. This is the equivalent of ComponentLookup.

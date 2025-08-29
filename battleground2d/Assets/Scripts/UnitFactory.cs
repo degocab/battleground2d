@@ -31,7 +31,7 @@ public class UnitFactory
                 break;
             case FormationGenerator.FormationType.Horde:
             default:
-                positions = formationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.3f, 12345, spawnPosition);
+                positions = formationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.275f, 12345, spawnPosition);
                 break;
         }
 
@@ -97,10 +97,11 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,
-            range = .25f,
+            range = .5f,
             isAttacking = false,
             isDefending = false,
-            AttackRate = 5f,
+            AttackRate = 10f,
+            AttackRateRemaining = 0f
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
@@ -113,7 +114,7 @@ public class UnitFactory
     private void SetPhysicsComponents(Entity entity)
     {
         entityManager.SetComponentData(entity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Unit });
-        entityManager.SetComponentData(entity, new ECS_CircleCollider2DAuthoring { Radius = .125f });
+        entityManager.SetComponentData(entity, new ECS_CircleCollider2DAuthoring { Radius = 0.1375f });
         entityManager.SetComponentData(entity, new ECS_PhysicsBody2DAuthoring
         {
             initialVelocity = new float2(0, 0),

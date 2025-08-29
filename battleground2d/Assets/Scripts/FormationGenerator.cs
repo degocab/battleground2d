@@ -11,14 +11,14 @@ public class FormationGenerator
         Horde
     }
     public List<float2> GeneratePhalanxFormation(int unitCount, float2 spawnPosition, int unitsPerPhalanx = 256,
-        float unitSpacing = 0.25f, float phalanxSpacing = 1f)
+        float unitSpacing = 0.275f, float phalanxSpacing = 1f)
     {
         var positions = new List<float2>();
         int numFullPhalanxes = unitCount / unitsPerPhalanx;
         int remainingUnits = unitCount % unitsPerPhalanx;
 
         float currentY = spawnPosition.y; // Start from spawn position's Y
-
+        unitSpacing = unitSpacing * 1.05f; //add a little variance????
         for (int i = 0; i < numFullPhalanxes; i++)
         {
             positions.AddRange(GenerateSinglePhalanx(unitsPerPhalanx, unitSpacing, currentY, spawnPosition.x));
@@ -54,7 +54,7 @@ public class FormationGenerator
     }
 
     public List<float2> GenerateHordeFormation(int unitCount, float frontWidth = 20f,
-        float depthVariation = 1f, float spacingNoise = 0.3f, uint seed = 12345, float2? position = null)
+        float depthVariation = 1f, float spacingNoise = 0.275f, uint seed = 12345, float2? position = null)
     {
         var positions = new List<float2>();
         var random = new Unity.Mathematics.Random(seed);
@@ -66,7 +66,7 @@ public class FormationGenerator
         int rows = Mathf.CeilToInt((float)unitCount / maxUnitsPerRow);
 
         // Calculate spacing based on unit diameter (0.25f)
-        float unitSpacing = 0.25f * 1.2f; // Add 20% extra space between units
+        float unitSpacing = 0.275f * 1.2f; // Add 20% extra space between units
 
         for (int i = 0; i < unitCount; i++)
         {

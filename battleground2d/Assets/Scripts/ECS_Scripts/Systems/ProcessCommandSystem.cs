@@ -57,7 +57,9 @@ public class ProcessCommandSystem : JobComponentSystem
                 var command = commandDataArray[i];
                 var combatState = combatStateArray[i];
 
-                
+                if (command.Command != command.previousCommand)
+                    command.TargetEntity = Entity.Null;
+
                 switch (command.Command)
                 {
                     case CommandType.Idle:
@@ -142,7 +144,7 @@ public class ProcessCommandSystem : JobComponentSystem
                         //    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
                         //}
                         //else 
-                        if (math.lengthsq(command.TargetPosition) > .25) // Check if a valid position is set
+                        if (math.lengthsq(command.TargetPosition) > .4) // Check if a valid position is set
                         {
                             // We are moving to a specific location. Add the HasTarget component directly.
                             ECB.AddComponent(chunkIndex, entity, new HasTarget
@@ -168,7 +170,7 @@ public class ProcessCommandSystem : JobComponentSystem
                         break;
                     case CommandType.Attack:
 
-                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.25)
+                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.4)
                         {
                             // This is a move-then-attack command
                             // First, move to the position
@@ -202,6 +204,7 @@ public class ProcessCommandSystem : JobComponentSystem
                     default:
                         break;
                 }
+                command.previousCommand = command.Command;
             }
         }
     }
@@ -238,8 +241,6 @@ ComponentType.Exclude<CommanderComponent>());
     }
 }
 
-
-
 public enum CommandType : byte
 {
     Idle,
@@ -250,30 +251,3 @@ public enum CommandType : byte
     Attack,
     Defend
 }
-
-public struct FindTargetCommandTag : IComponentData { }
-public struct CommandData : IComponentData
-{
-    public CommandType Command;
-    public float2 TargetPosition; // Optional (used for MoveTo, etc.)
-    public Entity TargetEntity;   // Optional (used for Attack, etc.)
-}
-
-// Add to existing components
-public struct AttackCommandTag : IComponentData { }
-
-public struct IsAttacking : IComponentData { }
-
-//public struct HealthComponent : IComponentData
-//{
-//    public float CurrentHealth;
-//    public float MaxHealth;
-//}
-
-public struct DamageComponent : IComponentData
-{
-    public float Value;
-    public Entity SourceEntity;
-}
-
-public struct DeathTag : IComponentData { }

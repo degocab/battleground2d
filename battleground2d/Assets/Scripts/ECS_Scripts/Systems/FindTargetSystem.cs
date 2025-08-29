@@ -369,7 +369,8 @@ public partial class TargetReevaluationSystem : SystemBase
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                if (random.NextFloat() < 0.2f)
+                //todo: fiund out how this affects target finding
+                if (random.NextFloat() < .4f)
                 {
                     ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entities[i]);
                 }

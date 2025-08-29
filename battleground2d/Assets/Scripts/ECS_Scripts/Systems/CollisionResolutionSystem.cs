@@ -49,7 +49,7 @@ public class CollisionResolutionSystem : SystemBase
                     // Prevent divide by zero
                     if (dist == 0f)
                     {
-                        delta = new float2(.125f, 0f); // Arbitrary push direction
+                        delta = new float2(0.1375f, 0f); // Arbitrary push direction
                         dist = 0.001f;
                     }
 
@@ -62,7 +62,7 @@ public class CollisionResolutionSystem : SystemBase
                         float2 push = direction * penetration;
 
                         if (!otherBody.isStatic)
-                            push *= 0.125f;
+                            push *= 0.1375f;
 
                         totalPushX += push.x;
                         totalPushY += push.y;
