@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Burst;
 using System.Text;
 using UnityEngine;
+using System;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TargetReevaluationSystem))]
 [UpdateAfter(typeof(TargetValidationSystem))]
@@ -291,15 +292,15 @@ public partial class FindTargetSystem : SystemBase
 public partial class TargetReevaluationSystem : SystemBase
 {
     private float _nextReevaluationTime;
-    private const float ReevaluationInterval = 5f;
+    private const float ReevaluationInterval = 2f;
     private EntityQuery _reevaluationQuery;
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
 
     protected override void OnCreate()
     {
         _reevaluationQuery = GetEntityQuery(
-            ComponentType.ReadOnly<HasTarget>(),
-            ComponentType.Exclude<FindTargetCommandTag>()
+            ComponentType.ReadWrite<HasTarget>(),
+            ComponentType.Exclude<CommanderComponent>()
         );
 
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
@@ -312,44 +313,65 @@ public partial class TargetReevaluationSystem : SystemBase
             return;
 
         float currentTime = (float)Time.ElapsedTime;
+        //Debug.Log($"{currentTime} < {_nextReevaluationTime}");
         if (currentTime < _nextReevaluationTime)
             return;
 
         _nextReevaluationTime = currentTime + ReevaluationInterval;
 
+
+
         // Use EntityCommandBuffer for structural changes instead of EntityManager
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        //var random = new Unity.Mathematics.Random((uint)(currentTime * 1000));
+        var random = new Unity.Mathematics.Random((uint)(currentTime * 1000));
 
+        var r = random.NextFloat();
+        if (!(r < .8f))
+            return;
+        //Debug.Log(r);
         // Option 1: Using Entities.ForEach with proper Burst compatibility
-        //Entities
-        //    .WithName("ReevaluateTargets")
-        //    .WithAll<HasTarget>()
-        //    .WithNone<FindTargetCommandTag>()
-        //    .ForEach((Entity entity, int entityInQueryIndex) =>
-        //    {
-        //        if (random.NextFloat() < 0.2f)
-        //        {
-        //            ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
-        //        }
-        //    }).ScheduleParallel();
+        Entities
+            .WithName("ReevaluateTargets")
+            .WithAll<HasTarget>()
+            .WithNone<CommanderComponent>()
+            .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
+            {
+            if (r < 0.8f && hasTarget.Type == HasTarget.TargetType.Entity)
+            {
+                ecb.RemoveComponent<HasTarget>(entityInQueryIndex,entity);
+                }
+            }).ScheduleParallel();
+        Entities
+            .WithName("ReevaluateTargets2")
+            .WithAll<HasTarget>()
+            .WithNone<CommanderComponent>()
+            .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
+            {
 
-        //_ecbSystem.AddJobHandleForProducer(Dependency);
+
+                if (r < 0.8f && hasTarget.Type == HasTarget.TargetType.Entity)
+                {
+                    ecb.AddComponent<HasTarget>(entityInQueryIndex, entity);
+
+                }
+            }).ScheduleParallel();
+
+        _ecbSystem.AddJobHandleForProducer(Dependency);
 
         // Option 2: Alternative approach using IJobChunk (more performant)
 
 
-        if (!(_reevaluationQuery.CalculateEntityCount() > 0))
-            return;
-        var reevaluateJob = new ReevaluateTargetsJob
-        {
-            ECB = ecb,
-            RandomSeed = (uint)(currentTime * 1000),
-            EntityTypeHandle = GetEntityTypeHandle()
-        };
+        //if (!(_reevaluationQuery.CalculateEntityCount() > 0))
+        //    return;
+        //var reevaluateJob = new ReevaluateTargetsJob
+        //{
+        //    ECB = ecb,
+        //    RandomSeed = (uint)(currentTime * 1000),
+        //    EntityTypeHandle = GetEntityTypeHandle()
+        //};
 
-        Dependency = reevaluateJob.ScheduleParallel(_reevaluationQuery, Dependency);
-        _ecbSystem.AddJobHandleForProducer(Dependency);
+        //Dependency = reevaluateJob.ScheduleParallel(_reevaluationQuery, Dependency);
+        //_ecbSystem.AddJobHandleForProducer(Dependency);
 
     }
 
@@ -370,9 +392,10 @@ public partial class TargetReevaluationSystem : SystemBase
             for (int i = 0; i < chunk.Count; i++)
             {
                 //todo: fiund out how this affects target finding
-                if (random.NextFloat() < .4f)
+                var r = random.NextFloat();
+                if (r < 4f)
                 {
-                    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entities[i]);
+                    ECB.AddComponent<FindTargetCommandTag>(firstEntityIndex + chunkIndex, entities[i]);
                 }
             }
         }

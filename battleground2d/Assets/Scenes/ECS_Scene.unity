@@ -639,7 +639,11 @@ MonoBehaviour:
   - s: "Gameplay v1\r\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
       Make units search for each other\r\n[x] Make units march/charge eachother\n[]
       Make units fight(for now just swing)\r\n\t[x] add unit damage\r\n\t[] add combat
-      collision resolution\r\n"
+      collision resolution\r\n[] add fix for target eval, add prev targ to hastarget,
+      if hastarget is withing range, set prevTarg to null, if its out of range, set
+      to prev to current\n\t- prob need to set this in another compoonent that isnt
+      removed that is persistant\n\t- then when we do findtarget again, we check
+      prev and ignore if that is found,\n\t- also need to "
     state: 2
     show: 1
     deleteQuestion: 0

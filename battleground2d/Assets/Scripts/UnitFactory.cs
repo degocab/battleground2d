@@ -44,13 +44,13 @@ public class UnitFactory
     //TODO: add bool for setting AI commander component
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right);
+        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right, 1000f);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
     private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
 
         // Use provided command or create default move command
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
@@ -65,7 +65,7 @@ public class UnitFactory
         return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateCommand(commandType));
     }
 
-    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection)
+    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection, float health)
     {
         var archetype = archetypeFactory.GetArchetype(rank);
         var unit = entityManager.CreateEntity(archetype);
@@ -96,7 +96,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new HealthComponent { Health = 1000f, MaxHealth = 1000f });
         entityManager.SetComponentData(entity, new AttackComponent
         {
-            Damage = 10f,
+            Damage = 1f,
             range = .5f,
             isAttacking = false,
             isDefending = false,

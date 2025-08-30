@@ -190,7 +190,9 @@ using UnityEngine;
 
 public struct CombatState : IComponentData
 {
-    public enum State { Idle, SeekingTarget, Attacking, Defending, Fleeing }
+    public enum State { Idle, SeekingTarget, Attacking, Defending, Fleeing,
+        TakingDamage
+    }
     public State CurrentState;
     public Entity TargetEntity;
     public float StateTimer;
@@ -374,6 +376,9 @@ public partial class AutonomousCombatSystem : SystemBase
                             combatState.CurrentState = CombatState.State.Idle;
                             combatState.TargetEntity = Entity.Null;
                         }
+                        break;
+                    case CombatState.State.TakingDamage:
+                        attack.isTakingDamage = true;
                         break;
                 }
 
