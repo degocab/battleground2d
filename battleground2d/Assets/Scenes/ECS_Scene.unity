@@ -661,7 +661,7 @@ MonoBehaviour:
 
       [x] cleanup'
     state: 3
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Investigate a grid system
 

@@ -1,4 +1,50 @@
-﻿//using System;
+﻿using Unity.Entities;
+using UnityEngine;
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateAfter(typeof(ApplyDamageSystem))]
+[UpdateBefore(typeof(UnitMoveToTargetSystem))]
+public partial class DeathSystem : SystemBase
+{
+    private BeginSimulationEntityCommandBufferSystem _ecbSystem;
+
+    protected override void OnCreate()
+    {
+        _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+    }
+
+    protected override void OnUpdate()
+    {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+        float deltaTime = Time.DeltaTime;
+        var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+
+        Entities
+            .WithName("ProcessDeath")
+            .ForEach((Entity entity, int entityInQueryIndex,
+                     ref HealthComponent health,
+                     ref AnimationComponent animation) =>
+            {
+                if (health.isDying)
+                {
+                    health.timeRemaining -= deltaTime;
+                    //animation.AnimationType = EntitySpawner.AnimationType.Die;
+
+                    if (health.timeRemaining <= 0) //wait for death animation to finish?
+                    {
+                        ecb.DestroyEntity(entityInQueryIndex, entity);
+                    }
+                }
+
+            }).ScheduleParallel();
+
+        _ecbSystem.AddJobHandleForProducer(Dependency);
+    }
+}
+
+
+//using System;
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;

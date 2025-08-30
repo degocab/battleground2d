@@ -288,7 +288,7 @@ public partial class FindTargetSystem : SystemBase
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(FindTargetSystem))]
-[UpdateBefore(typeof(AutonomousCombatSystem))]
+[UpdateBefore(typeof(CombatSystem))]
 public partial class TargetReevaluationSystem : SystemBase
 {
     private float _nextReevaluationTime;
