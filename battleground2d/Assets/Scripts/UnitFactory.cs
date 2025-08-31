@@ -44,7 +44,7 @@ public class UnitFactory
     //TODO: add bool for setting AI commander component
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right, 1000f);
+        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right, 100000f);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
@@ -76,7 +76,7 @@ public class UnitFactory
         else
             SetTransformComponents(unit, new float3( position.x, position.y, 0));
 
-        SetCombatComponents(unit);
+        SetCombatComponents(unit, health);
         SetPhysicsComponents(unit);
         SetAnimationComponent(unit, unitType, unitDirection);
         SetUnitIdentity(unit, unitType, rank);
@@ -90,14 +90,14 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new PositionComponent { Value = position });
     }
 
-    private void SetCombatComponents(Entity entity)
+    private void SetCombatComponents(Entity entity, float health)
     {
         entityManager.SetComponentData(entity, new CombatState { CurrentState = CombatState.State.Idle });
-        entityManager.SetComponentData(entity, new HealthComponent { Health = 1000f, MaxHealth = 1000f });
+        entityManager.SetComponentData(entity, new HealthComponent { Health = health, MaxHealth = health });
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 1f,
-            range = .5f,
+            Range = 0.275f,
             isAttacking = false,
             isDefending = false,
             AttackRate = 10f,
@@ -142,7 +142,7 @@ public class UnitFactory
             FrameTimerMax = 0.1f,
             animationHeightOffset = 0,
             animationWidthOffset = 1,
-            prevAnimationType = AnimationType.Idle,
+            PrevAnimationType = AnimationType.Idle,
             finishAnimation = false
         });
     }

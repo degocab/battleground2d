@@ -19,7 +19,7 @@ public struct AnimationComponent : IComponentData
     public EntitySpawner.AnimationType AnimationType;
 
     public EntitySpawner.Direction prevDirection;
-    public EntitySpawner.AnimationType prevAnimationType;
+    public EntitySpawner.AnimationType PrevAnimationType;
 
     /// <summary>
     /// Bool to set for animation that needs to continue after value resets

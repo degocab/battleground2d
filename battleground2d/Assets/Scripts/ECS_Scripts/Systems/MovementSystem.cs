@@ -123,13 +123,33 @@ public class MovementSystem : SystemBase
               animationComponent.prevDirection = animationComponent.Direction;
           }).ScheduleParallel(speedJobHandle);
 
-        // Set the final dependency for the next system
-        Dependency = animationJobHandle;
+
 
         // !!! REMOVE Dependency.Complete() !!! 
         // Let the scheduler handle it. Your CollisionSystem should use this Dependency.
 
+        var restrictMovemenJobHandle = Entities
+                .WithName("RestrictMovementByStates")
+                .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
+                {
 
+                    switch (animationComponent.AnimationType)
+                    {
+                        case EntitySpawner.AnimationType.Attack:
+                        case EntitySpawner.AnimationType.TakeDamage:
+                            movementSpeedComponent.velocity = float3.zero;
+                            break;
+
+                        default:
+                            //dont do nothing
+                            break;
+                    }
+
+                }).ScheduleParallel(animationJobHandle);
+
+
+        // Set the final dependency for the next system
+        Dependency = restrictMovemenJobHandle;
     }
 
 }

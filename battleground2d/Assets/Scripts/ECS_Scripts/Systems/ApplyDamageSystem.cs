@@ -2,7 +2,7 @@
 using Unity.Entities;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(CombatSystem))]
+[UpdateAfter(typeof(AttackResolutionSystem))]
 [UpdateBefore(typeof(DeathSystem))]
 [BurstCompile]
 public partial class ApplyDamageSystem : SystemBase
@@ -32,7 +32,7 @@ public partial class ApplyDamageSystem : SystemBase
                 health.Health -= damage.Value;
 
                 attackComponent.isTakingDamage = true;
-                //ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
+                ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
 
                 if (health.Health <= 0)
                 {

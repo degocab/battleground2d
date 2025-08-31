@@ -1,6 +1,8 @@
 ﻿using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(PhysicsSystem))] // After movement determines velocity
@@ -24,17 +26,14 @@ public partial class SetAnimationTypeSystem : SystemBase
                      in CombatState combatState,
                      in HealthComponent health) =>
             {
-                // 1. Handle cooldowns and timers first
-                if (cooldown.timeRemaining > 0)
-                {
-                    cooldown.timeRemaining -= deltaTime;
-                }
+
 
                 // 2. Handle death animation (highest priority)
                 if (health.isDying)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
                     animationComponent.finishAnimation = false;
+                    UpdatePreviousAnimationField(entity, ref animationComponent);
                     return; // Death overrides everything else
                 }
 
@@ -44,9 +43,15 @@ public partial class SetAnimationTypeSystem : SystemBase
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                     animationComponent.finishAnimation = true;
+                    Debug.Log("Taking Damage");
+                    UpdatePreviousAnimationField(entity, ref animationComponent);
                     return; // Death overrides everything else
                 }
-
+                // 1. Handle cooldowns and timers first
+                if (cooldown.timeRemaining > 0)
+                {
+                    cooldown.timeRemaining -= deltaTime;
+                }
                 // 3. Handle combat animations (medium priority)
                 if (combatState.CurrentState == CombatState.State.Attacking)
                 {
@@ -85,14 +90,24 @@ public partial class SetAnimationTypeSystem : SystemBase
                 }
 
                 // 5. YOUR EXISTING ANIMATION LOGIC (keep what works)
-                if (animationComponent.prevAnimationType != animationComponent.AnimationType)
-                {
-                    Unity.Mathematics.Random walkRandom = new Unity.Mathematics.Random((uint)entity.Index);
-                    Unity.Mathematics.Random runRandom = new Unity.Mathematics.Random((uint)entity.Index * 1000);
-                    EntitySpawner.UpdateAnimationFields(ref animationComponent, walkRandom, runRandom);
-                    animationComponent.prevAnimationType = animationComponent.AnimationType;
-                }
+
+                UpdatePreviousAnimationField(entity, ref animationComponent);
 
             }).ScheduleParallel();
     }
+
+
+
+    private static void UpdatePreviousAnimationField(Entity entity, ref AnimationComponent animationComponent)
+    {
+        if (animationComponent.PrevAnimationType != animationComponent.AnimationType)
+        {
+            Unity.Mathematics.Random walkRandom = new Unity.Mathematics.Random((uint)entity.Index);
+            Unity.Mathematics.Random runRandom = new Unity.Mathematics.Random((uint)entity.Index * 1000);
+            EntitySpawner.UpdateAnimationFields(ref animationComponent, walkRandom, runRandom);
+            animationComponent.PrevAnimationType = animationComponent.AnimationType;
+        }
+
+    }
+
 }

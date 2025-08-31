@@ -3,8 +3,6 @@
 public struct AttackComponent : IComponentData
 {
     public float Damage;
-    public float range;
-
     public bool isAttacking;
     public bool isDefending;
     public bool isTakingDamage;
