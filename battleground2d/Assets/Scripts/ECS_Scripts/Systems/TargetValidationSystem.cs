@@ -1,41 +1,41 @@
-﻿using Unity.Entities;
-using Unity.Transforms;
+﻿    using Unity.Entities;
+    using Unity.Transforms;
 
-[UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateBefore(typeof(FindTargetSystem))]
-[UpdateAfter(typeof(ProcessCommandSystem))]
-public partial class TargetValidationSystem : SystemBase
-{
-    private EndSimulationEntityCommandBufferSystem _ecbSystem;
-
-    protected override void OnCreate()
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateBefore(typeof(FindTargetSystem))]
+    [UpdateAfter(typeof(ProcessCommandSystem))]
+    public partial class TargetValidationSystem : SystemBase
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-    }
+        private EndSimulationEntityCommandBufferSystem _ecbSystem;
 
-    protected override void OnUpdate()
-    {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
-            return;
+        protected override void OnCreate()
+        {
+            _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        }
 
-        var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        protected override void OnUpdate()
+        {
+            if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+                return;
 
-        Entities
-            .WithName("ValidateTargets")
-            .WithReadOnly(translationFromEntity)
-            .WithAll<HasTarget>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
-            {
-                if (hasTarget.Type == HasTarget.TargetType.Entity &&
-                    hasTarget.TargetEntity != Entity.Null &&
-                    !translationFromEntity.HasComponent(hasTarget.TargetEntity))
+            var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+
+            Entities
+                .WithName("ValidateTargets")
+                .WithReadOnly(translationFromEntity)
+                .WithAll<HasTarget>()
+                .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
                 {
-                    ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
-                    ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-                }
-            }).ScheduleParallel();
+                    if (hasTarget.Type == HasTarget.TargetType.Entity &&
+                        hasTarget.TargetEntity != Entity.Null &&
+                        !translationFromEntity.HasComponent(hasTarget.TargetEntity))
+                    {
+                        ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                    }
+                }).ScheduleParallel();
 
-        _ecbSystem.AddJobHandleForProducer(Dependency);
+            _ecbSystem.AddJobHandleForProducer(Dependency);
+        }
     }
-}

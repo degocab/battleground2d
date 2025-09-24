@@ -199,6 +199,7 @@ ComponentType.Exclude<CommanderComponent>());
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(FindTargetSystem))]
+[UpdateBefore(typeof(MovementSystem))]
 public class UpdateTargetPositionSystem : SystemBase
 {
     private EntityQuery _query;

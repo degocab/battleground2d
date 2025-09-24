@@ -96,7 +96,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new HealthComponent { Health = health, MaxHealth = health });
         entityManager.SetComponentData(entity, new AttackComponent
         {
-            Damage = 1f,
+            Damage = 10f,
             Range = 0.275f,
             isAttacking = false,
             isDefending = false,

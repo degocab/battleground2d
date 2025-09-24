@@ -3,7 +3,9 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(TargetReevaluationSystem))]
@@ -240,15 +242,21 @@ public partial class AttackResolutionSystem : SystemBase
     {
         float currentTime = (float)Time.ElapsedTime;
         var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        var damageComponentFromEntity = GetComponentDataFromEntity<DamageComponent>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+
+        var attackEventBufferFromEntity = GetBufferFromEntity<AttackEventBuffer>(false);
 
         Dependency = Entities
             .WithName("AttackResolutionJob")
             .WithReadOnly(translationFromEntity)
+            //.WithReadOnly(damageComponentFromEntity)
+            //.WithNativeDisableParallelForRestriction(attackEventBufferFromEntity)
+            .WithAll<AttackEventComponent>()
             .ForEach((Entity entity, int entityInQueryIndex,
                     ref AttackComponent attack,
-                     in Translation translation,
-                     in AttackEventComponent attackEvent
+                     in AttackEventComponent attackEvent,
+                     in Translation translation
                      ) =>
             {
                 // Check if target still exists and is in range
@@ -259,11 +267,42 @@ public partial class AttackResolutionSystem : SystemBase
 
                     if (distance <= attack.Range)
                     {
-                        ecb.AddComponent(entityInQueryIndex, attackEvent.TargetEntity, new DamageComponent
-                        {
-                            Value = attackEvent.Damage,
-                            SourceEntity = attackEvent.SourceEntity
-                        });
+                        //if (!damageComponentFromEntity.HasComponent(attackEvent.TargetEntity))
+                        //{
+                        //ecb.AddComponent(entityInQueryIndex, attackEvent.TargetEntity, new DamageComponent
+                        //{
+                        //    Value = attackEvent.Damage,
+                        //    SourceEntity = attackEvent.SourceEntity
+                        //});
+                        //}
+                        //else
+                        //{
+                        //    // Optional: if DamageComponent exists, you could do something else here,
+                        //    // like accumulate damage or skip.
+                        //}
+
+
+                        //ecb.AddComponent(entityInQueryIndex, attackEvent.TargetEntity, new DamageComponent
+                        //{
+                        //    Value = attackEvent.Damage,
+                        //    SourceEntity = attackEvent.SourceEntity
+                        //});
+
+
+
+
+
+
+                        
+                            // Buffer doesn't exist, add it first then append
+                            ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
+                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
+                            {
+                                Attacker = attackEvent.SourceEntity,
+                                Damage = attackEvent.Damage,
+                                DamageType = 0
+                            });
+                        
                     }
                 }
                 
@@ -273,4 +312,11 @@ public partial class AttackResolutionSystem : SystemBase
 
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
+}
+
+public struct AttackEventBuffer : IBufferElementData
+{
+    public Entity Attacker;
+    public float Damage;
+    public int DamageType; // use int for enum-like simplicity
 }

@@ -10,7 +10,7 @@ public class LoadingSystem : SystemBase
 {
     private BeginInitializationEntityCommandBufferSystem _ecbSystem;
     private float timeSinceLastLog = 0f;
-    private const float LogIntervalSeconds = 60f; // 5 minutes
+    private const float LogIntervalSeconds = 10f; // 5 minutes
     private string logPath;
 
     protected override void OnCreate()

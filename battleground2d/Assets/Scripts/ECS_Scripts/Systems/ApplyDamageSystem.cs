@@ -23,22 +23,46 @@ public partial class ApplyDamageSystem : SystemBase
 
         Entities
             .WithName("ApplyDamage")
-            .WithAll<DamageComponent>()
+            //.WithAll<DamageComponent>()
+            .WithAll<AttackEventBuffer>()
             .ForEach((Entity entity, int entityInQueryIndex,
             ref AttackComponent attackComponent,
                      ref HealthComponent health,
-                     in DamageComponent damage) =>
+                     //in DamageComponent damage,
+                     ref DynamicBuffer<AttackEventBuffer> attacks) =>
             {
-                health.Health -= damage.Value;
+                //health.Health -= damage.Value;
 
+                //attackComponent.isTakingDamage = true;
+                //ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
+
+                //if (health.Health <= 0)
+                //{
+                //    health.isDying = true;
+                //    health.timeRemaining = health.deathAnimationDuration;
+                //}
+                float totalDamage = 0;
+
+                for (int i = 0; i < attacks.Length; i++)
+                {
+                    totalDamage += attacks[i].Damage;
+                }
+
+                health.Health -= totalDamage;
                 attackComponent.isTakingDamage = true;
-                ecb.RemoveComponent<DamageComponent>(entityInQueryIndex, entity);
+                attacks.Clear(); // Clear buffer for reuse
 
                 if (health.Health <= 0)
-                {
-                    health.isDying = true;
-                    health.timeRemaining = health.deathAnimationDuration;
+            {
+                health.isDying = true;
+                health.timeRemaining = health.deathAnimationDuration;
                 }
+
+                // DEBUG: Add debug output to verify damage is being applied
+//#if UNITY_EDITOR
+//                UnityEngine.Debug.Log($"Entity {entity.Index} took {totalDamage} damage. New health: {health.Health}");
+//#endif
+
 
             }).ScheduleParallel();
 
