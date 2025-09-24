@@ -10,6 +10,8 @@ using static UnityEngine.EventSystems.EventTrigger;
 [BurstCompile]
 public partial class SetAnimationTypeSystem : SystemBase
 {
+    // bonuys poiunts off ultimate oints off car wash
+    // 
     protected override void OnUpdate()
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
@@ -26,32 +28,40 @@ public partial class SetAnimationTypeSystem : SystemBase
                      in CombatState combatState,
                      in HealthComponent health) =>
             {
-
+                // 1. Handle cooldowns and timers first
+                if (cooldown.timeRemaining > 0)
+                {
+                    cooldown.timeRemaining -= deltaTime;
+                }
 
                 // 2. Handle death animation (highest priority)
                 if (health.isDying)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
-                    animationComponent.finishAnimation = false;
+                    animationComponent.finishAnimation = true;
                     UpdatePreviousAnimationField(entity, ref animationComponent);
                     return; // Death overrides everything else
                 }
+                //Debug.Log("attackComponent.isTakingDamage: " + attackComponent.isTakingDamage);
 
 
                 // 2. Handle death animation (highest priority)
                 if (attackComponent.isTakingDamage)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
-                    animationComponent.finishAnimation = true;
-                    Debug.Log("Taking Damage");
                     UpdatePreviousAnimationField(entity, ref animationComponent);
-                    return; // Death overrides everything else
+                    animationComponent.finishAnimation = true;
+
+                    //Debug.Log("cooldown.timeRemaing: " + cooldown.timeRemaining);
+                    if (cooldown.timeRemaining <= 0)
+                    {
+                        cooldown.timeRemaining = cooldown.takeDamageCooldownDuration;
+
+                        return; // Death overrides everything else
+                    }
+
                 }
-                // 1. Handle cooldowns and timers first
-                if (cooldown.timeRemaining > 0)
-                {
-                    cooldown.timeRemaining -= deltaTime;
-                }
+
                 // 3. Handle combat animations (medium priority)
                 if (combatState.CurrentState == CombatState.State.Attacking)
                 {
@@ -73,10 +83,11 @@ public partial class SetAnimationTypeSystem : SystemBase
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
                 }
-                else if (cooldown.timeRemaining > 0 && cooldown.timeRemaining == cooldown.takeDamageCooldownDuration)
-                {
-                    animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
-                }
+                //else if (combatState.CurrentState == CombatState.State.TakingDamage)
+                //{
+
+                //}
+
                 // 4. Handle movement animations (lowest priority)
                 else if (movement.velocity.x != 0f || movement.velocity.y != 0f)
                 {
@@ -93,7 +104,8 @@ public partial class SetAnimationTypeSystem : SystemBase
 
                 UpdatePreviousAnimationField(entity, ref animationComponent);
 
-            }).ScheduleParallel();
+            })//.WithoutBurst().Run();
+            .ScheduleParallel();
     }
 
 

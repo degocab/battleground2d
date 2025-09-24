@@ -651,6 +651,13 @@ MonoBehaviour:
     state: 2
     show: 1
     deleteQuestion: 0
+  - s: 'System Cleanup v1
+
+      [] Separate systems, systems should only have one
+      purpose'
+    state: 2
+    show: 1
+    deleteQuestion: 0
   - s: 'Merge test physics system into existing codebase
 
       [x] movement system

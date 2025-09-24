@@ -143,58 +143,6 @@ public class PlayerControlSystem : SystemBase
                 ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
                 UpdateCameraPosition(translation.Value);
 
-
-                //ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown, ref animationComponent,
-                //                   isAttacking, isDefending, currentTime);
-                //ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
-                //UpdateCameraPosition(translation.Value);
-                //// NO MOVEMENT DURING ATTACKS - PERIOD
-                //if (combatState.CurrentState == CombatState.State.Attacking)
-                //{
-
-                //    if (deltaTime - attackComponent.LastAttackTime >= 1f / attackComponent.AttackRate)
-                //    {
-                //        // Execute attack
-
-
-                //        // Apply damage to target
-                //        //if (combatState.TargetEntity != Entity.Null
-                //        //    && TranslationFromEntity.HasComponent(combatState.TargetEntity)
-                //        //    )
-                //        //{
-
-
-                //        attackComponent.LastAttackTime = deltaTime;
-                //        attackComponent.isAttacking = true;
-                //        //ECB.AddComponent(chunkIndex, combatState.TargetEntity, new DamageComponent
-                //        //{
-                //        //    Value = attackComponent.Damage,
-                //        //    SourceEntity = entity
-                //        //});
-                //        //}
-                //    }
-                //    Debug.Log("IS attacking");
-                //    movementSpeedComponent.velocity = float3.zero;
-                //    movementSpeedComponent.isRunnning = false;
-                //    UpdateCameraPosition(translation.Value);
-                //    return;
-                //}
-                //else
-                //{
-                //    // Process combat and movement normally when not attacking
-                //    if (!ProcessCombatActions(ref combatState, ref attackComponent, ref attackCooldown,
-                //                   isAttacking, isDefending, deltaTime))
-                //    {
-                //        movementSpeedComponent.velocity = float3.zero;
-                //        movementSpeedComponent.isRunnning = false;
-                //        UpdateCameraPosition(translation.Value);
-                //        return; ;
-                //    }
-                //    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
-                //    UpdateCameraPosition(translation.Value);
-                //}
-
-
             }).Run();
 
     }
