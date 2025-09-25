@@ -3,8 +3,8 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(CombatSystem))]
 [UpdateBefore(typeof(ApplyDamageSystem))]
+[UpdateAfter(typeof(CombatSystem))]
 public partial class AttackResolutionSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;

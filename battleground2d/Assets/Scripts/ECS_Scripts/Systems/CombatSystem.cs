@@ -8,8 +8,8 @@ using UnityEngine;
 using static UnityEngine.GraphicsBuffer;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(TargetReevaluationSystem))]
 [UpdateBefore(typeof(AttackResolutionSystem))]
+[UpdateAfter(typeof(TargetReevaluationSystem))]
 [BurstCompile]
 public partial class CombatSystem : SystemBase
 {
@@ -197,6 +197,7 @@ public partial class CombatSystem : SystemBase
                         break;
                     case CombatState.State.TakingDamage:
                         attack.isTakingDamage = true;
+
                         break;
                 }
 

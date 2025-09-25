@@ -3,8 +3,8 @@ using Unity.Transforms;
 using Unity.Mathematics;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
-[UpdateAfter(typeof(CollisionDetectionSystem))]
 [UpdateBefore(typeof(PhysicsSystem))]
+[UpdateAfter(typeof(CollisionDetectionSystem))]
 public class CollisionResolutionSystem : SystemBase
 {
     protected override void OnUpdate()
@@ -23,7 +23,6 @@ public class CollisionResolutionSystem : SystemBase
                     //velocity.Value = velocity.PrevValue;
                     return;
                 }
-                    
 
                 float2 position = translation.Value.xy;
                 float totalPushX = 0f;
@@ -73,13 +72,8 @@ public class CollisionResolutionSystem : SystemBase
 
                 // Keep Z = 0 (2D only)
                 translation.Value.z = 0f;
-
                 //velocity.Value.xy += new float2(totalPushX, totalPushY);
 
-            })
-            .Run(); // Run on main thread for now to access EntityManager
-
-
-
+            }).Run(); // Run on main thread for now to access EntityManager
     }
 }

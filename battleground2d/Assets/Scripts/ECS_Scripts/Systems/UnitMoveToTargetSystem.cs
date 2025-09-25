@@ -32,6 +32,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
         Entities
             .WithName("UnitMoveToTargetJob")
             .WithAll<HasTarget>()
+            .WithNone<PlayerInputComponent>()
             // *** ANOTHER KEY CHANGE: You must explicitly declare your read-only dependency ***
             //.WithReadOnly(translationFromEntity) // This is crucial for safety!
             .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget, ref CombatState combatState, ref CommandData commandData) =>

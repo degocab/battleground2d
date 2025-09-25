@@ -8,8 +8,8 @@ using UnityEngine;
 using System.Linq;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(CollisionQuadrantSystem))]
 [UpdateBefore(typeof(CollisionResolutionSystem))]
+[UpdateAfter(typeof(CollisionQuadrantSystem))]
 public partial class CollisionDetectionSystem : SystemBase
 {
     private EntityCommandBufferSystem ecbSystem;

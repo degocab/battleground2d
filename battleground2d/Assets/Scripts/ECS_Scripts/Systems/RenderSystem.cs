@@ -106,7 +106,8 @@ public class RenderSystem : SystemBase
                 {
                     entity = entity,
                     position = translation.Value,
-                    matrix = animation.matrix,
+                    //matrix = animation.matrix,
+                    matrix = Matrix4x4.TRS(translation.Value, Quaternion.identity, Vector3.one), // Calculate here!
                     uv = animation.uv
                 };
 
@@ -268,6 +269,12 @@ public class RenderSystem : SystemBase
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
+
+        // Add this debug code:
+        //Entities.WithAll<CommanderComponent>().ForEach((Entity entity, ref Translation translation) =>
+        //{
+        //    Debug.Log($"Player Position: {translation.Value}");
+        //}).Run();
 
         Camera camera = Camera.main;
         float cameraWidth = camera.aspect * camera.orthographicSize;

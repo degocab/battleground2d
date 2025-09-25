@@ -28,11 +28,11 @@ public partial class SetAnimationTypeSystem : SystemBase
                      in CombatState combatState,
                      in HealthComponent health) =>
             {
-                // 1. Handle cooldowns and timers first
-                if (cooldown.timeRemaining > 0)
-                {
-                    cooldown.timeRemaining -= deltaTime;
-                }
+                //// 1. Handle cooldowns and timers first
+                //if (cooldown.timeRemaining > 0)
+                //{
+                //    cooldown.timeRemaining -= deltaTime;
+                //}
 
                 // 2. Handle death animation (highest priority)
                 if (health.isDying)
@@ -50,13 +50,15 @@ public partial class SetAnimationTypeSystem : SystemBase
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                     UpdatePreviousAnimationField(entity, ref animationComponent);
+                    //TODO: experiment how this affects gameplay
                     animationComponent.finishAnimation = true;
 
                     //Debug.Log("cooldown.timeRemaing: " + cooldown.timeRemaining);
                     if (cooldown.timeRemaining <= 0)
                     {
                         cooldown.timeRemaining = cooldown.takeDamageCooldownDuration;
-
+                        animationComponent.finishAnimation = false;
+                        attackComponent.isTakingDamage = false;
                         return; // Death overrides everything else
                     }
 
@@ -99,8 +101,6 @@ public partial class SetAnimationTypeSystem : SystemBase
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
                 }
-
-                // 5. YOUR EXISTING ANIMATION LOGIC (keep what works)
 
                 UpdatePreviousAnimationField(entity, ref animationComponent);
 

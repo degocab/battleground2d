@@ -4,8 +4,8 @@ using Unity.Entities;
 using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(FindTargetSystem))]
 [UpdateBefore(typeof(CombatSystem))]
+[UpdateAfter(typeof(FindTargetSystem))]
 public partial class TargetReevaluationSystem : SystemBase
 {
     private float _nextReevaluationTime;

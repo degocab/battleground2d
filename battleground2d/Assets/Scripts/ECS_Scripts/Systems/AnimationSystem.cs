@@ -11,6 +11,7 @@ using UnityEngine;
 //[UpdateAfter(typeof(MovementSystem))]
 [UpdateInGroup(typeof(PresentationSystemGroup))]
 [UpdateAfter(typeof(TransformSystemGroup))]
+[UpdateAfter(typeof(CollisionResolutionSystem))]
 [BurstCompile]
 public class AnimationSystem : SystemBase
 {
@@ -56,7 +57,7 @@ public class AnimationSystem : SystemBase
 
                     float3 position = translation.Value;
                     position.z = position.y * .01f;
-                    spriteSheetAnimationData.matrix = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
+                    //spriteSheetAnimationData.matrix = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
                 }
             }
             else
