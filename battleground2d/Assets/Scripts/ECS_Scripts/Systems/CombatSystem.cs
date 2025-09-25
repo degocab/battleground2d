@@ -9,7 +9,7 @@ using static UnityEngine.GraphicsBuffer;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(TargetReevaluationSystem))]
-[UpdateBefore(typeof(ApplyDamageSystem))]
+[UpdateBefore(typeof(AttackResolutionSystem))]
 [BurstCompile]
 public partial class CombatSystem : SystemBase
 {
@@ -126,17 +126,17 @@ public partial class CombatSystem : SystemBase
                             break;
                         }
 
-                        if (combatState.TargetEntity == Entity.Null ||
-                            !TranslationFromEntity.HasComponent(combatState.TargetEntity))
+                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
                         {
                             combatState.CurrentState = CombatState.State.Idle;
                             break;
                         }
 
                         float3 targetPos = TranslationFromEntity[combatState.TargetEntity].Value;
-                        float distance = math.distance(translation.Value, targetPos);
+                        //float distance = math.distance(translation.Value, targetPos);
 
-                        if (distance <= attack.Range)
+                        //if (distance <= attack.Range)
+                        if (CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range))
                         {
                             combatState.CurrentState = CombatState.State.Attacking;
                             combatState.StateTimer = 0f;
@@ -146,8 +146,7 @@ public partial class CombatSystem : SystemBase
                     case CombatState.State.Attacking:
                         combatState.StateTimer += DeltaTime;
                         // Check if target is still valid BEFORE trying to attack
-                        if (combatState.TargetEntity == Entity.Null ||
-                            !TranslationFromEntity.HasComponent(combatState.TargetEntity))
+                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
                         {
                             combatState.CurrentState = CombatState.State.SeekingTarget;
                             combatState.TargetEntity = Entity.Null;
@@ -160,9 +159,7 @@ public partial class CombatSystem : SystemBase
 
 
                             // Apply damage to target
-                            if (combatState.TargetEntity != Entity.Null
-                                && TranslationFromEntity.HasComponent(combatState.TargetEntity)
-                                )
+                            if (CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
                             {
 
 
@@ -191,8 +188,7 @@ public partial class CombatSystem : SystemBase
                         }
 
                         // Check if target is still valid or if we timed out
-                        if (combatState.TargetEntity == Entity.Null ||
-                            !TranslationFromEntity.HasComponent(combatState.TargetEntity) ||
+                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity) ||
                             combatState.StateTimer > 30f) // 30 second combat timeout
                         {
                             combatState.CurrentState = CombatState.State.Idle;
@@ -216,107 +212,6 @@ public partial class CombatSystem : SystemBase
 
 
 
-public struct AttackEventComponent : IComponentData
-{
-    public Entity TargetEntity;
-    public float Damage;
-    public Entity SourceEntity;
-    public float AttackTime;
-    public float AttackDuration;
-}
-
-[UpdateAfter(typeof(CombatSystem))]
-[UpdateBefore(typeof(ApplyDamageSystem))]
-public partial class AttackResolutionSystem : SystemBase
-{
-    private EndSimulationEntityCommandBufferSystem _ecbSystem;
-    private EntityQuery _attackEventQuery;
-
-    protected override void OnCreate()
-    {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        _attackEventQuery = GetEntityQuery(ComponentType.ReadWrite<AttackEventComponent>());
-    }
-
-    protected override void OnUpdate()
-    {
-        float currentTime = (float)Time.ElapsedTime;
-        var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
-        var damageComponentFromEntity = GetComponentDataFromEntity<DamageComponent>(true);
-        var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-
-        var attackEventBufferFromEntity = GetBufferFromEntity<AttackEventBuffer>(false);
-
-        Dependency = Entities
-            .WithName("AttackResolutionJob")
-            .WithReadOnly(translationFromEntity)
-            //.WithReadOnly(damageComponentFromEntity)
-            //.WithNativeDisableParallelForRestriction(attackEventBufferFromEntity)
-            .WithAll<AttackEventComponent>()
-            .ForEach((Entity entity, int entityInQueryIndex,
-                    ref AttackComponent attack,
-                     in AttackEventComponent attackEvent,
-                     in Translation translation
-                     ) =>
-            {
-                // Check if target still exists and is in range
-                if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
-                {
-                    float3 targetPos = translationFromEntity[attackEvent.TargetEntity].Value;
-                    float distance = math.distance(translation.Value, targetPos);
-
-                    if (distance <= attack.Range)
-                    {
-                        //if (!damageComponentFromEntity.HasComponent(attackEvent.TargetEntity))
-                        //{
-                        //ecb.AddComponent(entityInQueryIndex, attackEvent.TargetEntity, new DamageComponent
-                        //{
-                        //    Value = attackEvent.Damage,
-                        //    SourceEntity = attackEvent.SourceEntity
-                        //});
-                        //}
-                        //else
-                        //{
-                        //    // Optional: if DamageComponent exists, you could do something else here,
-                        //    // like accumulate damage or skip.
-                        //}
-
-
-                        //ecb.AddComponent(entityInQueryIndex, attackEvent.TargetEntity, new DamageComponent
-                        //{
-                        //    Value = attackEvent.Damage,
-                        //    SourceEntity = attackEvent.SourceEntity
-                        //});
 
 
 
-
-
-
-                        
-                            // Buffer doesn't exist, add it first then append
-                            ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
-                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
-                            {
-                                Attacker = attackEvent.SourceEntity,
-                                Damage = attackEvent.Damage,
-                                DamageType = 0
-                            });
-                        
-                    }
-                }
-                
-                ecb.RemoveComponent<AttackEventComponent>(entityInQueryIndex, entity);
-
-            }).ScheduleParallel(Dependency);
-
-        _ecbSystem.AddJobHandleForProducer(Dependency);
-    }
-}
-
-public struct AttackEventBuffer : IBufferElementData
-{
-    public Entity Attacker;
-    public float Damage;
-    public int DamageType; // use int for enum-like simplicity
-}

@@ -38,20 +38,7 @@ public class PhysicsSystem : SystemBase
     }
 }
 
-public struct ECS_CircleCollider2DAuthoring : IComponentData
-{
-    public float Radius;
-}
 
-public struct ECS_PhysicsBody2DAuthoring : IComponentData
-{
-    public float2 initialVelocity;
-    public float mass;
-    public bool isStatic;
-}
 
-public struct ECS_Velocity2D : IComponentData
-{
-    public float2 Value;
-    public float2 PrevValue;
-}
+
+

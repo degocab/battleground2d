@@ -3,7 +3,6 @@ using Unity.Transforms;
 using Unity.Mathematics;
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
-
 [UpdateAfter(typeof(CollisionDetectionSystem))]
 [UpdateBefore(typeof(PhysicsSystem))]
 public class CollisionResolutionSystem : SystemBase
