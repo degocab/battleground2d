@@ -617,6 +617,49 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
+  - s: "Formations Phase 1: Foundation\r\n\r\n[] Add FormationComponent\r\n\r\n   
+      IsInFormation: bool\r\n\r\n    FormationPosition: float2 (relative position)\r\n\r\n   
+      FormationRank: int (0=front, 1=middle, 2=back)\r\n\r\n    HoldPosition: bool\r\n\r\n[]
+      Add FormationGroupComponent\r\n\r\n    GroupID: int\r\n\r\n    FormationType:
+      enum (Phalanx, Square, etc.)\r\n\r\n    AnchorEntity: Entity (commander/center
+      point)"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Formations Phase 2: Formation Combat System\r\n\r\n[] Create FormationCombatSystem
+      (runs after target selection)\r\n\r\n    Override individual target finding
+      for formation units\r\n\r\n    Front rank: normal combat if enemy in range\r\n\r\n   
+      Middle/back: only engage if enemy within 1 unit (\"breached\")\r\n\r\n[] Create
+      FormationMovementSystem\r\n\r\n    Move entire formation as unit when advancing\r\n\r\n   
+      Maintain relative positions during movement\r\n\r\n    Handle unit replacement
+      when front-line falls"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Formations Phase 3: Command Behaviors\r\n\r\n[] Hold Position\r\n\r\n   
+      Units never leave formation positions\r\n\r\n    Front: attack enemies in range\r\n\r\n   
+      Middle/back: only if breached (enemy within 1u)\r\n\r\n[] Advance\r\n\r\n   
+      Formation moves as unit to destination\r\n\r\n    Front: attack any enemies
+      encountered\r\n\r\n    Middle/back: advance + replace fallen front units\r\n\r\n[]
+      Attack Move\r\n\r\n    Formation moves as unit\r\n\r\n    Front: only engage
+      if attacked first\r\n\r\n    Middle/back: advance + replace fallen\r\n\r\n[]
+      Charge\r\n\r\n    Formation breaks completely\r\n\r\n    All units find closest
+      targets individually\r\n\r\n    Aggressive pursuit behavior"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Formations Phase 4: Advanced Features\r\n\r\n[] Fall Back behavior (retreat
+      while maintaining formation)\r\n[] Formation collision (groups avoid other
+      groups)\r\n[] Dynamic rank promotion (middle\u2192front when gaps appear)"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: "Formations Logic\nHold     = Defend position, react only\nAdvance  = Move
+      + attack anything  \nAttackMv = Move + attack if provoked\nCharge   = Break
+      formation, all-out attack"
+    state: 0
+    show: 0
+    deleteQuestion: 0
   - s: "Physics v2\n[] group based physics before unit \n[] damage phyiscs\n[] add
       logic for block, need collision first\n[] arrow phyiscs\n[] calvary charge
       phyiscs"
@@ -637,26 +680,26 @@ MonoBehaviour:
     show: 0
     deleteQuestion: 0
   - s: "Gameplay V1\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
-      Make units search for each other\r\n[x] Make units march/charge eachother\n[]
-      Make units fight(for now just swing)\r\n\t[x] add unit damage\r\n\t[] add combat
-      collision resolution\r\n[x] add fix for target eval, add prev targ to hastarget,
-      if hastarget is withing range, set prevTarg to null, if its out of range, set
-      to prev to current\n\t- prob need to set this in another compoonent that isnt
-      removed that is persistant\n\t- then when we do findtarget again, we check
-      prev and ignore if that is found,\n\t- also need to \n[] fix commander getting
-      hit after leaving target range, could also be affecting units still.\n[] Group
-      system\n\t- add system to organize units into groups and have group collision
+      Make units search for each other\r\n[x] Make units march/charge eachother\n[x]
+      Make units fight(for now just swing)\r\n\t[x] add unit damage\r\n\t[x] add
+      combat collision resolution\r\n[x] add fix for target eval, add prev targ to
+      hastarget, if hastarget is withing range, set prevTarg to null, if its out
+      of range, set to prev to current\n\t- prob need to set this in another compoonent
+      that isnt removed that is persistant\n\t- then when we do findtarget again,
+      we check prev and ignore if that is found,\n\t- also need to \n[x] fix commander
+      getting hit after leaving target range, could also be affecting units still.\n[]
+      Group system\n\t- add system to organize units into groups and have group collision
       first/group target find/command assigning\n\t- keep groups in tight formation
       based on formation?\n"
     state: 2
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'System Cleanup v1
 
       [] Separate systems, systems should only have one
       purpose'
     state: 2
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Merge test physics system into existing codebase
 
@@ -719,7 +762,7 @@ MonoBehaviour:
     deleteQuestion: 0
   - s: frame max timer not resetting while holding move after attack
     state: 3
-    show: 1
+    show: 0
     deleteQuestion: 0
 --- !u!4 &985990580
 Transform:

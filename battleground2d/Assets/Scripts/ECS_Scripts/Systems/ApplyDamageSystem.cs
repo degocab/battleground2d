@@ -72,7 +72,7 @@ public partial class ApplyDamageSystem : SystemBase
                 #if UNITY_EDITOR
                 if (health.Health > 100)
                 {
-                    UnityEngine.Debug.Log($"Entity {entity.Index} took {totalDamage} damage. New health: {health.Health}"); 
+                    UnityEngine. Debug.Log($"Entity {entity.Index} took {totalDamage} damage. New health: {health.Health}"); 
                 }
                 #endif
 

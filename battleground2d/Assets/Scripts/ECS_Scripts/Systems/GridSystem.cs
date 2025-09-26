@@ -34,45 +34,6 @@ public class GridSystem : SystemBase
 
 
         EntityQuery query = GetEntityQuery(typeof(Translation), typeof(GridID));
-        //NativeArray<GridID> gridIds = query.ToComponentDataArray<GridID>(Allocator.TempJob);
-        //NativeArray<Translation> translations = query.ToComponentDataArray<Translation>(Allocator.TempJob);
-        //Particle[] particles = new Particle[translations.Count()];
-
-        ////loop through units(particles)
-        ////  insert unit into quadtree
-        ////foreach (var p in translations)
-        //for (var i = 0; i < translations.Count(); i++)
-        //{
-        //    if (i == 49)
-        //    {
-        //        var lol = 49;
-        //    }
-        //    var p = translations[i];
-        //    var particle = new Particle { x = p.Value.x, y = p.Value.y };
-        //    particles[i] = particle;
-        //    var point = new Point(p.Value.x, p.Value.y, particle);
-        //    qtree.insert(point);
-        //}
-
-        ////loop through units in physics?
-        ////foreach (var p in translations)
-        //for (var i = 0; i < particles.Count(); i++)
-        //{
-
-        //    var p = particles[i];
-        //    var range = new Circle(p.x, p.y, 0.125f * 2);
-        //    var points = qtree.query(range, null);
-        //    foreach(var point in points)
-        //    {
-        //        var other = point.userData;
-        //        // for (let other of particles) {
-        //        if (!p.Equals(other) && p.Intersects(other))
-        //        {
-        //            //p.setHighlight(true);
-
-        //        }
-        //    }
-        //}
 
         // Iterate through all entities with Translation and GridID components
         Dependency = Entities.ForEach((ref Translation translation, ref GridID grid) =>

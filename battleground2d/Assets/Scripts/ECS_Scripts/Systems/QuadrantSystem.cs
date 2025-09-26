@@ -138,14 +138,6 @@ ComponentType.Exclude<CommanderComponent>());
         Dependency.Complete();
 
 
-
-        //Entities.WithAll<Unit>().WithNone<CommanderComponent>().ForEach((Entity entity, ref Translation translation) =>
-        //{
-        //    int hashMapKey = GetPositionHashMapKey(translation.Value.xy);
-        //    quadrantMultiHashMap.Add(hashMapKey, entity);
-
-        //}).Run();
-
         // Get mouse position in screen space
         float3 mousePosition = Input.mousePosition;
 
@@ -166,12 +158,7 @@ ComponentType.Exclude<CommanderComponent>());
                 DebugDrawQuadrant(pos);
             }
         }
-        //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
-        //Debug.Log(GetEntityCountInHashMap(quadrantMultiHashMap, GetPositionHashMapKey(worldMouse2D)));
 
-        //var key = GetPositionHashMapKey(worldMouse2D);
-        //int count = GetEntityCountInHashMap(quadrantMultiHashMap, key);
-        //Debug.Log($"Entities in cell {key}: {count}");
     }
 }
 

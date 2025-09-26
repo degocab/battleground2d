@@ -1,7 +1,9 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -60,151 +62,133 @@ public class ProcessCommandSystem : JobComponentSystem
                 if (command.Command != command.previousCommand)
                     command.TargetEntity = Entity.Null;
 
-                switch (command.Command)
-                {
-                    case CommandType.Idle:
-                        break;
-                    case CommandType.March:
-
-                        float2 direction = float2.zero;
-                        switch (animationData.Direction)
-                        {
-                            case EntitySpawner.Direction.Up:
-                                direction = new float2(0, 1);
-                                break;
-                            case EntitySpawner.Direction.Down:
-                                direction = new float2(0, -1);
-                                break;
-                            case EntitySpawner.Direction.Left:
-                                direction = new float2(-1, 0); // Left direction
-                                break;
-                            case EntitySpawner.Direction.Right:
-                            default:
-                                direction = new float2(1, 0);
-                                break;
-                        }
-
-                        // Set a very far target position for endless movement
-                        float endlessDistance = 1000f; // Large distance for "endless" movement
-                        float2 targetPos = entityPos + (direction * endlessDistance);
-
-                        ECB.AddComponent(chunkIndex, entity, new HasTarget
-                        {
-                            Type = HasTarget.TargetType.Position,
-                            TargetPosition = targetPos, // Convert float2 to float3
-                            TargetEntity = Entity.Null
-                        });
-                        movementSpeed.isRunnning = false;
-                        break;
-                    case CommandType.Charge:
-                        float2 direction2 = float2.zero;
-                        switch (animationData.Direction)
-                        {
-                            case EntitySpawner.Direction.Up:
-                                direction = new float2(0, 1);
-                                break;
-                            case EntitySpawner.Direction.Down:
-                                direction = new float2(0, -1);
-                                break;
-                            case EntitySpawner.Direction.Left:
-                                direction = new float2(-1, 0); // Left direction
-                                break;
-                            case EntitySpawner.Direction.Right:
-                            default:
-                                direction = new float2(1, 0);
-                                break;
-                        }
-
-                        // Set a very far target position for endless movement
-                        float endlessDistance2 = 1000f; // Large distance for "endless" movement
-                        float2 targetPos2 = entityPos + (direction * endlessDistance2);
-
-                        ECB.AddComponent(chunkIndex, entity, new HasTarget
-                        {
-                            Type = HasTarget.TargetType.Position,
-                            TargetPosition = targetPos2, // Convert float2 to float3
-                            TargetEntity = Entity.Null
-                        });
-                        combatState.CurrentState = CombatState.State.SeekingTarget;
-                        movementSpeed.isRunnning = true;
-                        break;
-                    case CommandType.FindTarget:
-                        command.TargetEntity = Entity.Null;
-                        command.TargetPosition = float2.zero;
-                        ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                        combatState.CurrentState = CombatState.State.SeekingTarget;
-                        command.Command = CommandType.Idle;
-                        commandDataArray[i] = command;
-                        break;
-                    case CommandType.MoveTo:
-                        // Check if we are moving to an entity's location or a specific point in the world
-                        //if (command.TargetEntity != Entity.Null)
-                        //{
-                        //    // We are targeting another entity (chase/follow)
-                        //    ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                        //}
-                        //else 
-                        if (math.lengthsq(command.TargetPosition) > .4) // Check if a valid position is set
-                        {
-                            // We are moving to a specific location. Add the HasTarget component directly.
-                            ECB.AddComponent(chunkIndex, entity, new HasTarget
-                            {
-                                Type = HasTarget.TargetType.Position,
-                                TargetPosition = new float2(command.TargetPosition), // Convert float2 to float3
-                                TargetEntity = Entity.Null
-                            });
-                        }
-                        else
-                        {
-                            // We are moving to a specific location. Add the HasTarget component directly.
-                            ECB.AddComponent(chunkIndex, entity, new HasTarget
-                            {
-                                Type = HasTarget.TargetType.Position,
-                                TargetPosition = new float2(entityPos + command.TargetPosition), // Convert float2 to float3
-                                TargetEntity = Entity.Null
-                            });
-                        }
-                        //Clear the command so it doesn't keep re-triggering
-                        command.Command = CommandType.Idle;
-                        commandDataArray[i] = command;
-                        break;
-                    case CommandType.Attack:
-
-                        if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.4)
-                        {
-                            // This is a move-then-attack command
-                            // First, move to the position
-                            combatState.CurrentState = CombatState.State.SeekingTarget;
-                            ECB.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-
-                            // Then add a tag to find targets after arriving
-                            ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
-                            command.Command = CommandType.Idle;
-                            commandDataArray[i] = command;
-                        }
-                        else if (command.TargetEntity != Entity.Null)
-                        {
-                            combatState.CurrentState = CombatState.State.Attacking;
-                            ECB.AddComponent(chunkIndex, entity, new HasTarget
-                            {
-                                Type = HasTarget.TargetType.Entity,
-                                TargetEntity = command.TargetEntity, // ← Specific entity
-                                TargetPosition = float2.zero
-                            });
-                            // This is a direct attack command on a specific entity
-                            ECB.AddComponent<AttackCommandTag>(chunkIndex, entity);
-                            command.Command = CommandType.Idle;
-                            commandDataArray[i] = command;
-                        }
+                ProcessCommand(ref command, ref combatState, ref movementSpeed, entity, entityPos,
+             animationData.Direction, chunkIndex, ECB);
 
 
-                        break;
-                    case CommandType.Defend:
-                        break;
-                    default:
-                        break;
-                }
                 command.previousCommand = command.Command;
+            }
+        }
+
+        private void ProcessCommand(ref CommandData command, ref CombatState combatState,
+                                     ref MovementSpeedComponent movementSpeed, Entity entity,
+                                     float2 entityPos, EntitySpawner.Direction direction,
+                                     int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+        {
+            switch (command.Command)
+            {
+                case CommandType.Idle:
+                    break;
+
+                case CommandType.March:
+                case CommandType.Charge:
+                    HandleMovementCommand(command.Command, ref combatState, ref movementSpeed,
+                                        entity, entityPos, direction, chunkIndex, ecb);
+                    break;
+
+                case CommandType.FindTarget:
+                    HandleFindTargetCommand(ref command, ref combatState, entity, chunkIndex, ecb);
+                    break;
+
+                case CommandType.MoveTo:
+                    HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb);
+                    break;
+
+                case CommandType.Attack:
+                    HandleAttackCommand(ref command, ref combatState, entity, chunkIndex, ecb);
+                    break;
+
+                case CommandType.Defend:
+                    // TODO: Implement defend logic
+                    break;
+            }
+        }
+
+        private void HandleMovementCommand(CommandType commandType, ref CombatState combatState,
+                                         ref MovementSpeedComponent movementSpeed, Entity entity,
+                                         float2 entityPos, EntitySpawner.Direction direction,
+                                         int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+        {
+            float2 dir = GetDirectionVector(direction);
+            float endlessDistance = 1000f;
+            float2 targetPos = entityPos + (dir * endlessDistance);
+
+            ecb.AddComponent(chunkIndex, entity, new HasTarget
+            {
+                Type = HasTarget.TargetType.Position,
+                TargetPosition = targetPos,
+                TargetEntity = Entity.Null
+            });
+
+            movementSpeed.isRunnning = commandType == CommandType.Charge;
+            combatState.CurrentState = commandType == CommandType.Charge ?
+                CombatState.State.SeekingTarget : combatState.CurrentState;
+        }
+
+        private void HandleFindTargetCommand(ref CommandData command, ref CombatState combatState,
+                                           Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+        {
+            command.TargetEntity = Entity.Null;
+            command.TargetPosition = float2.zero;
+            ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+            combatState.CurrentState = CombatState.State.SeekingTarget;
+            command.Command = CommandType.Idle;
+        }
+
+        private void HandleMoveToCommand(ref CommandData command, Entity entity, float2 entityPos,
+                                       int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+        {
+            float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
+                command.TargetPosition : entityPos + command.TargetPosition;
+
+            ecb.AddComponent(chunkIndex, entity, new HasTarget
+            {
+                Type = HasTarget.TargetType.Position,
+                TargetPosition = targetPos,
+                TargetEntity = Entity.Null
+            });
+
+            command.Command = CommandType.Idle;
+        }
+
+        private void HandleAttackCommand(ref CommandData command, ref CombatState combatState,
+                                       Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+        {
+            if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.4f)
+            {
+                // Move-then-attack
+                combatState.CurrentState = CombatState.State.SeekingTarget;
+                ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+                ecb.AddComponent<AttackCommandTag>(chunkIndex, entity);
+            }
+            else if (command.TargetEntity != Entity.Null)
+            {
+                // Direct attack on entity
+                combatState.CurrentState = CombatState.State.Attacking;
+                ecb.AddComponent(chunkIndex, entity, new HasTarget
+                {
+                    Type = HasTarget.TargetType.Entity,
+                    TargetEntity = command.TargetEntity,
+                    TargetPosition = float2.zero
+                });
+                ecb.AddComponent<AttackCommandTag>(chunkIndex, entity);
+            }
+
+            command.Command = CommandType.Idle;
+        }
+        private float2 GetDirectionVector(EntitySpawner.Direction direction)
+        {
+            switch (direction)
+            {
+                case EntitySpawner.Direction.Up:
+                    return new float2(0, 1);
+                case EntitySpawner.Direction.Down:
+                    return new float2(0, -1);
+                case EntitySpawner.Direction.Left:
+                    return new float2(-1, 0);
+                case EntitySpawner.Direction.Right:
+                default:
+                    return new float2(1, 0);
             }
         }
     }
@@ -246,8 +230,8 @@ public enum CommandType : byte
     Idle,
     FindTarget,
     MoveTo,
-    March, //march forward endlesslly, take 
-    Charge, //charge in facing direction until 
+    March, //march forward endlesslly
+    Charge, //charge in facing direction until reaching enemies
     Attack,
     Defend
 }

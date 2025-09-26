@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -43,7 +44,7 @@ public partial class CombatSystem : SystemBase
         // Get the ComponentDataFromEntity for translations
         ComponentDataFromEntity<Translation> translationFromEntity = GetComponentDataFromEntity<Translation>(true);
 
-        var combatJob = new AutonomousCombatJob
+        var combatJob = new CombatJob
         {
             DeltaTime = deltaTime,
             CurrentTime = currentTime,
@@ -64,7 +65,7 @@ public partial class CombatSystem : SystemBase
     }
 
     [BurstCompile]
-    private struct AutonomousCombatJob : IJobChunk
+    private struct CombatJob : IJobChunk
     {
         public float DeltaTime;
         public float CurrentTime;
@@ -77,8 +78,7 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
-        [ReadOnly]
-        public EntityTypeHandle EntityTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
@@ -107,104 +107,98 @@ public partial class CombatSystem : SystemBase
                 switch (combatState.CurrentState)
                 {
                     case CombatState.State.Idle:
-                        if (hasTarget.TargetEntity != Entity.Null)
-                        {
-                            combatState.CurrentState = CombatState.State.SeekingTarget;
-                            combatState.TargetEntity = hasTarget.TargetEntity;
-                            combatState.StateTimer = 0f;
-                        }
+                        HandleIdleState(ref combatState, hasTarget);
                         break;
 
                     case CombatState.State.SeekingTarget:
-                        combatState.StateTimer += DeltaTime;
+                        HandleSeekingState(ref combatState, attack, translation, hasTarget, DeltaTime, TranslationFromEntity);
 
-                        // Timeout for seeking (optional)
-                        if (combatState.StateTimer > 10f) // 10 second timeout
-                        {
-                            combatState.CurrentState = CombatState.State.Idle;
-                            combatState.TargetEntity = Entity.Null;
-                            break;
-                        }
-
-                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
-                        {
-                            combatState.CurrentState = CombatState.State.Idle;
-                            break;
-                        }
-
-                        float3 targetPos = TranslationFromEntity[combatState.TargetEntity].Value;
-                        //float distance = math.distance(translation.Value, targetPos);
-
-                        //if (distance <= attack.Range)
-                        if (CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range))
-                        {
-                            combatState.CurrentState = CombatState.State.Attacking;
-                            combatState.StateTimer = 0f;
-                        }
                         break;
 
                     case CombatState.State.Attacking:
-                        combatState.StateTimer += DeltaTime;
-                        // Check if target is still valid BEFORE trying to attack
-                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
-                        {
-                            combatState.CurrentState = CombatState.State.SeekingTarget;
-                            combatState.TargetEntity = Entity.Null;
-                            break;
-                        }
-                        // Check if we can attack based on cooldown
-                        if (CurrentTime - attack.LastAttackTime >= 1f / attack.AttackRate)
-                        {
-                            // Execute attack
+                        HandleAttackingState(ref combatState, ref attack, ref animation, entity, chunkIndex,
+                                           translation, CurrentTime, DeltaTime, TranslationFromEntity, ECB);
 
-
-                            // Apply damage to target
-                            if (CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
-                            {
-
-
-                                attack.LastAttackTime = CurrentTime;
-                                animation.AnimationType = EntitySpawner.AnimationType.Attack;
-                                attack.isAttacking = true;
-
-
-
-                                // Create a projectile or attack hitbox instead of immediate damage
-                                ECB.AddComponent(chunkIndex, entity, new AttackEventComponent
-                                {
-                                    TargetEntity = combatState.TargetEntity,
-                                    Damage = attack.Damage,
-                                    SourceEntity = entity,
-                                    AttackTime = CurrentTime,
-                                    AttackDuration = 0.2f // Time for attack to land
-                                });
-
-                                //ECB.AddComponent(chunkIndex, combatState.TargetEntity, new DamageComponent
-                                //{
-                                //    Value = attack.Damage,
-                                //    SourceEntity = entity
-                                //});
-                            }
-                        }
-
-                        // Check if target is still valid or if we timed out
-                        if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity) ||
-                            combatState.StateTimer > 30f) // 30 second combat timeout
-                        {
-                            combatState.CurrentState = CombatState.State.Idle;
-                            combatState.TargetEntity = Entity.Null;
-                        }
                         break;
                     case CombatState.State.TakingDamage:
                         attack.isTakingDamage = true;
-
                         break;
+
                 }
 
                 // Write back modified components
                 combatStates[i] = combatState;
                 attacks[i] = attack;
                 animations[i] = animation;
+            }
+        }
+
+        private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack, ref AnimationComponent animation, Entity entity, int chunkIndex, Translation translation, float currentTime, float deltaTime, ComponentDataFromEntity<Translation> translationFromEntity, EntityCommandBuffer.ParallelWriter eCB)
+        {
+            combatState.StateTimer += DeltaTime;
+            // Check if target is still valid BEFORE trying to attack
+            if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
+            {
+                combatState.CurrentState = CombatState.State.SeekingTarget;
+                combatState.TargetEntity = Entity.Null;
+                return;
+            }
+            // Check if we can attack based on cooldown
+            if (CurrentTime - attack.LastAttackTime >= 1f / attack.AttackRate)
+            {
+                // Apply damage to target
+                if (CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
+                {
+                    attack.LastAttackTime = CurrentTime;
+                    animation.AnimationType = EntitySpawner.AnimationType.Attack;
+                    attack.isAttacking = true;
+
+                    // Create a projectile or attack hitbox instead of immediate damage
+                    ECB.AddComponent(chunkIndex, entity, new AttackEventComponent
+                    {
+                        TargetEntity = combatState.TargetEntity,
+                        Damage = attack.Damage,
+                        SourceEntity = entity,
+                        AttackTime = CurrentTime,
+                        AttackDuration = 0.2f // Time for attack to land
+                    });
+                }
+            }
+
+            // Check if target is still valid or if we timed out
+            if ( combatState.StateTimer > 30f) // 30 second combat timeout
+            {
+                combatState.CurrentState = CombatState.State.Idle;
+                combatState.TargetEntity = Entity.Null;
+            }
+        }
+
+        private void HandleSeekingState(ref CombatState combatState, AttackComponent attack, Translation translation, HasTarget hasTarget, float deltaTime, ComponentDataFromEntity<Translation> translationFromEntity)
+        {
+            combatState.StateTimer += DeltaTime;
+
+            if (combatState.StateTimer > 10f || !CombatUtils.IsTargetValid(combatState.TargetEntity, translationFromEntity))
+            {
+                combatState.CurrentState = CombatState.State.Idle;
+                combatState.TargetEntity = Entity.Null;
+                return;
+            }
+
+            float3 targetPos = TranslationFromEntity[combatState.TargetEntity].Value;
+            if (CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range))
+            {
+                combatState.CurrentState = CombatState.State.Attacking;
+                combatState.StateTimer = 0f;
+            }
+        }
+
+        private void HandleIdleState(ref CombatState combatState, HasTarget hasTarget)
+        {
+            if (hasTarget.TargetEntity != Entity.Null)
+            {
+                combatState.CurrentState = CombatState.State.SeekingTarget;
+                combatState.TargetEntity = hasTarget.TargetEntity;
+                combatState.StateTimer = 0f;
             }
         }
     }
