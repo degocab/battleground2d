@@ -100,15 +100,22 @@ public class UnitFactory
             Range = 0.275f,
             isAttacking = false,
             isDefending = false,
-            AttackRate = 10f,
-            AttackRateRemaining = 0f
+            AttackRate = .2f, // have to match for initial 
+            AttackRateRemaining = .2f  // have to match for initial 
+        });
+        entityManager.SetComponentData(entity, new DefenseComponent
+        {
+            IsBlocking = false,
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
-            cooldownDuration = .75f,
+            cooldownDuration = .25f,
             timeRemaining = 0f,
-            takeDamageCooldownDuration = .225f
+            takeDamageCooldownDuration = .22f, // have to match for initial 
+            takingDmgTimeRemaining = .22f // have to match for initial 
         });
+
+
     }
 
     private void SetPhysicsComponents(Entity entity)
@@ -192,7 +199,7 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(CommandData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent)
         );
     }
 
@@ -204,8 +211,8 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag)
-            //, typeof(TargetComponent)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(DefenseComponent), typeof(AttackPhasesComponent)
+        //, typeof(TargetComponent)
         );
     }
 }

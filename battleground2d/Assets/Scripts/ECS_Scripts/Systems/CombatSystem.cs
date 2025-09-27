@@ -102,7 +102,9 @@ public partial class CombatSystem : SystemBase
                 var translation = translations[i];
                 var hasTarget = hasTargets[i];
                 var entity = entities[i];
-                attack.isTakingDamage = false;
+                //attack.isTakingDamage = false;
+                attack.isDefending = false;
+
                 // State machine logic
                 switch (combatState.CurrentState)
                 {
@@ -123,7 +125,13 @@ public partial class CombatSystem : SystemBase
                     case CombatState.State.TakingDamage:
                         attack.isTakingDamage = true;
                         break;
-
+                    case CombatState.State.Defending:
+                        attack.isDefending = true;
+                        Debug.Log("Defending");
+                        // Reduce incoming damage by 50%
+                        // Chance to parry and counter-attack
+                        // Prevent movement while defending
+                        break;
                 }
 
                 // Write back modified components
@@ -143,9 +151,12 @@ public partial class CombatSystem : SystemBase
                 combatState.TargetEntity = Entity.Null;
                 return;
             }
+            //Debug.Log($"currentTime - lastattacktime: {CurrentTime - attack.LastAttackTime}");
+            //Debug.Log($"atk Rate({attack.AttackRate})|{CurrentTime - attack.LastAttackTime} >= {1f / attack.AttackRate}]");
             // Check if we can attack based on cooldown
             if (CurrentTime - attack.LastAttackTime >= 1f / attack.AttackRate)
             {
+                
                 // Apply damage to target
                 if (CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
                 {
@@ -164,13 +175,11 @@ public partial class CombatSystem : SystemBase
                     });
                 }
             }
+            else{
+                combatState.CurrentState = CombatState.State.Defending;
 
-            // Check if target is still valid or if we timed out
-            if ( combatState.StateTimer > 30f) // 30 second combat timeout
-            {
-                combatState.CurrentState = CombatState.State.Idle;
-                combatState.TargetEntity = Entity.Null;
             }
+
         }
 
         private void HandleSeekingState(ref CombatState combatState, AttackComponent attack, Translation translation, HasTarget hasTarget, float deltaTime, ComponentDataFromEntity<Translation> translationFromEntity)

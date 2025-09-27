@@ -45,7 +45,7 @@ public partial class ApplyDamageSystem : SystemBase
 
                 if (attacks.Length == 0)
                 {
-                    attackComponent.isTakingDamage = false;
+                    //attackComponent.isTakingDamage = false;
                     return;
                 }
 
@@ -59,7 +59,7 @@ public partial class ApplyDamageSystem : SystemBase
                 health.Health -= totalDamage;
                 //TODO: set to true if this doesnt trigger animation?
                 attackComponent.isTakingDamage = true;
-               
+                
                 attacks.Clear(); // Clear buffer for reuse
 
                 if (health.Health <= 0)
@@ -69,12 +69,12 @@ public partial class ApplyDamageSystem : SystemBase
                 }
 
                 ////DEBUG: Add debug output to verify damage is being applied
-                #if UNITY_EDITOR
-                if (health.Health > 100)
-                {
-                    UnityEngine. Debug.Log($"Entity {entity.Index} took {totalDamage} damage. New health: {health.Health}"); 
-                }
-                #endif
+                //#if UNITY_EDITOR
+                //if (health.Health > 100)
+                //{
+                //    UnityEngine. Debug.Log($"Entity {entity.Index} took {totalDamage} damage. New health: {health.Health}"); 
+                //}
+                //#endif
 
 
             }).ScheduleParallel();

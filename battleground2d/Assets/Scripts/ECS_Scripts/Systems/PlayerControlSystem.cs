@@ -37,16 +37,6 @@ public class PlayerControlSystem : SystemBase
         var ecb = _ecbSystem.CreateCommandBuffer();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
         var commanderTranslation = GetComponent<Translation>(commanderEntity);
-        bool attack = false;
-        bool defend = false;
-        //if (Input.GetKeyDown(KeyCode.Space)) // Detect spacebar press only
-        if (Input.GetMouseButtonDown(0)) // Detect spacebar press only
-            attack = true;
-
-        if (Input.GetMouseButton(1)) // Detect spacebar press only
-            defend = true;
-        else
-            defend = false;
 
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
@@ -94,6 +84,8 @@ public class PlayerControlSystem : SystemBase
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);
         bool isDefending = Input.GetMouseButton(1);
+        Debug.Log($"Is Defending: {isDefending}");
+
 
         UpdateCameraZoom();
         float currentTime = (float)Time.ElapsedTime;
@@ -106,36 +98,80 @@ public class PlayerControlSystem : SystemBase
                 ref AttackComponent attackComponent,
                 ref AttackCooldownComponent attackCooldown,
                 ref AnimationComponent animationComponent,
-                ref MovementSpeedComponent movementSpeedComponent
+                ref MovementSpeedComponent movementSpeedComponent,
+                ref DefenseComponent defenseComponent
             ) =>
             {
-                Debug.Log($"AttackRate: {attackComponent.AttackRate}");
+
+                if (attackComponent.isTakingDamage) return;
+
+
+                // Step 3: RESET flags at the start of each frame
+                attackComponent.isAttacking = false;
+                attackComponent.isDefending = false;
+                defenseComponent.IsBlocking = false;
+
 
                 // Step 1: Reduce only attack rate cooldown (we don't touch animation cooldown)
                 if (attackComponent.AttackRateRemaining > 0f)
+                {
                     attackComponent.AttackRateRemaining -= deltaTime;
+                }
+                if (attackCooldown.timeRemaining > 0f)
+                {
+                    //attackCooldown.timeRemaining -= deltaTime;
+                    isAttacking = true;
+                }
+
+
 
                 // Step 2: Determine whether we are allowed to attack
                 bool animationReady = attackCooldown.timeRemaining <= 0f;
                 bool attackReady = attackComponent.AttackRateRemaining <= 0f;
                 bool canAttack = animationReady && attackReady;
 
-                // Step 3: Handle state transitions
-                if (canAttack)
+                // Step 3: RESET flags at the start of each frame
+                attackComponent.isAttacking = false;
+                attackComponent.isDefending = false;
+                defenseComponent.IsBlocking = false;
+
+                //Debug.Log($"canAttack = [{canAttack}] because attackReady = [{attackReady}] and animationReady = [{animationReady}] because attackCooldown.timeRemaining = [{attackCooldown.timeRemaining}]");
+                // Step 4: Handle state transitions
+                if (isAttacking)
                 {
-                    if (isAttacking)
+                    if (canAttack)
                     {
                         PerformAttack(ref combatState, ref attackComponent, ref animationComponent);
                         StartAttack(ref combatState, ref attackCooldown); // animation system will handle timeRemaining now
+                        attackComponent.isAttacking = true; // SET FLAG
+                        playerInput.stillAttacking = true;
                     }
                     else
                     {
-                        SetToIdle(ref combatState, ref animationComponent);
+                        if (isAttacking)
+                        {
+                            //still attacking
+                        }
+                        else
+                        {
+                            SetToIdle(ref combatState, ref animationComponent);
+
+                        }
                     }
+                }
+                else if (isDefending)
+                {
+                    defenseComponent.IsBlocking = true;
+                    attackComponent.isDefending = true;
+                    combatState.CurrentState = CombatState.State.Defending;
                 }
                 else if (animationReady && !attackReady)
                 {
                     // We’ve recovered from animation but are still waiting on attack rate cooldown
+                    SetToIdle(ref combatState, ref animationComponent);
+                }
+                else
+                {
                     SetToIdle(ref combatState, ref animationComponent);
                 }
 
@@ -239,6 +275,7 @@ public class PlayerControlSystem : SystemBase
     {
         combatState.CurrentState = CombatState.State.Attacking;
         attackCooldown.timeRemaining = attackCooldown.cooldownDuration;
+        Debug.Log("Attack Started");
     }
 
     private void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
@@ -251,7 +288,7 @@ public class PlayerControlSystem : SystemBase
 
     private void PerformAttack(ref CombatState combatState, ref AttackComponent attackComponent, ref AnimationComponent animationComponent)
     {
-        attackComponent.AttackRateRemaining = 1f; // or attackComponent.AttackRate;
+        attackComponent.AttackRateRemaining = attackComponent.AttackRate;
         combatState.CurrentState = CombatState.State.Attacking;
         attackComponent.isAttacking = true;
         animationComponent.finishAnimation = true;
@@ -264,5 +301,7 @@ public class PlayerControlSystem : SystemBase
     {
         combatState.CurrentState = CombatState.State.Idle;
         animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
+        Debug.Log("Player is idle");
+
     }
 }
