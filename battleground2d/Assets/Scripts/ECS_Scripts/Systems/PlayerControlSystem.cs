@@ -117,7 +117,7 @@ public class PlayerControlSystem : SystemBase
                 {
                     attackComponent.AttackRateRemaining -= deltaTime;
                 }
-                if (attackCooldown.timeRemaining > 0f)
+                if (attackCooldown.attackCoolTimeRemaining > 0f)
                 {
                     //attackCooldown.timeRemaining -= deltaTime;
                     isAttacking = true;
@@ -126,7 +126,7 @@ public class PlayerControlSystem : SystemBase
 
 
                 // Step 2: Determine whether we are allowed to attack
-                bool animationReady = attackCooldown.timeRemaining <= 0f;
+                bool animationReady = attackCooldown.attackCoolTimeRemaining <= 0f;
                 bool attackReady = attackComponent.AttackRateRemaining <= 0f;
                 bool canAttack = animationReady && attackReady;
 
@@ -274,7 +274,7 @@ public class PlayerControlSystem : SystemBase
                            ref AttackCooldownComponent attackCooldown)
     {
         combatState.CurrentState = CombatState.State.Attacking;
-        attackCooldown.timeRemaining = attackCooldown.cooldownDuration;
+        attackCooldown.attackCoolTimeRemaining = attackCooldown.attackCoolDownDuration;
         Debug.Log("Attack Started");
     }
 

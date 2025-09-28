@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Unity.Burst;
 using Unity.Entities;
+using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(AttackResolutionSystem))]
@@ -28,6 +29,7 @@ public partial class ApplyDamageSystem : SystemBase
             .WithAll<AttackEventBuffer>()
             .ForEach((Entity entity, int entityInQueryIndex,
             ref AttackComponent attackComponent,
+            ref AttackCooldownComponent cooldown,
                      ref HealthComponent health,
                      //in DamageComponent damage,
                      ref DynamicBuffer<AttackEventBuffer> attacks) =>
@@ -46,6 +48,7 @@ public partial class ApplyDamageSystem : SystemBase
                 if (attacks.Length == 0)
                 {
                     //attackComponent.isTakingDamage = false;
+                    Debug.Log("no attacks in buffer");
                     return;
                 }
 
@@ -59,7 +62,9 @@ public partial class ApplyDamageSystem : SystemBase
                 health.Health -= totalDamage;
                 //TODO: set to true if this doesnt trigger animation?
                 attackComponent.isTakingDamage = true;
-                
+                cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
+                Debug.Log("applying damage, isTakingDamage set to true");
+
                 attacks.Clear(); // Clear buffer for reuse
 
                 if (health.Health <= 0)

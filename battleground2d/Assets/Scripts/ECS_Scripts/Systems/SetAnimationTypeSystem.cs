@@ -49,7 +49,16 @@ public partial class SetAnimationTypeSystem : SystemBase
                 // 2. Handle death animation (highest priority)
                 if (attackComponent.isTakingDamage)
                 {
-                    //Debug.Log("Is taking damage");
+                    Debug.Log($"takingDmgTimeRemaining {cooldown.takingDmgTimeRemaining}");
+                    if (cooldown.takingDmgTimeRemaining <= 0)
+                    {
+                        animationComponent.finishAnimation = false;
+                        attackComponent.isTakingDamage = false;
+                        Debug.Log("setting isTakingDamage to false");
+                        return; 
+                    }
+
+                    Debug.Log("Is taking damage");
                     animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                     combatState.CurrentState = CombatState.State.TakingDamage;
                     UpdatePreviousAnimationField(entity, ref animationComponent);
@@ -57,39 +66,35 @@ public partial class SetAnimationTypeSystem : SystemBase
                     animationComponent.finishAnimation = true;
 
                     //Debug.Log("cooldown.takingDmgTimeRemaining: " + cooldown.takingDmgTimeRemaining);
-                    if (cooldown.takingDmgTimeRemaining <= 0)
-                    {
-                        cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
-                        //Debug.Log("cooldown.takeDamageCooldownDuration: " + cooldown.takeDamageCooldownDuration);
-                        animationComponent.finishAnimation = false;
-                        attackComponent.isTakingDamage = false;
-                        return; // Death overrides everything else
-                    }
-                    else
-                    {
-                        cooldown.takingDmgTimeRemaining -= deltaTime;
+                    //if (cooldown.takingDmgTimeRemaining <= 0)
+                    //{
+                    //    cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 
-                    }
+                    //    animationComponent.finishAnimation = false;
+                    //    attackComponent.isTakingDamage = false;
+                    //    Debug.Log("setting isTakingDamage to false");
+                    //    //return; // Death overrides everything else
+                    //}
+                    //else
+                    //{
+                    //    cooldown.takingDmgTimeRemaining -= deltaTime;
+
+                    //}
+
                     return;
                 }
 
                 // 3. Handle combat animations (medium priority)
-                if (combatState.CurrentState == CombatState.State.Attacking)
+                if (combatState.CurrentState == CombatState.State.Attacking && cooldown.attackCoolTimeRemaining > 0f)
                 {
-                    //if (cooldown.timeRemaining == cooldown.cooldownDuration) //on attack trigger?
-                    //{
-                    //    animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
-                    //}
-                    if (cooldown.timeRemaining > 0f)
-                    {
-                        animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
-
-                    }
-                    else
-                    {
-                        animationComponent.finishAnimation = false; // Reset finish flag after animation is done
-                        attackComponent.isAttacking = false; // Reset finish flag after animation is done
-                    }
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
+                }
+                else if (combatState.CurrentState == CombatState.State.Attacking)
+                {
+                    // Attack state but cooldown finished - reset to idle
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
+                    animationComponent.finishAnimation = false;
+                    attackComponent.isAttacking = false;
                 }
                 else if (combatState.CurrentState == CombatState.State.Defending)
                 {
@@ -113,15 +118,36 @@ public partial class SetAnimationTypeSystem : SystemBase
                 }
 
                 UpdatePreviousAnimationField(entity, ref animationComponent);
-                if (cooldown.timeRemaining > 0)
-                {
-                    cooldown.timeRemaining -= deltaTime;
-                }
+                //if (cooldown.attackCoolTimeRemaining > 0)
+                //{
+                //    Debug.Log($"attackCoolTimeRemaining: {cooldown.attackCoolTimeRemaining}");
+                //    cooldown.attackCoolTimeRemaining -= deltaTime;
+                //    Debug.Log($"attackCoolTimeRemaining: {cooldown.attackCoolTimeRemaining}");
+                //}
             })//.WithoutBurst().Run();
             .ScheduleParallel();
+
+
+        //Entities
+        //   .WithName("ResetCoolDowns")
+        //   .ForEach((Entity entity,
+        //            ref AnimationComponent animationComponent,
+        //            ref AttackComponent attackComponent,
+        //            ref AttackCooldownComponent cooldown,
+        //            ref CombatState combatState,
+
+        //            in MovementSpeedComponent movement,
+        //            in HealthComponent health) =>
+        //   {
+        //       if (cooldown.attackCoolTimeRemaining > 0)
+        //           cooldown.attackCoolTimeRemaining -= deltaTime;
+        //       if (cooldown.takingDmgTimeRemaining > 0)
+        //           cooldown.takingDmgTimeRemaining -= deltaTime;
+        //       if (attackComponent.AttackRateRemaining > 0)
+        //           attackComponent.AttackRateRemaining -= deltaTime;
+        //   }).ScheduleParallel();
+
     }
-
-
 
     private static void UpdatePreviousAnimationField(Entity entity, ref AnimationComponent animationComponent)
     {

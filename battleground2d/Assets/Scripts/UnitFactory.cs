@@ -100,8 +100,8 @@ public class UnitFactory
             Range = 0.275f,
             isAttacking = false,
             isDefending = false,
-            AttackRate = .2f, // have to match for initial 
-            AttackRateRemaining = .2f  // have to match for initial 
+            AttackRate = 2f, // have to match for initial 
+            AttackRateRemaining = 0f  // have to match for initial 
         });
         entityManager.SetComponentData(entity, new DefenseComponent
         {
@@ -109,8 +109,8 @@ public class UnitFactory
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
-            cooldownDuration = .25f,
-            timeRemaining = 0f,
+            attackCoolDownDuration = .6f,
+            attackCoolTimeRemaining = 0f,
             takeDamageCooldownDuration = .22f, // have to match for initial 
             takingDmgTimeRemaining = .22f // have to match for initial 
         });

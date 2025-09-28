@@ -41,6 +41,28 @@ public partial class CombatSystem : SystemBase
         float deltaTime = Time.DeltaTime;
         float currentTime = (float)Time.ElapsedTime;
 
+
+
+        Entities
+   .WithName("ResetCoolDowns")
+   .ForEach((Entity entity,
+            ref AnimationComponent animationComponent,
+            ref AttackComponent attackComponent,
+            ref AttackCooldownComponent cooldown,
+            ref CombatState combatState,
+
+            in MovementSpeedComponent movement,
+            in HealthComponent health) =>
+   {
+       if (cooldown.attackCoolTimeRemaining > 0)
+           cooldown.attackCoolTimeRemaining -= deltaTime;
+       if (cooldown.takingDmgTimeRemaining > 0)
+           cooldown.takingDmgTimeRemaining -= deltaTime;
+       if (attackComponent.AttackRateRemaining > 0)
+           attackComponent.AttackRateRemaining -= deltaTime;
+   }).ScheduleParallel();
+
+
         // Get the ComponentDataFromEntity for translations
         ComponentDataFromEntity<Translation> translationFromEntity = GetComponentDataFromEntity<Translation>(true);
 
@@ -102,8 +124,9 @@ public partial class CombatSystem : SystemBase
                 var translation = translations[i];
                 var hasTarget = hasTargets[i];
                 var entity = entities[i];
-                //attack.isTakingDamage = false;
+                attack.isTakingDamage = false;
                 attack.isDefending = false;
+                attack.isAttacking = false;
 
                 // State machine logic
                 switch (combatState.CurrentState)
@@ -118,11 +141,13 @@ public partial class CombatSystem : SystemBase
                         break;
 
                     case CombatState.State.Attacking:
-                        HandleAttackingState(ref combatState, ref attack, ref animation, entity, chunkIndex,
+                        HandleAttackingState(ref cooldown, ref combatState, ref attack, ref animation, entity, chunkIndex,
                                            translation, CurrentTime, DeltaTime, TranslationFromEntity, ECB);
 
                         break;
                     case CombatState.State.TakingDamage:
+                        Debug.Log("taking damage in coambat state");
+
                         attack.isTakingDamage = true;
                         break;
                     case CombatState.State.Defending:
@@ -138,48 +163,84 @@ public partial class CombatSystem : SystemBase
                 combatStates[i] = combatState;
                 attacks[i] = attack;
                 animations[i] = animation;
+                cooldowns[i] = cooldown;
             }
         }
 
-        private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack, ref AnimationComponent animation, Entity entity, int chunkIndex, Translation translation, float currentTime, float deltaTime, ComponentDataFromEntity<Translation> translationFromEntity, EntityCommandBuffer.ParallelWriter eCB)
+        private void HandleAttackingState(ref AttackCooldownComponent cooldown, ref CombatState combatState,
+                                    ref AttackComponent attack, ref AnimationComponent animation,
+                                    Entity entity, int chunkIndex, Translation translation,
+                                    float currentTime, float deltaTime,
+                                    ComponentDataFromEntity<Translation> translationFromEntity,
+                                    EntityCommandBuffer.ParallelWriter ecb)
         {
             combatState.StateTimer += DeltaTime;
-            // Check if target is still valid BEFORE trying to attack
+
+            // Target validation
             if (!CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
             {
                 combatState.CurrentState = CombatState.State.SeekingTarget;
                 combatState.TargetEntity = Entity.Null;
                 return;
             }
-            //Debug.Log($"currentTime - lastattacktime: {CurrentTime - attack.LastAttackTime}");
-            //Debug.Log($"atk Rate({attack.AttackRate})|{CurrentTime - attack.LastAttackTime} >= {1f / attack.AttackRate}]");
-            // Check if we can attack based on cooldown
-            if (CurrentTime - attack.LastAttackTime >= 1f / attack.AttackRate)
-            {
-                
-                // Apply damage to target
-                if (CombatUtils.IsTargetValid(combatState.TargetEntity, TranslationFromEntity))
-                {
-                    attack.LastAttackTime = CurrentTime;
-                    animation.AnimationType = EntitySpawner.AnimationType.Attack;
-                    attack.isAttacking = true;
 
-                    // Create a projectile or attack hitbox instead of immediate damage
-                    ECB.AddComponent(chunkIndex, entity, new AttackEventComponent
-                    {
-                        TargetEntity = combatState.TargetEntity,
-                        Damage = attack.Damage,
-                        SourceEntity = entity,
-                        AttackTime = CurrentTime,
-                        AttackDuration = 0.2f // Time for attack to land
-                    });
+
+            // DEBUG: Log the values at the start
+            bool stillAttacking = cooldown.attackCoolTimeRemaining > 0f;
+            bool animationReady = cooldown.attackCoolTimeRemaining < 0.001f;
+            bool attackReady = attack.AttackRateRemaining < 0.001f;
+            bool canAttack = animationReady && attackReady;
+
+
+            // NEW: Also check if animation is actually in attack state
+            bool animationPlayingAttack = animation.AnimationType == EntitySpawner.AnimationType.Attack;
+
+
+            // AI DECISION: Attack or Defend?
+            if (canAttack)
+            {
+
+                // AI chooses to attack
+                attack.AttackRateRemaining = attack.AttackRate * 2;
+                attack.isAttacking = true;
+                animation.finishAnimation = true;
+                animation.AnimationType = EntitySpawner.AnimationType.Attack;
+                cooldown.attackCoolTimeRemaining = .3f;// cooldown.attackCoolDownDuration;
+
+                ecb.AddComponent(chunkIndex, entity, new AttackEventComponent
+                {
+                    TargetEntity = combatState.TargetEntity,
+                    Damage = attack.Damage,
+                    SourceEntity = entity,
+                    AttackTime = CurrentTime,
+                    AttackDuration = 0.2f
+                });
+            }
+            else if (animationPlayingAttack)
+            {
+                // Animation is still playing, wait for it to finish
+                return;
+            }
+            else
+            {
+                if (stillAttacking)
+                {
+                    //Debug.Log("stillattacking");
+                }
+                else
+                {
+                    //// AI chooses to defend while waiting
+                    combatState.CurrentState = CombatState.State.Defending;
+                    attack.isDefending = true;
                 }
             }
-            else{
-                combatState.CurrentState = CombatState.State.Defending;
 
+            // Timeout
+            if (combatState.StateTimer > 30f)
+            {
+                combatState.CurrentState = CombatState.State.Idle;
+                combatState.TargetEntity = Entity.Null;
             }
-
         }
 
         private void HandleSeekingState(ref CombatState combatState, AttackComponent attack, Translation translation, HasTarget hasTarget, float deltaTime, ComponentDataFromEntity<Translation> translationFromEntity)

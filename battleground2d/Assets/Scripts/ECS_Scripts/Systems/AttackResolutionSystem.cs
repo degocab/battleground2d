@@ -49,6 +49,8 @@ public partial class AttackResolutionSystem : SystemBase
                     {
                         //combatState.CurrentState = CombatState.State.TakingDamage;
                         // Buffer doesn't exist, add it first then append
+
+                        Debug.Log("Adding attack event buffer");
                         ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                         ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
                         {
@@ -56,6 +58,11 @@ public partial class AttackResolutionSystem : SystemBase
                             Damage = attackEvent.Damage,
                             DamageType = 0
                         });
+
+                    }
+                    else
+                    {
+                        Debug.Log("attack event buffer not added");
 
                     }
                 }
@@ -95,7 +102,6 @@ public partial class AttackResolutionSystem : SystemBase
     {
         // Simple directional checks for 4-way system
         bool areFacingEachOther = AreDirectionsOpposite(attackerFacing, defenderFacing);
-
         if (!areFacingEachOther)
         {
             // Attacker might be hitting from side/back

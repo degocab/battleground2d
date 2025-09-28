@@ -692,7 +692,7 @@ MonoBehaviour:
       first/group target find/command assigning\n\t- keep groups in tight formation
       based on formation?\n"
     state: 2
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'System Cleanup v1
 
@@ -700,6 +700,14 @@ MonoBehaviour:
       purpose'
     state: 2
     show: 0
+    deleteQuestion: 0
+  - s: "combat phase 1\n[] directional defense\n[] add block phase\n[] setup death
+      phase\n[] increase attack range, shouldnt be larger than the collision range
+      to allow sword range\n[] change directional view to be independent of movement
+      direction\n\t[] walking backwards\n\t[] update block logic to use view direction
+      vs movement direction"
+    state: 2
+    show: 1
     deleteQuestion: 0
   - s: 'Merge test physics system into existing codebase
 
