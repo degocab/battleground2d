@@ -48,7 +48,7 @@ public partial class ApplyDamageSystem : SystemBase
                 if (attacks.Length == 0)
                 {
                     //attackComponent.isTakingDamage = false;
-                    Debug.Log("no attacks in buffer");
+                    //Debug.Log("no attacks in buffer");
                     return;
                 }
 
@@ -63,7 +63,6 @@ public partial class ApplyDamageSystem : SystemBase
                 //TODO: set to true if this doesnt trigger animation?
                 attackComponent.isTakingDamage = true;
                 cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
-                Debug.Log("applying damage, isTakingDamage set to true");
 
                 attacks.Clear(); // Clear buffer for reuse
 

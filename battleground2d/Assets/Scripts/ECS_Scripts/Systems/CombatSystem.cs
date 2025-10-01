@@ -146,13 +146,11 @@ public partial class CombatSystem : SystemBase
 
                         break;
                     case CombatState.State.TakingDamage:
-                        Debug.Log("taking damage in coambat state");
 
                         attack.isTakingDamage = true;
                         break;
                     case CombatState.State.Defending:
                         attack.isDefending = true;
-                        Debug.Log("Defending");
                         // Reduce incoming damage by 50%
                         // Chance to parry and counter-attack
                         // Prevent movement while defending

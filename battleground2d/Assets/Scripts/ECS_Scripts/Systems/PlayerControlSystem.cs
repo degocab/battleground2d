@@ -1,5 +1,9 @@
-﻿using Unity.Entities;
+﻿using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -106,7 +110,6 @@ public class PlayerControlSystem : SystemBase
                 if (attackComponent.isTakingDamage) return;
 
 
-                // Step 3: RESET flags at the start of each frame
                 attackComponent.isAttacking = false;
                 attackComponent.isDefending = false;
                 defenseComponent.IsBlocking = false;
@@ -135,7 +138,6 @@ public class PlayerControlSystem : SystemBase
                 attackComponent.isDefending = false;
                 defenseComponent.IsBlocking = false;
 
-                //Debug.Log($"canAttack = [{canAttack}] because attackReady = [{attackReady}] and animationReady = [{animationReady}] because attackCooldown.timeRemaining = [{attackCooldown.timeRemaining}]");
                 // Step 4: Handle state transitions
                 if (isAttacking)
                 {
@@ -305,3 +307,6 @@ public class PlayerControlSystem : SystemBase
 
     }
 }
+
+
+

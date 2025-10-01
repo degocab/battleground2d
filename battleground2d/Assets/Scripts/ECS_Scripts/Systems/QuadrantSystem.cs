@@ -99,7 +99,9 @@ ComponentType.Exclude<CommanderComponent>());
             {
                 var animationComponent = chunkAnimationComponents[i];  
 
-                float2 translation2d = translations[i].Value.xy;
+                //float2 translation2d = translations[i].Value.xy;
+                float2 translation2d = new float2(translations[i].Value.x, translations[i].Value.y - .25f);
+
                 int hashMapKey = GetPositionHashMapKey(translation2d);
                 quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
                 {

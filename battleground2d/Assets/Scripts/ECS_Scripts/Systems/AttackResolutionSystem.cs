@@ -50,7 +50,6 @@ public partial class AttackResolutionSystem : SystemBase
                         //combatState.CurrentState = CombatState.State.TakingDamage;
                         // Buffer doesn't exist, add it first then append
 
-                        Debug.Log("Adding attack event buffer");
                         ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                         ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
                         {
@@ -62,7 +61,7 @@ public partial class AttackResolutionSystem : SystemBase
                     }
                     else
                     {
-                        Debug.Log("attack event buffer not added");
+                        //Debug.Log("attack event buffer not added");
 
                     }
                 }

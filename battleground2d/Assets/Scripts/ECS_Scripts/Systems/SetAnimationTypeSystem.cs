@@ -49,16 +49,13 @@ public partial class SetAnimationTypeSystem : SystemBase
                 // 2. Handle death animation (highest priority)
                 if (attackComponent.isTakingDamage)
                 {
-                    Debug.Log($"takingDmgTimeRemaining {cooldown.takingDmgTimeRemaining}");
                     if (cooldown.takingDmgTimeRemaining <= 0)
                     {
                         animationComponent.finishAnimation = false;
                         attackComponent.isTakingDamage = false;
-                        Debug.Log("setting isTakingDamage to false");
                         return; 
                     }
 
-                    Debug.Log("Is taking damage");
                     animationComponent.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                     combatState.CurrentState = CombatState.State.TakingDamage;
                     UpdatePreviousAnimationField(entity, ref animationComponent);

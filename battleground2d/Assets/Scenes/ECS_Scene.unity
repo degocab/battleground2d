@@ -690,7 +690,7 @@ MonoBehaviour:
       getting hit after leaving target range, could also be affecting units still.\n[]
       Group system\n\t- add system to organize units into groups and have group collision
       first/group target find/command assigning\n\t- keep groups in tight formation
-      based on formation?\n"
+      based on formation?\n[] Add simple AI for defense - "
     state: 2
     show: 1
     deleteQuestion: 0
@@ -701,11 +701,12 @@ MonoBehaviour:
     state: 2
     show: 0
     deleteQuestion: 0
-  - s: "combat phase 1\n[] directional defense\n[] add block phase\n[] setup death
-      phase\n[] increase attack range, shouldnt be larger than the collision range
-      to allow sword range\n[] change directional view to be independent of movement
-      direction\n\t[] walking backwards\n\t[] update block logic to use view direction
-      vs movement direction"
+  - s: "combat phase 1\n[x] directional defense\n[x] player attack even detection
+      + resolution\n[] fix units frozen while attacking(prob taking dmg)\n[] add
+      block phase\n[] setup death phase\n[] increase attack range, shouldnt be larger
+      than the collision range to allow sword range\n[] change directional view to
+      be independent of movement direction\n\t[] walking backwards\n\t[] update block
+      logic to use view direction vs movement direction\n"
     state: 2
     show: 1
     deleteQuestion: 0
@@ -1189,6 +1190,7 @@ MonoBehaviour:
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,
     type: 2}
+  DrawDebugLines: 1
   unitPrefab: {fileID: 952375374}
   spawnConfig: {fileID: 11400000, guid: 7500725a709982945b1f94e40b07aa93, type: 2}
 --- !u!4 &1877706034

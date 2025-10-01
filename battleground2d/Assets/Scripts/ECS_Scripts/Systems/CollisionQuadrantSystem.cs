@@ -55,21 +55,26 @@ public partial class CollisionQuadrantSystem : SystemBase
         [ReadOnly] public EntityTypeHandle EntityType;
         public NativeMultiHashMap<int, CollisionQuadrantData>.ParallelWriter QuadrantMap;
 
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentType;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var translations = chunk.GetNativeArray(TranslationType);
+            var animationComponents = chunk.GetNativeArray(AnimationComponentType);
             var entities = chunk.GetNativeArray(EntityType);
             var ECS_CircleCollider2DAuthorings = chunk.GetNativeArray(ecsCircleCollider2DAuthoringType);
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                float2 pos = translations[i].Value.xy;
+                //float2 pos = translations[i].Value.xy;
+                float2 pos = new float2(translations[i].Value.x, translations[i].Value.y - .25f);
                 int key = GetPositionHashMapKey(pos);
                 QuadrantMap.Add(key, new CollisionQuadrantData
                 {
                     entity = entities[i],
                     position = pos,
-                    radius = ECS_CircleCollider2DAuthorings[i].Radius
+                    radius = ECS_CircleCollider2DAuthorings[i].Radius,
+                    unitType = animationComponents[i].UnitType,
+
                 });
             }
         }
@@ -88,6 +93,7 @@ public partial class CollisionQuadrantSystem : SystemBase
         var job = new SetCollisionQuadrantMapJob
         {
             TranslationType = GetComponentTypeHandle<Translation>(true),
+            AnimationComponentType = GetComponentTypeHandle<AnimationComponent>(true),
             ecsCircleCollider2DAuthoringType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
             EntityType = GetEntityTypeHandle(),
             QuadrantMap = collisionQuadrantMap.AsParallelWriter()

@@ -39,6 +39,7 @@ public class EntitySpawner : MonoBehaviour
     public Mesh quadMesh;      // Assign your quad mesh here
     public UnityEngine.Material walkingSpriteSheetMaterial;  // Drag your prefab with MeshRenderer in Unity editor
 
+    public bool DrawDebugLines = false;
 
     public GameObject unitPrefab;  // Drag your prefab with MeshRenderer in Unity editor
     public enum Direction { Up, Down, Left, Right }
@@ -76,8 +77,8 @@ public class EntitySpawner : MonoBehaviour
             {
                 unitFactory = new UnitFactory(entityManager);
                 //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
-                unitFactory.SpawnUnits(100, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(100, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-3, 0), FormationType.Horde);
+                unitFactory.SpawnUnits(5000, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(5000, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-3, 0), FormationType.Horde);
                 unitFactory.SpawnCommander();
 
                 hasSpawnedUnits = true; // ← MARK AS SPAWNED

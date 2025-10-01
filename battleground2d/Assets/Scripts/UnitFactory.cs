@@ -97,7 +97,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,
-            Range = 0.275f,
+            Range = .35f,//0.275f,
             isAttacking = false,
             isDefending = false,
             AttackRate = 2f, // have to match for initial 
