@@ -551,7 +551,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Unit Types
 
@@ -560,23 +560,14 @@ MonoBehaviour:
 
       [] Add archer unit type'
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Background
 
       [] work on design for background sprites, procedural or
       something'
     state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'Formations
-
-      [] figure out how to create formations
-
-      [] figure
-      out how to send to troops to each location'
-    state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Create new defend while moving
 
@@ -585,7 +576,7 @@ MonoBehaviour:
       [] Game
       logic to move while holding defend'
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Figure out how to keep bodies in background.
 
@@ -596,7 +587,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "Add Unit Crit chance\nCaptains/commanders will have 90% chance to one shot
       any enemy\n\t- to help mimic cinematic combat\n\t- to show superior skill\n\t-
@@ -604,7 +595,7 @@ MonoBehaviour:
       low crit one chance, but should allow many units to die fast when crits are
       applied"
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'Smooth out animations
 
@@ -615,7 +606,7 @@ MonoBehaviour:
 
       [] smooth out attack animation'
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "Formations Phase 1: Foundation\r\n\r\n[] Add FormationComponent\r\n\r\n   
       IsInFormation: bool\r\n\r\n    FormationPosition: float2 (relative position)\r\n\r\n   
@@ -652,19 +643,19 @@ MonoBehaviour:
       while maintaining formation)\r\n[] Formation collision (groups avoid other
       groups)\r\n[] Dynamic rank promotion (middle\u2192front when gaps appear)"
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "Formations Logic\nHold     = Defend position, react only\nAdvance  = Move
       + attack anything  \nAttackMv = Move + attack if provoked\nCharge   = Break
       formation, all-out attack"
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "Physics v2\n[] group based physics before unit \n[] damage phyiscs\n[] add
       logic for block, need collision first\n[] arrow phyiscs\n[] calvary charge
       phyiscs"
     state: 2
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: 'OPTIMIZATIONS
 
@@ -677,7 +668,7 @@ MonoBehaviour:
 
       [x] optimize movement system'
     state: 2
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "Gameplay V1\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
       Make units search for each other\r\n[x] Make units march/charge eachother\n[x]
@@ -690,7 +681,7 @@ MonoBehaviour:
       getting hit after leaving target range, could also be affecting units still.\n[]
       Group system\n\t- add system to organize units into groups and have group collision
       first/group target find/command assigning\n\t- keep groups in tight formation
-      based on formation?\n[] Add simple AI for defense - "
+      based on formation?\n[] Add simple AI for defense stance"
     state: 2
     show: 1
     deleteQuestion: 0
@@ -699,11 +690,11 @@ MonoBehaviour:
       [] Separate systems, systems should only have one
       purpose'
     state: 2
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: "combat phase 1\n[x] directional defense\n[x] player attack even detection
       + resolution\n[] fix units frozen while attacking(prob taking dmg)\n[] add
-      block phase\n[] setup death phase\n[] increase attack range, shouldnt be larger
+      block phase\n[] setup death phase\n[x] increase attack range, shouldnt be larger
       than the collision range to allow sword range\n[] change directional view to
       be independent of movement direction\n\t[] walking backwards\n\t[] update block
       logic to use view direction vs movement direction\n"

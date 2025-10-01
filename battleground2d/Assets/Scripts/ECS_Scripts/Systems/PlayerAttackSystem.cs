@@ -225,6 +225,8 @@ public partial class PlayerAttackSystem : SystemBase
                 while (QuadrantMap.TryGetNextValue(out targetData, ref iterator));
             }
 
+            quadrantOffsets.Dispose();
+
             alreadyHit.Dispose();
 
             // Debug log hit count
@@ -234,67 +236,124 @@ public partial class PlayerAttackSystem : SystemBase
             }
         }
 
+
         private NativeArray<int2> GetRelevantQuadrantOffsets(EntitySpawner.Direction direction)
         {
-            // Return only the quadrants that could possibly be in the attack direction
-            // This reduces from 9 quadrants to typically 3-5 quadrants
+            // Create NativeArray with Temp allocator (Burst-compatible)
+            var offsets = new NativeArray<int2>(6, Allocator.Temp);
 
             switch (direction)
             {
                 case EntitySpawner.Direction.Right:
-                    return new NativeArray<int2>(new int2[]
-                    {
-                new int2(0, 0),   // Current quadrant
-                new int2(1, 0),   // Right
-                new int2(1, 1),   // Right + Up
-                new int2(1, -1),  // Right + Down
-                new int2(0, 1),   // Up (for width)
-                new int2(0, -1)   // Down (for width)
-                    }, Allocator.Temp);
+                    offsets[0] = new int2(0, 0);   // Current quadrant
+                    offsets[1] = new int2(1, 0);   // Right
+                    offsets[2] = new int2(1, 1);   // Right + Up
+                    offsets[3] = new int2(1, -1);  // Right + Down
+                    offsets[4] = new int2(0, 1);   // Up (for width)
+                    offsets[5] = new int2(0, -1);  // Down (for width)
+                    break;
 
                 case EntitySpawner.Direction.Left:
-                    return new NativeArray<int2>(new int2[]
-                    {
-                new int2(0, 0),   // Current quadrant
-                new int2(-1, 0),  // Left
-                new int2(-1, 1),  // Left + Up
-                new int2(-1, -1), // Left + Down
-                new int2(0, 1),   // Up (for width)
-                new int2(0, -1)   // Down (for width)
-                    }, Allocator.Temp);
+                    offsets[0] = new int2(0, 0);   // Current quadrant
+                    offsets[1] = new int2(-1, 0);  // Left
+                    offsets[2] = new int2(-1, 1);  // Left + Up
+                    offsets[3] = new int2(-1, -1); // Left + Down
+                    offsets[4] = new int2(0, 1);   // Up (for width)
+                    offsets[5] = new int2(0, -1);  // Down (for width)
+                    break;
 
                 case EntitySpawner.Direction.Up:
-                    return new NativeArray<int2>(new int2[]
-                    {
-                new int2(0, 0),   // Current quadrant
-                new int2(0, 1),   // Up
-                new int2(1, 1),   // Up + Right
-                new int2(-1, 1),  // Up + Left
-                new int2(1, 0),   // Right (for width)
-                new int2(-1, 0)   // Left (for width)
-                    }, Allocator.Temp);
+                    offsets[0] = new int2(0, 0);   // Current quadrant
+                    offsets[1] = new int2(0, 1);   // Up
+                    offsets[2] = new int2(1, 1);   // Up + Right
+                    offsets[3] = new int2(-1, 1);  // Up + Left
+                    offsets[4] = new int2(1, 0);   // Right (for width)
+                    offsets[5] = new int2(-1, 0);  // Left (for width)
+                    break;
 
                 case EntitySpawner.Direction.Down:
-                    return new NativeArray<int2>(new int2[]
-                    {
-                new int2(0, 0),   // Current quadrant
-                new int2(0, -1),  // Down
-                new int2(1, -1),  // Down + Right
-                new int2(-1, -1), // Down + Left
-                new int2(1, 0),   // Right (for width)
-                new int2(-1, 0)   // Left (for width)
-                    }, Allocator.Temp);
+                    offsets[0] = new int2(0, 0);   // Current quadrant
+                    offsets[1] = new int2(0, -1);  // Down
+                    offsets[2] = new int2(1, -1);  // Down + Right
+                    offsets[3] = new int2(-1, -1); // Down + Left
+                    offsets[4] = new int2(1, 0);   // Right (for width)
+                    offsets[5] = new int2(-1, 0);  // Left (for width)
+                    break;
 
                 default:
-                    // Fallback to 3x3 area if direction is unknown
-                    return new NativeArray<int2>(new int2[]
-                    {
-                new int2(-1, -1), new int2(0, -1), new int2(1, -1),
-                new int2(-1, 0),  new int2(0, 0),  new int2(1, 0),
-                new int2(-1, 1),  new int2(0, 1),  new int2(1, 1)
-                    }, Allocator.Temp);
+                    // Fallback - resize for 3x3
+                    offsets.Dispose();
+                    offsets = new NativeArray<int2>(9, Allocator.Temp);
+                    offsets[0] = new int2(-1, -1); offsets[1] = new int2(0, -1); offsets[2] = new int2(1, -1);
+                    offsets[3] = new int2(-1, 0); offsets[4] = new int2(0, 0); offsets[5] = new int2(1, 0);
+                    offsets[6] = new int2(-1, 1); offsets[7] = new int2(0, 1); offsets[8] = new int2(1, 1);
+                    break;
             }
+
+            return offsets;
         }
+
+        //private NativeArray<int2> GetRelevantQuadrantOffsets(EntitySpawner.Direction direction)
+        //{
+        //    // Return only the quadrants that could possibly be in the attack direction
+        //    // This reduces from 9 quadrants to typically 3-5 quadrants
+
+        //    switch (direction)
+        //    {
+        //        case EntitySpawner.Direction.Right:
+        //            return new NativeArray<int2>(new int2[]
+        //            {
+        //        new int2(0, 0),   // Current quadrant
+        //        new int2(1, 0),   // Right
+        //        new int2(1, 1),   // Right + Up
+        //        new int2(1, -1),  // Right + Down
+        //        new int2(0, 1),   // Up (for width)
+        //        new int2(0, -1)   // Down (for width)
+        //            }, Allocator.Temp);
+
+        //        case EntitySpawner.Direction.Left:
+        //            return new NativeArray<int2>(new int2[]
+        //            {
+        //        new int2(0, 0),   // Current quadrant
+        //        new int2(-1, 0),  // Left
+        //        new int2(-1, 1),  // Left + Up
+        //        new int2(-1, -1), // Left + Down
+        //        new int2(0, 1),   // Up (for width)
+        //        new int2(0, -1)   // Down (for width)
+        //            }, Allocator.Temp);
+
+        //        case EntitySpawner.Direction.Up:
+        //            return new NativeArray<int2>(new int2[]
+        //            {
+        //        new int2(0, 0),   // Current quadrant
+        //        new int2(0, 1),   // Up
+        //        new int2(1, 1),   // Up + Right
+        //        new int2(-1, 1),  // Up + Left
+        //        new int2(1, 0),   // Right (for width)
+        //        new int2(-1, 0)   // Left (for width)
+        //            }, Allocator.Temp);
+
+        //        case EntitySpawner.Direction.Down:
+        //            return new NativeArray<int2>(new int2[]
+        //            {
+        //        new int2(0, 0),   // Current quadrant
+        //        new int2(0, -1),  // Down
+        //        new int2(1, -1),  // Down + Right
+        //        new int2(-1, -1), // Down + Left
+        //        new int2(1, 0),   // Right (for width)
+        //        new int2(-1, 0)   // Left (for width)
+        //            }, Allocator.Temp);
+
+        //        default:
+        //            // Fallback to 3x3 area if direction is unknown
+        //            return new NativeArray<int2>(new int2[]
+        //            {
+        //        new int2(-1, -1), new int2(0, -1), new int2(1, -1),
+        //        new int2(-1, 0),  new int2(0, 0),  new int2(1, 0),
+        //        new int2(-1, 1),  new int2(0, 1),  new int2(1, 1)
+        //            }, Allocator.Temp);
+        //    }
+        //}
 
 
         private bool IsInAttackRectangle(float2 attackerPos, float2 attackDirection, float2 targetPos,
