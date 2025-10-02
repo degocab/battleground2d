@@ -50,7 +50,7 @@ public partial class CombatSystem : SystemBase
             ref AttackComponent attackComponent,
             ref AttackCooldownComponent cooldown,
             ref CombatState combatState,
-
+            ref DefenseComponent defenseComponent,
             in MovementSpeedComponent movement,
             in HealthComponent health) =>
    {
@@ -60,6 +60,11 @@ public partial class CombatSystem : SystemBase
            cooldown.takingDmgTimeRemaining -= deltaTime;
        if (attackComponent.AttackRateRemaining > 0)
            attackComponent.AttackRateRemaining -= deltaTime;
+       if (defenseComponent.BlockDuration > 0)
+       {
+           defenseComponent.BlockDuration -= deltaTime;
+
+       }
    }).ScheduleParallel();
 
 

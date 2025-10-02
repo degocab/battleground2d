@@ -93,15 +93,15 @@ public partial class SetAnimationTypeSystem : SystemBase
                     animationComponent.finishAnimation = false;
                     attackComponent.isAttacking = false;
                 }
+
+                else if (combatState.CurrentState == CombatState.State.Blocking)
+                {
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Block;
+                }
                 else if (combatState.CurrentState == CombatState.State.Defending)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
                 }
-                //else if (combatState.CurrentState == CombatState.State.TakingDamage)
-                //{
-
-                //}
-
                 // 4. Handle movement animations (lowest priority)
                 else if (movement.velocity.x != 0f || movement.velocity.y != 0f)
                 {

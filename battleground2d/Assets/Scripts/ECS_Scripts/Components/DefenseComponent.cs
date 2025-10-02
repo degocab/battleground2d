@@ -6,4 +6,6 @@ public struct DefenseComponent : IComponentData
     public float BlockAngle; // 45° arcs? 90°? 180°?
     public float ParryChance;
     public float BlockDamageReduction;
+
+    public float BlockDuration;
 }

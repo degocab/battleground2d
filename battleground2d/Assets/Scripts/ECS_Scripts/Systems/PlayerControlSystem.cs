@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -136,7 +137,10 @@ public class PlayerControlSystem : SystemBase
                 // Step 3: RESET flags at the start of each frame
                 attackComponent.isAttacking = false;
                 attackComponent.isDefending = false;
-                defenseComponent.IsBlocking = false;
+                //defenseComponent.IsBlocking = false;
+
+
+                bool blocking = isStillBlocking(defenseComponent);
 
                 // Step 4: Handle state transitions
                 if (isAttacking)
@@ -161,9 +165,15 @@ public class PlayerControlSystem : SystemBase
                         }
                     }
                 }
+                else if (blocking)
+                {
+                    //keep blocking, shuld override defending
+                    defenseComponent.IsBlocking = true;
+                    combatState.CurrentState = CombatState.State.Blocking;
+                }
                 else if (isDefending)
                 {
-                    defenseComponent.IsBlocking = true;
+                    //defenseComponent.IsBlocking = true;
                     attackComponent.isDefending = true;
                     combatState.CurrentState = CombatState.State.Defending;
                 }
@@ -183,6 +193,11 @@ public class PlayerControlSystem : SystemBase
 
             }).Run();
 
+    }
+
+    private bool isStillBlocking(DefenseComponent defenseComponent)
+    {
+        return defenseComponent.BlockDuration > 0f;
     }
 
     private CommandData CreateCommandFromNumber(int number, float3 commanderPosition, float2 moveToPosition)

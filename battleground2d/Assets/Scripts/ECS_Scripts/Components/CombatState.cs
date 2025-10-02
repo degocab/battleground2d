@@ -5,7 +5,7 @@ public struct CombatState : IComponentData
     public enum State
     {
         Idle, SeekingTarget, Attacking, Defending, Fleeing,
-        TakingDamage
+        TakingDamage, Blocking
     }
     public State CurrentState;
     public Entity TargetEntity;
