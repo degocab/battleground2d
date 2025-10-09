@@ -55,7 +55,7 @@ public partial class CollisionDetectionSystem : SystemBase
         //EntityQuery _entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>());
 
         int totalEntities = _entityQuery.CalculateEntityCount();
-
+    
         const int maxCollisionsPerEntity = 16; // realistic max collisions per entity
         int estimatedCapacity = math.max(1024, totalEntities * maxCollisionsPerEntity);
 

@@ -540,6 +540,93 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   title: ToDo
   textList:
+  - s: "## PHASE 1: FINALIZE COMBAT SYSTEM (Next 2-3 weeks)\r\n\r\n### Week 1: Core
+      Combat Polish\r\n```\r\n[ ] fix units frozen while attacking (blocking movement
+      during attack animation)\r\n[ ] fix ai units not triggering taking dmg animation\n[
+      ] add block phase system \r\n\t[x] add player block\n\t[] add ai block\n[ ]
+      setup death phase (clean up dead units)\r\n[ ] change directional view to be
+      independent of movement direction\r\n    [ ] walking backwards animation/states\r\n   
+      [ ] update block logic to use view direction vs movement direction\r\n[ ] Separate
+      combat systems (single responsibility)\r\n```\r\n\r\n### Week 2: Combat Feel
+      & Polish\r\n```\r\n[ ] Add simple AI for defense stance (enemies that actually
+      defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n[ ] Add
+      Unit Crit chance system\r\n[ ] Create defend-while-moving animation & logic\r\n```"
+    state: 2
+    show: 1
+    deleteQuestion: 0
+  - s: "## PHASE 2: FORMATIONS & TACTICS (After combat is solid)\r\n\r\n### Week
+      3: Formation Foundation\r\n```\r\n[ ] Add FormationComponent & FormationGroupComponent\r\n[
+      ] Create FormationCombatSystem (override target finding)\r\n[ ] Create FormationMovementSystem
+      \r\n[ ] Implement Hold Position behavior\r\n```\r\n\r\n### Week 4: Advanced
+      Formations\r\n```\r\n[ ] Implement Advance/Attack Move/Charge commands\r\n[
+      ] Add Formation collision (groups avoid other groups)\r\n[ ] Dynamic rank promotion
+      (middle\u2192front when gaps appear)\r\n```"
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: '## PHASE 3: UNIT VARIETY & AI
+
+
+
+      ### Week 5: Unit Types & AI
+
+      ```
+
+      [
+      ] Add unit type enum (infantry, cavalry, archer, etc.)
+
+      [ ] Start AI
+      commander (mimic player functions)
+
+      [ ] Add archer unit type (ranged
+      combat)
+
+      ```'
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: '## PHASE 4: PERFORMANCE & POLISH
+
+
+
+      ### Week 6: Optimization
+
+      ```
+
+      [
+      ] Optimize combat system
+
+      [ ] Group-based physics
+
+      [ ] Research
+      corpse persistence (bodies in background)
+
+      ```'
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: '## PHASE 5: ADVANCED FEATURES
+
+
+
+      ### Week 7+: Cinematic & Advanced
+
+      ```
+
+      [
+      ] Cavalry charge physics
+
+      [ ] Arrow physics
+
+      [ ] Background design
+
+      [
+      ] Captain/commander crit system (90% one-shot)
+
+      ```'
+    state: 0
+    show: 0
+    deleteQuestion: 0
   - s: 'AI
 
       [] start working on AI commander to mimic player functions
@@ -551,7 +638,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Unit Types
 
@@ -560,14 +647,14 @@ MonoBehaviour:
 
       [] Add archer unit type'
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Background
 
       [] work on design for background sprites, procedural or
       something'
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Create new defend while moving
 
@@ -576,7 +663,7 @@ MonoBehaviour:
       [] Game
       logic to move while holding defend'
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Figure out how to keep bodies in background.
 
@@ -587,7 +674,7 @@ MonoBehaviour:
 
 '
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: "Add Unit Crit chance\nCaptains/commanders will have 90% chance to one shot
       any enemy\n\t- to help mimic cinematic combat\n\t- to show superior skill\n\t-
@@ -595,7 +682,7 @@ MonoBehaviour:
       low crit one chance, but should allow many units to die fast when crits are
       applied"
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: 'Smooth out animations
 
@@ -606,7 +693,7 @@ MonoBehaviour:
 
       [] smooth out attack animation'
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: "Formations Phase 1: Foundation\r\n\r\n[] Add FormationComponent\r\n\r\n   
       IsInFormation: bool\r\n\r\n    FormationPosition: float2 (relative position)\r\n\r\n   
@@ -614,16 +701,6 @@ MonoBehaviour:
       Add FormationGroupComponent\r\n\r\n    GroupID: int\r\n\r\n    FormationType:
       enum (Phalanx, Square, etc.)\r\n\r\n    AnchorEntity: Entity (commander/center
       point)"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Phase 2: Formation Combat System\r\n\r\n[] Create FormationCombatSystem
-      (runs after target selection)\r\n\r\n    Override individual target finding
-      for formation units\r\n\r\n    Front rank: normal combat if enemy in range\r\n\r\n   
-      Middle/back: only engage if enemy within 1 unit (\"breached\")\r\n\r\n[] Create
-      FormationMovementSystem\r\n\r\n    Move entire formation as unit when advancing\r\n\r\n   
-      Maintain relative positions during movement\r\n\r\n    Handle unit replacement
-      when front-line falls"
     state: 0
     show: 0
     deleteQuestion: 0
@@ -639,23 +716,33 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
+  - s: "Formations Phase 2: Formation Combat System\r\n\r\n[] Create FormationCombatSystem
+      (runs after target selection)\r\n\r\n    Override individual target finding
+      for formation units\r\n\r\n    Front rank: normal combat if enemy in range\r\n\r\n   
+      Middle/back: only engage if enemy within 1 unit (\"breached\")\r\n\r\n[] Create
+      FormationMovementSystem\r\n\r\n    Move entire formation as unit when advancing\r\n\r\n   
+      Maintain relative positions during movement\r\n\r\n    Handle unit replacement
+      when front-line falls"
+    state: 0
+    show: 0
+    deleteQuestion: 0
   - s: "Formations Phase 4: Advanced Features\r\n\r\n[] Fall Back behavior (retreat
       while maintaining formation)\r\n[] Formation collision (groups avoid other
       groups)\r\n[] Dynamic rank promotion (middle\u2192front when gaps appear)"
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: "Formations Logic\nHold     = Defend position, react only\nAdvance  = Move
       + attack anything  \nAttackMv = Move + attack if provoked\nCharge   = Break
       formation, all-out attack"
     state: 0
-    show: 1
+    show: 0
     deleteQuestion: 0
   - s: "Physics v2\n[] group based physics before unit \n[] damage phyiscs\n[] add
       logic for block, need collision first\n[] arrow phyiscs\n[] calvary charge
       phyiscs"
-    state: 2
-    show: 1
+    state: 0
+    show: 0
     deleteQuestion: 0
   - s: 'OPTIMIZATIONS
 
@@ -667,8 +754,15 @@ MonoBehaviour:
       [] optimize combat system
 
       [x] optimize movement system'
-    state: 2
-    show: 1
+    state: 0
+    show: 0
+    deleteQuestion: 0
+  - s: 'System Cleanup v1
+
+      [] Separate systems, systems should only have one
+      purpose'
+    state: 0
+    show: 0
     deleteQuestion: 0
   - s: "Gameplay V1\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
       Make units search for each other\r\n[x] Make units march/charge eachother\n[x]
@@ -682,24 +776,8 @@ MonoBehaviour:
       Group system\n\t- add system to organize units into groups and have group collision
       first/group target find/command assigning\n\t- keep groups in tight formation
       based on formation?\n[] Add simple AI for defense stance"
-    state: 2
-    show: 1
-    deleteQuestion: 0
-  - s: 'System Cleanup v1
-
-      [] Separate systems, systems should only have one
-      purpose'
-    state: 2
-    show: 1
-    deleteQuestion: 0
-  - s: "combat phase 1\n[x] directional defense\n[x] player attack even detection
-      + resolution\n[] fix units frozen while attacking(prob taking dmg)\n[] add
-      block phase\n[] setup death phase\n[x] increase attack range, shouldnt be larger
-      than the collision range to allow sword range\n[] change directional view to
-      be independent of movement direction\n\t[] walking backwards\n\t[] update block
-      logic to use view direction vs movement direction\n"
-    state: 2
-    show: 1
+    state: 0
+    show: 0
     deleteQuestion: 0
   - s: 'Merge test physics system into existing codebase
 

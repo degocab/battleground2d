@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -164,50 +165,15 @@ public partial class DefenseSystem : SystemBase
     {
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
+        var hasTargetFromEntity = GetComponentDataFromEntity<HasTarget>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
-        //Entities
-        //    .WithName("DefenseEventJob")
-        //    .WithReadOnly(defenseFromEntity)
-        //    .WithReadOnly(animationFromEntity)
-        //    .ForEach((Entity entity, int entityInQueryIndex,
-        //             ref DynamicBuffer<AttackEventBuffer> attackBuffer, 
-        //             in AttackComponent attackComponent) =>
-        //    {
-        //        for (int i = 0; i < attackBuffer.Length; i++)
-        //        {
-        //            var attack = attackBuffer[i];
 
-        //            // Check if this entity can block the attack
-        //            if (CanBlockAttack(entity, attack.Attacker, defenseFromEntity, animationFromEntity, attackComponent))
-        //            {
-
-        //                ecb.AddBuffer<DefendEventBuffer>(entityInQueryIndex, entity);
-        //                ecb.AppendToBuffer(entityInQueryIndex, entity, new DefendEventBuffer
-        //                {
-        //                    //TODO: add force to apply physics later on???
-        //                });
-        //                // Block successful - remove or reduce this attack
-        //                // Option 1: Remove attack completely
-        //                attackBuffer.RemoveAt(i);
-        //                i--; // Adjust index after removal
-
-        //                // Option 2: Reduce damage (if you want partial blocks)
-        //                // attack.Damage *= 0.5f;
-
-        //                // TODO: Add visual/audio feedback for successful block
-
-
-
-        //            }
-        //        }
-        //    }).WithBurst().ScheduleParallel();
-
-        //defend resoliution
 
         Entities
     .WithName("DefenseResolutionJob")
     .WithAll<DefendEventBuffer>()
+    .WithReadOnly(hasTargetFromEntity)
     .ForEach((Entity entity, int entityInQueryIndex,
     ref AttackComponent attackComponent,
     ref DefenseComponent defense,
@@ -217,25 +183,38 @@ public partial class DefenseSystem : SystemBase
         if (defends.Length == 0)
         {
             //attackComponent.isTakingDamage = false;
-            Debug.Log("no defends in buffer");
+                //Debug.Log("no defends in buffer"); 
             return;
         }
-        Debug.Log("blocking attack");
+        // Check if entity has HasTarget component - use the existing hasTargetFromEntity
+        bool hasTargetComponent = hasTargetFromEntity.HasComponent(entity);
 
-        attackComponent.isDefending = false;
+        if (!hasTargetComponent)
+        {
+            ecb.AddComponent(entityInQueryIndex, entity, new HasTarget
+            {
+                Type = HasTarget.TargetType.Entity,
+                TargetEntity = Entity.Null,
+                TargetPosition = float2.zero
+            });
+        }
         for (int i = 0; i < defends.Length; i++)
         {
+            //Debug.Log("Attack blocked by AI!!!!!!");
             //reset block trigger?
-            defense.IsBlocking = true;
-            defense.BlockDuration = .2f;
-            combatState.CurrentState = CombatState.State.Blocking;
+            //defense.IsBlocking = true;
+            //defense.BlockDuration = .2f;
+            //combatState.CurrentState = CombatState.State.Blocking;
         }
-
+        defense.IsBlocking = true;
+        defense.BlockDuration = .2f;
+        combatState.CurrentState = CombatState.State.Blocking;
         //TODO: set to true if this doesnt trigger animation?
 
         defends.Clear(); // Clear buffer for reuse
 
     }).WithBurst().ScheduleParallel();
+
     }
 
     private static bool CanBlockAttack(Entity defender, Entity attacker,

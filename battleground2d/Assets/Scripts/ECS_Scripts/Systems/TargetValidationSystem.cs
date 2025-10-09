@@ -1,5 +1,6 @@
 ﻿    using Unity.Entities;
-    using Unity.Transforms;
+using Unity.Mathematics;
+using Unity.Transforms;
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(FindTargetSystem))]

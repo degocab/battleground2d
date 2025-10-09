@@ -32,6 +32,8 @@ public class ProcessCommandSystem : JobComponentSystem
         public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<DefenseComponent> DefenseComponentTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AttackComponent> AttackComponentTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
@@ -48,6 +50,8 @@ public class ProcessCommandSystem : JobComponentSystem
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
             var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
+            var defenseComponents = chunk.GetNativeArray(DefenseComponentTypeHandle);
+            var attackComponents = chunk.GetNativeArray(AttackComponentTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -58,11 +62,13 @@ public class ProcessCommandSystem : JobComponentSystem
                 float2 entityPos = translation.Value.xy;
                 var command = commandDataArray[i];
                 var combatState = combatStateArray[i];
+                var defenseComponent = defenseComponents[i];
+                var attackComponent = attackComponents[i];
 
                 if (command.Command != command.previousCommand)
                     command.TargetEntity = Entity.Null;
 
-                ProcessCommand(ref command, ref combatState, ref movementSpeed, entity, entityPos,
+                ProcessCommand(ref command, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
              animationData.Direction, chunkIndex, ECB);
 
 
@@ -71,10 +77,14 @@ public class ProcessCommandSystem : JobComponentSystem
         }
 
         private void ProcessCommand(ref CommandData command, ref CombatState combatState,
-                                     ref MovementSpeedComponent movementSpeed, Entity entity,
+                                     ref MovementSpeedComponent movementSpeed, AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
                                      float2 entityPos, EntitySpawner.Direction direction,
                                      int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
+
+            //maybe dont do anything if attacking/defending/blocking///process after?
+            //if (attackComponent.isDefending || defenseComponent.IsBlocking) return;
+
             switch (command.Command)
             {
                 case CommandType.Idle:
@@ -154,6 +164,9 @@ public class ProcessCommandSystem : JobComponentSystem
         private void HandleAttackCommand(ref CommandData command, ref CombatState combatState,
                                        Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
+
+            //recheck if unit is not taking dmg/blocking
+
             if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.4f)
             {
                 // Move-then-attack
@@ -202,6 +215,8 @@ public class ProcessCommandSystem : JobComponentSystem
 ComponentType.ReadOnly<Unit>(),
 ComponentType.ReadWrite<CommandData>(),
 ComponentType.ReadWrite<CombatState>(),
+ComponentType.ReadOnly<DefenseComponent>(),
+ComponentType.ReadOnly<AttackComponent>(),
 ComponentType.ReadOnly<Translation>(),
 ComponentType.ReadOnly<AnimationComponent>(),
 ComponentType.ReadWrite<MovementSpeedComponent>(),
@@ -214,6 +229,8 @@ ComponentType.Exclude<CommanderComponent>());
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
+            AttackComponentTypeHandle = GetComponentTypeHandle<AttackComponent>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()

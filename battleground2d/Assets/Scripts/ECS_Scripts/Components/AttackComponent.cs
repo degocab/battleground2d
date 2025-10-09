@@ -11,5 +11,8 @@ public struct AttackComponent : IComponentData
     public float AttackRate; // Attacks per second
     public float AttackRateRemaining; // Attacks per second
     public float LastAttackTime;
+
+    public float DefendDuration;
+    public float DefendCooldownRemaining;
 }
 

@@ -14,7 +14,7 @@ using System.Linq;
 public partial class CollisionQuadrantSystem : SystemBase
 {
     public const int quadrantYMultiplier = 1000;
-    public const int quadrantCellSize = 10;
+    public const int quadrantCellSize = 1;
 
     public static NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
 

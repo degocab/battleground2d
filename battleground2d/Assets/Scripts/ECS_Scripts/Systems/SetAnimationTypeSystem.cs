@@ -25,7 +25,7 @@ public partial class SetAnimationTypeSystem : SystemBase
                      ref AttackComponent attackComponent,
                      ref AttackCooldownComponent cooldown,
                      ref CombatState combatState,
-
+                     ref DefenseComponent defenseComponent,
                      in MovementSpeedComponent movement,
                      in HealthComponent health) =>
             {
@@ -62,22 +62,6 @@ public partial class SetAnimationTypeSystem : SystemBase
                     //TODO: experiment how this affects gameplay
                     animationComponent.finishAnimation = true;
 
-                    //Debug.Log("cooldown.takingDmgTimeRemaining: " + cooldown.takingDmgTimeRemaining);
-                    //if (cooldown.takingDmgTimeRemaining <= 0)
-                    //{
-                    //    cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
-
-                    //    animationComponent.finishAnimation = false;
-                    //    attackComponent.isTakingDamage = false;
-                    //    Debug.Log("setting isTakingDamage to false");
-                    //    //return; // Death overrides everything else
-                    //}
-                    //else
-                    //{
-                    //    cooldown.takingDmgTimeRemaining -= deltaTime;
-
-                    //}
-
                     return;
                 }
 
@@ -89,9 +73,26 @@ public partial class SetAnimationTypeSystem : SystemBase
                 else if (combatState.CurrentState == CombatState.State.Attacking)
                 {
                     // Attack state but cooldown finished - reset to idle
-                    animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
-                    animationComponent.finishAnimation = false;
-                    attackComponent.isAttacking = false;
+                    //animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
+                    //attackComponent.isDefending = true;
+                    //animationComponent.finishAnimation = false;
+                    //attackComponent.isAttacking = false;
+                    //if (movement.velocity.x != 0f || movement.velocity.y != 0f)
+                    //{
+                    //    animationComponent.AnimationType = movement.isRunnning ?
+                    //        EntitySpawner.AnimationType.Run :
+                    //        EntitySpawner.AnimationType.Walk;
+                    //}
+                    //else
+                    //{
+                    //    animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
+                    //    attackComponent.isDefending = true;
+                    //}
+                    //
+                    if(attackComponent.isDefending)
+                        animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
+                    if(defenseComponent.IsBlocking)
+                        animationComponent.AnimationType = EntitySpawner.AnimationType.Block;
                 }
 
                 else if (combatState.CurrentState == CombatState.State.Blocking)
@@ -115,34 +116,10 @@ public partial class SetAnimationTypeSystem : SystemBase
                 }
 
                 UpdatePreviousAnimationField(entity, ref animationComponent);
-                //if (cooldown.attackCoolTimeRemaining > 0)
-                //{
-                //    Debug.Log($"attackCoolTimeRemaining: {cooldown.attackCoolTimeRemaining}");
-                //    cooldown.attackCoolTimeRemaining -= deltaTime;
-                //    Debug.Log($"attackCoolTimeRemaining: {cooldown.attackCoolTimeRemaining}");
-                //}
+
             })//.WithoutBurst().Run();
             .ScheduleParallel();
 
-
-        //Entities
-        //   .WithName("ResetCoolDowns")
-        //   .ForEach((Entity entity,
-        //            ref AnimationComponent animationComponent,
-        //            ref AttackComponent attackComponent,
-        //            ref AttackCooldownComponent cooldown,
-        //            ref CombatState combatState,
-
-        //            in MovementSpeedComponent movement,
-        //            in HealthComponent health) =>
-        //   {
-        //       if (cooldown.attackCoolTimeRemaining > 0)
-        //           cooldown.attackCoolTimeRemaining -= deltaTime;
-        //       if (cooldown.takingDmgTimeRemaining > 0)
-        //           cooldown.takingDmgTimeRemaining -= deltaTime;
-        //       if (attackComponent.AttackRateRemaining > 0)
-        //           attackComponent.AttackRateRemaining -= deltaTime;
-        //   }).ScheduleParallel();
 
     }
 

@@ -39,52 +39,41 @@ public class PlayerControlSystem : SystemBase
         if (!HasSingleton<CommanderComponent>())
             return;
 
-        var ecb = _ecbSystem.CreateCommandBuffer();
+        //var ecb = _ecbSystem.CreateCommandBuffer();
+        var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
         var commanderTranslation = GetComponent<Translation>(commanderEntity);
-
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
             if (Input.GetKeyDown((KeyCode)key))
             {
-                int commandType = key - (int)KeyCode.Alpha1; // 0-8
+                int commandType = key - (int)KeyCode.Alpha1;
+                var newCommand = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
 
-                // Create command based on number pressed
-                var command = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
+                // Use a local variable to capture the command for the job
+                var commandCopy = newCommand;
 
-
-                // Apply to all selected units (for now, just commander - extend later)
-                var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-
-
+                // SINGLE job that does both operations safely
                 Entities
-                    .WithName("ApplyMouseCommandCleanHastarget")
+                    .WithName("ProcessCommandInput")
                     .WithAll<Unit>()
-                    .WithAll<HasTarget>()
-                    .WithNone<CommanderComponent>()
-                    .ForEach((Entity entity, int entityInQueryIndex) =>
-                    {
-                        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-                    }).ScheduleParallel();
-
-                Entities
-                    .WithName("ApplyMouseCommand")
-                    .WithAll<Unit>()
-                    .WithAll<CommandData>()
                     .WithNone<CommanderComponent>()
                     .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData) =>
                     {
-                        commandData = command;
-                        //parallelEcb.SetComponent(entityInQueryIndex, entity, command);
+                        // First remove HasTarget component
+                        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+
+                        // Then update command data
+                        commandData = commandCopy;
+
                     }).ScheduleParallel();
 
-
-
-                Debug.Log($"Assigned command: {command.Command} to all units");
+                Debug.Log($"Assigned command: {newCommand.Command} to all units");
+                break; // Important: Only process one key per frame
             }
         }
-
+        this.Dependency.Complete();
         float deltaTime = Time.DeltaTime;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);

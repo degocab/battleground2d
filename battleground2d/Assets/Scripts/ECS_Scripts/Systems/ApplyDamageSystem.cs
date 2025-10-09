@@ -31,7 +31,7 @@ public partial class ApplyDamageSystem : SystemBase
             ref AttackComponent attackComponent,
             ref AttackCooldownComponent cooldown,
                      ref HealthComponent health,
-                     //in DamageComponent damage,
+                     ref CombatState combatState,
                      ref DynamicBuffer<AttackEventBuffer> attacks) =>
             {
                 //health.Health -= damage.Value;
@@ -62,6 +62,8 @@ public partial class ApplyDamageSystem : SystemBase
                 health.Health -= totalDamage;
                 //TODO: set to true if this doesnt trigger animation?
                 attackComponent.isTakingDamage = true;
+                //combatState.CurrentState = CombatState.State.TakingDamage;
+
                 cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 
                 attacks.Clear(); // Clear buffer for reuse
