@@ -97,7 +97,12 @@ public class PlayerControlSystem : SystemBase
             ) =>
             {
 
-                if (attackComponent.isTakingDamage) return;
+                if (combatState.CurrentState == CombatState.State.TakingDamage) 
+                {
+                    //combatState.CurrentState = CombatState.State.TakingDamage;
+                    return;
+                }
+               
 
 
                 attackComponent.isAttacking = false;
@@ -106,10 +111,10 @@ public class PlayerControlSystem : SystemBase
 
 
                 // Step 1: Reduce only attack rate cooldown (we don't touch animation cooldown)
-                if (attackComponent.AttackRateRemaining > 0f)
-                {
-                    attackComponent.AttackRateRemaining -= deltaTime;
-                }
+                //if (attackComponent.AttackRateRemaining > 0f)
+                //{
+                //    attackComponent.AttackRateRemaining -= deltaTime;
+                //}
                 if (attackCooldown.attackCoolTimeRemaining > 0f)
                 {
                     //attackCooldown.timeRemaining -= deltaTime;

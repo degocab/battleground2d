@@ -61,8 +61,8 @@ public partial class ApplyDamageSystem : SystemBase
 
                 health.Health -= totalDamage;
                 //TODO: set to true if this doesnt trigger animation?
-                attackComponent.isTakingDamage = true;
-                //combatState.CurrentState = CombatState.State.TakingDamage;
+                //attackComponent.isTakingDamage = true;
+                combatState.CurrentState = CombatState.State.TakingDamage;
 
                 cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 

@@ -47,12 +47,14 @@ public partial class SetAnimationTypeSystem : SystemBase
 
 
                 // 2. Handle death animation (highest priority)
-                if (attackComponent.isTakingDamage)
+                //if (attackComponent.isTakingDamage)
+                if (combatState.CurrentState == CombatState.State.TakingDamage)
                 {
                     if (cooldown.takingDmgTimeRemaining <= 0)
                     {
                         animationComponent.finishAnimation = false;
-                        attackComponent.isTakingDamage = false;
+                        //attackComponent.isTakingDamage = false;
+                        combatState.CurrentState = CombatState.State.Idle; //reset state
                         return; 
                     }
 

@@ -92,14 +92,14 @@ public class UnitFactory
 
     private void SetCombatComponents(Entity entity, float health)
     {
-        entityManager.SetComponentData(entity, new CombatState { CurrentState = CombatState.State.Defending });
+        entityManager.SetComponentData(entity, new CombatState { CurrentState = CombatState.State.Idle });
         entityManager.SetComponentData(entity, new HealthComponent { Health = health, MaxHealth = health });
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,
             Range = .2875f,
             isAttacking = false,
-            isDefending = true,
+            isDefending = false,
             AttackRate = 2f, // have to match for initial 
             AttackRateRemaining = 0f  // have to match for initial 
             , DefendDuration = 0.1f
@@ -143,7 +143,7 @@ public class UnitFactory
             UnitType = unitType,
             Direction = unitDirection,
             prevDirection = unitDirection,
-            AnimationType = AnimationType.Defend,
+            AnimationType = AnimationType.Idle,
             CurrentFrame = UnityEngine.Random.Range(0, 5),
             FrameCount = 2,
             FrameTimer = UnityEngine.Random.Range(0f, 1f),

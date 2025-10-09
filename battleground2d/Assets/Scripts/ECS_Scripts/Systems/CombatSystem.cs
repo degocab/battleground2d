@@ -126,7 +126,7 @@ public partial class CombatSystem : SystemBase
                 // Reset attack flags at start of each frame
                 attack.isAttacking = false;
                 attack.isDefending = false;
-                attack.isTakingDamage = false;
+                //attack.isTakingDamage = false;
                 defense.IsBlocking = false;
 
                 // State machine logic
@@ -152,8 +152,8 @@ public partial class CombatSystem : SystemBase
 
                     case CombatState.State.TakingDamage:
                         //Debug.Log($"AI is TakingDamage");
-                        attack.isTakingDamage = true;
-                        animation.AnimationType = EntitySpawner.AnimationType.TakeDamage;
+                        //attack.isTakingDamage = true;
+                        //animation.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                         break;
 
                     case CombatState.State.Defending:

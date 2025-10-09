@@ -130,14 +130,15 @@ public class MovementSystem : SystemBase
 
         var restrictMovemenJobHandle = Entities
                 .WithName("RestrictMovementByStates")
-                .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in AttackComponent attackComponent) =>
+                .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in AttackComponent attackComponent, in CombatState combatState) =>
                 {
 
                     switch (animationComponent.AnimationType)
                     {
                         case EntitySpawner.AnimationType.Attack:
                         case EntitySpawner.AnimationType.TakeDamage:
-                            if (!attackComponent.isTakingDamage)
+                            //if (!attackComponent.isTakingDamage)
+                            if (combatState.CurrentState != CombatState.State.TakingDamage)
                             {
                                 movementSpeedComponent.velocity = float3.zero;
                             }

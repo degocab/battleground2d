@@ -56,7 +56,20 @@ public partial class AttackResolutionSystem : SystemBase
 
                         //Debug.Log($"target: {animationFromEntity[attackEvent.TargetEntity].UnitType.ToString()} is defending:{isTargetDefending}");
                         //Debug.Log($"attacker: {animationComponent.UnitType.ToString()} is defending:{isTargetDefending}");
+
+
+                        var defenderAnimation = animationFromEntity[attackEvent.TargetEntity];
+
                         if (!isTargetDefending)
+                        {
+                            ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
+                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
+                            {
+                                Attacker = attackEvent.SourceEntity,
+                                Damage = attackEvent.Damage,
+                                DamageType = 0
+                            });
+                        }else if (isTargetDefending && !AreDirectionsOpposite(animationComponent.Direction, defenderAnimation.Direction))
                         {
                             ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                             ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
