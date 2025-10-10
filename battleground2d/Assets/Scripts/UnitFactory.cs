@@ -99,7 +99,7 @@ public class UnitFactory
             Damage = 10f,
             Range = .2875f,
             isAttacking = false,
-            isDefending = false,
+            //isDefending = false,
             AttackRate = 2f, // have to match for initial 
             AttackRateRemaining = 0f  // have to match for initial 
             , DefendDuration = 0.1f

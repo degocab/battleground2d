@@ -541,19 +541,20 @@ MonoBehaviour:
   title: ToDo
   textList:
   - s: "## PHASE 1: FINALIZE COMBAT SYSTEM (Next 2-3 weeks)\r\n\r\n### Week 1: Core
-      Combat Polish\r\n```\r\n[ ] PRIORITY : fix states, replace all bools with combat
-      state, then rename to EntityState\n\t[x] replace isTakingDamage\n\t[ ] replace
-      isDefending\n\t[ ] replace isBlocking\n\t[ ] replace isAttacking\n[ ] fix units
-      frozen while attacking (blocking movement during attack animation)\r\n[x] fix
-      ai units take dmg animation looping multiple times\n[x] add block phase system
-      \r\n\t[x] add player block\n\t[x] add ai block\n\t[x] fix ai blocking regardless
-      of direction\n[ ] setup death phase (clean up dead units)\r\n[ ] change directional
-      view to be independent of movement direction\r\n    [ ] walking backwards animation/states\r\n   
-      [ ] update block logic to use view direction vs movement direction\r\n[ ] Separate
-      combat systems (single responsibility)\r\n```\r\n\r\n### Week 2: Combat Feel
-      & Polish\r\n```\r\n[ ] Add simple AI for defense stance (enemies that actually
-      defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n[ ] Add
-      Unit Crit chance system\r\n[ ] Create defend-while-moving animation & logic\r\n```"
+      Combat Polish\r\n``\r`\n[] fix attacks being delayed\n[x] PRIORITY : fix states,
+      replace all bools with combat state, then rename to EntityState\n\t[x] replace
+      isTakingDamage\n\t[x] replace isDefending\n\t[x] replace isBlocking\n\t[x]
+      replace isAttacking\n[ ] fix units frozen while attacking (blocking movement
+      during attack animation)\r\n[x] fix ai units take dmg animation looping multiple
+      times\n[x] add block phase system \r\n\t[x] add player block\n\t[x] add ai
+      block\n\t[x] fix ai blocking regardless of direction\n[ ] setup death phase
+      (clean up dead units)\r\n[ ] change directional view to be independent of movement
+      direction\r\n    [ ] walking backwards animation/states\r\n    [ ] update block
+      logic to use view direction vs movement direction\r\n[ ] Separate combat systems
+      (single responsibility)\r\n```\r\n\r\n### Week 2: Combat Feel & Polish\r\n```\r\n[
+      ] Add simple AI for defense stance (enemies that actually defend)\r\n[ ] Smooth
+      out combat animations (attack/block/death)\r\n[ ] Add Unit Crit chance system\r\n[
+      ] Create defend-while-moving animation & logic\r\n```"
     state: 2
     show: 1
     deleteQuestion: 0

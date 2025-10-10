@@ -76,7 +76,6 @@ public class EntitySpawner : MonoBehaviour
             if (gameState.CurrentState == GameState.Playing)
             {
                 unitFactory = new UnitFactory(entityManager);
-                //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
                 unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn / 2, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 0), FormationType.Phalanx);
                 unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn / 2, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-3, 0), FormationType.Horde);
                 unitFactory.SpawnCommander();

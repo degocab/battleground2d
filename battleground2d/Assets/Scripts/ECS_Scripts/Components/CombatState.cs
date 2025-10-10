@@ -10,4 +10,6 @@ public struct CombatState : IComponentData
     public State CurrentState;
     public Entity TargetEntity;
     public float StateTimer;
+
+    public State PreviousState { get; internal set; }
 }

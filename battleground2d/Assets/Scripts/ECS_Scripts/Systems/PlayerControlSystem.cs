@@ -105,9 +105,9 @@ public class PlayerControlSystem : SystemBase
                
 
 
-                attackComponent.isAttacking = false;
-                attackComponent.isDefending = false;
-                defenseComponent.IsBlocking = false;
+                //attackComponent.isAttacking = false;
+                //attackComponent.isDefending = false;
+                //defenseComponent.IsBlocking = false;
 
 
                 // Step 1: Reduce only attack rate cooldown (we don't touch animation cooldown)
@@ -129,8 +129,8 @@ public class PlayerControlSystem : SystemBase
                 bool canAttack = animationReady && attackReady;
 
                 // Step 3: RESET flags at the start of each frame
-                attackComponent.isAttacking = false;
-                attackComponent.isDefending = false;
+                //attackComponent.isAttacking = false;
+                //attackComponent.isDefending = false;
                 //defenseComponent.IsBlocking = false;
 
 
@@ -143,7 +143,7 @@ public class PlayerControlSystem : SystemBase
                     {
                         PerformAttack(ref combatState, ref attackComponent, ref animationComponent);
                         StartAttack(ref combatState, ref attackCooldown); // animation system will handle timeRemaining now
-                        attackComponent.isAttacking = true; // SET FLAG
+                        //attackComponent.isAttacking = true; // SET FLAG
                         playerInput.stillAttacking = true;
                     }
                     else
@@ -168,7 +168,7 @@ public class PlayerControlSystem : SystemBase
                 else if (isDefending)
                 {
                     //defenseComponent.IsBlocking = true;
-                    attackComponent.isDefending = true;
+                    //attackComponent.isDefending = true;
                     combatState.CurrentState = CombatState.State.Defending;
                 }
                 else if (animationReady && !attackReady)
@@ -284,7 +284,7 @@ public class PlayerControlSystem : SystemBase
     private void StartAttack(ref CombatState combatState,
                            ref AttackCooldownComponent attackCooldown)
     {
-        combatState.CurrentState = CombatState.State.Attacking;
+        //combatState.CurrentState = CombatState.State.Attacking;
         attackCooldown.attackCoolTimeRemaining = attackCooldown.attackCoolDownDuration;
         Debug.Log("Attack Started");
     }
@@ -301,9 +301,9 @@ public class PlayerControlSystem : SystemBase
     {
         attackComponent.AttackRateRemaining = attackComponent.AttackRate;
         combatState.CurrentState = CombatState.State.Attacking;
-        attackComponent.isAttacking = true;
+        //attackComponent.isAttacking = true;
         animationComponent.finishAnimation = true;
-        animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
+        //animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
 
         Debug.Log("Player attacked!");
     }

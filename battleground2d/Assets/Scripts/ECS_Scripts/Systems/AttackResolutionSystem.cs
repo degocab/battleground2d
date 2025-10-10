@@ -26,6 +26,7 @@ public partial class AttackResolutionSystem : SystemBase
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
         var attackComponentFromEntity = GetComponentDataFromEntity<AttackComponent>(true);
+        var combatStateDataFromEntity = GetComponentDataFromEntity<CombatState>(true);
 
         Dependency = Entities
             .WithName("AttackResolutionJob")
@@ -33,10 +34,11 @@ public partial class AttackResolutionSystem : SystemBase
             .WithReadOnly(defenseFromEntity)
             .WithReadOnly(animationFromEntity)
             .WithReadOnly(attackComponentFromEntity)
+            .WithReadOnly(combatStateDataFromEntity)
             .WithAll<AttackEventComponent>()
             .ForEach((Entity entity, int entityInQueryIndex,
                     //ref AttackComponent attack,
-                    //ref CombatState combatState,
+                    in CombatState combatState,
                      in AttackEventComponent attackEvent,
                      in Translation translation
                      ,in AnimationComponent animationComponent
@@ -46,7 +48,8 @@ public partial class AttackResolutionSystem : SystemBase
                 if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
                 {
                     float3 targetPos = translationFromEntity[attackEvent.TargetEntity].Value;
-                    bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
+                    //bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
+                    bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
                     var attack = attackComponentFromEntity[entity];
                     if (ShouldAttackLand(attack.Range, animationComponent.Direction, attackEvent, translation.Value, targetPos,
                                currentTime, defenseFromEntity, animationFromEntity))
@@ -219,7 +222,7 @@ public partial class DefenseSystem : SystemBase
             //defense.BlockDuration = .2f;
             //combatState.CurrentState = CombatState.State.Blocking;
         }
-        defense.IsBlocking = true;
+        //defense.IsBlocking = true;
         defense.BlockDuration = .2f;
         combatState.CurrentState = CombatState.State.Blocking;
         //TODO: set to true if this doesnt trigger animation?
@@ -230,21 +233,21 @@ public partial class DefenseSystem : SystemBase
 
     }
 
-    private static bool CanBlockAttack(Entity defender, Entity attacker,
-                              ComponentDataFromEntity<DefenseComponent> defenseFromEntity,
-                              ComponentDataFromEntity<AnimationComponent> animationFromEntity, AttackComponent attackComponent)
-    {
-        if (!defenseFromEntity.HasComponent(defender) || !animationFromEntity.HasComponent(defender))
-            return false;
+    //private static bool CanBlockAttack(Entity defender, Entity attacker,
+    //                          ComponentDataFromEntity<DefenseComponent> defenseFromEntity,
+    //                          ComponentDataFromEntity<AnimationComponent> animationFromEntity, AttackComponent attackComponent)
+    //{
+    //    if (!defenseFromEntity.HasComponent(defender) || !animationFromEntity.HasComponent(defender))
+    //        return false;
 
-        var defense = defenseFromEntity[defender];
-        var defenderAnim = animationFromEntity[defender];
-        var attackerAnim = animationFromEntity[attacker];
+    //    var defense = defenseFromEntity[defender];
+    //    var defenderAnim = animationFromEntity[defender];
+    //    var attackerAnim = animationFromEntity[attacker];
 
-        // Only block if actively blocking and facing the right direction
-        return attackComponent.isDefending &&
-               AreDirectionsOpposite(defenderAnim.Direction, attackerAnim.Direction);
-    }
+    //    // Only block if actively blocking and facing the right direction
+    //    return attackComponent.isDefending &&
+    //           AreDirectionsOpposite(defenderAnim.Direction, attackerAnim.Direction);
+    //}
 
     private static bool AreDirectionsOpposite(EntitySpawner.Direction dir1, EntitySpawner.Direction dir2)
     {

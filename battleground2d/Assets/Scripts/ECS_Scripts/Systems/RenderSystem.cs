@@ -313,7 +313,7 @@ public class RenderSystem : SystemBase
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {
-            if (nativeListArray[i].Capacity < estimatedEntitiesTotal) nativeListArray[i].Capacity = estimatedPerSlice;
+            if (nativeListArray[i].Capacity < estimatedPerSlice) nativeListArray[i].Capacity = estimatedPerSlice;
             nativeListArray[i].Clear();
         }
 

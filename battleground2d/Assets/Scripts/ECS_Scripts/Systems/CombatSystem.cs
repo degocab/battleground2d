@@ -124,10 +124,10 @@ public partial class CombatSystem : SystemBase
                 var defense = defenses[i];
 
                 // Reset attack flags at start of each frame
-                attack.isAttacking = false;
-                attack.isDefending = false;
+                //attack.isAttacking = false;
+                //attack.isDefending = false;
                 //attack.isTakingDamage = false;
-                defense.IsBlocking = false;
+                //defense.IsBlocking = false;
 
                 // State machine logic
                 switch (combatState.CurrentState)
@@ -167,7 +167,7 @@ public partial class CombatSystem : SystemBase
 
                         if (defense.BlockDuration <= 0f)
                         {
-                            defense.IsBlocking = false;
+                            //defense.IsBlocking = false;
 
                             // Transition back to appropriate state after blocking ends
                             if (hasTarget.TargetEntity != Entity.Null &&
@@ -207,7 +207,8 @@ public partial class CombatSystem : SystemBase
         {
             combatState.StateTimer += DeltaTime;
 
-            if (defense.IsBlocking)  // You'll need to pass defense as a parameter
+            //if (defense.IsBlocking)  // You'll need to pass defense as a parameter
+            if (combatState.CurrentState == CombatState.State.Defending)  // You'll need to pass defense as a parameter
             {
                 return; // Stay in attacking state but don't process attack logic while blocking
             }
@@ -232,9 +233,9 @@ public partial class CombatSystem : SystemBase
             {
                 // Perform attack
                 attack.AttackRateRemaining = attack.AttackRate;
-                attack.isAttacking = true;
-                attack.isDefending = false;
-                animation.AnimationType = EntitySpawner.AnimationType.Attack;
+                //attack.isAttacking = true;
+                //attack.isDefending = false;
+                //animation.AnimationType = EntitySpawner.AnimationType.Attack;
                 animation.finishAnimation = true;
                 cooldown.attackCoolTimeRemaining = cooldown.attackCoolDownDuration;
 
@@ -259,8 +260,8 @@ public partial class CombatSystem : SystemBase
                 {
                     // Choose to defend - become invulnerable but can't attack
                     combatState.CurrentState = CombatState.State.Defending;
-                    attack.isDefending = true;
-                    animation.AnimationType = EntitySpawner.AnimationType.Defend;
+                    //attack.isDefending = true;
+                    //animation.AnimationType = EntitySpawner.AnimationType.Defend;
                     attack.DefendCooldownRemaining = attack.DefendDuration;
                 }
                 else
@@ -268,7 +269,7 @@ public partial class CombatSystem : SystemBase
                     // Choose NOT to defend - stay in attacking state but vulnerable
                     // This allows the enemy to hit you while you're waiting for attack cooldown
                     animation.AnimationType = EntitySpawner.AnimationType.Idle;
-                    attack.isDefending = false;
+                    //attack.isDefending = false;
                 }
             }
             else
@@ -340,13 +341,14 @@ public partial class CombatSystem : SystemBase
                 // Attack cooldown finished - go back to attacking
                 combatState.CurrentState = CombatState.State.Attacking;
                 animation.AnimationType = EntitySpawner.AnimationType.Idle;
-                attack.isDefending = false;
+                //attack.isDefending = false;
             }
             else
             {
                 // Continue defending while on cooldown
-                attack.isDefending = true;
-                animation.AnimationType = EntitySpawner.AnimationType.Defend;
+                //attack.isDefending = true;
+                combatState.CurrentState = CombatState.State.Defending;
+                //animation.AnimationType = EntitySpawner.AnimationType.Defend;
             }
         }
 

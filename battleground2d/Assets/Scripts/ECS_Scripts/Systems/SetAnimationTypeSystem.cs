@@ -91,9 +91,11 @@ public partial class SetAnimationTypeSystem : SystemBase
                     //    attackComponent.isDefending = true;
                     //}
                     //
-                    if(attackComponent.isDefending)
+                    //if(attackComponent.isDefending)
+                    if(combatState.CurrentState == CombatState.State.Defending)
                         animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
-                    if(defenseComponent.IsBlocking)
+                    //if(defenseComponent.IsBlocking)
+                    if(combatState.CurrentState == CombatState.State.Blocking)
                         animationComponent.AnimationType = EntitySpawner.AnimationType.Block;
                 }
 

@@ -1,6 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -11,11 +12,11 @@ using UnityEngine;
 public partial class PlayerAttackSystem : SystemBase
 {
     private EntityQuery _playerQuery;
-    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+    private BeginSimulationEntityCommandBufferSystem _ecbSystem;
     EntitySpawner entitySpawner;
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
         _playerQuery = GetEntityQuery(
             ComponentType.ReadWrite<AttackComponent>(),
             ComponentType.ReadOnly<Translation>(),
@@ -34,8 +35,10 @@ public partial class PlayerAttackSystem : SystemBase
 
 
         // Wait for CollisionQuadrantSystem to complete its update
-        var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
-        quadrantSystem.Update();
+        //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
+        //quadrantSystem.Update();
+        //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
+        //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.Dependency);
 
         float currentTime = (float)Time.ElapsedTime;
         var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
@@ -59,7 +62,9 @@ public partial class PlayerAttackSystem : SystemBase
             ECB = ecb,
             TranslationFromEntity = translationFromEntity,
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            AttackCooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(true),
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
+            CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(true),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             EntityTypeHandle = GetEntityTypeHandle(),
             QuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap,
@@ -79,31 +84,44 @@ public partial class PlayerAttackSystem : SystemBase
         public bool drawDebugLines;
 
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AttackCooldownComponent> AttackCooldownTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> QuadrantMap;
 
+        [ReadOnly] public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
+
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
+            var attackCooldownComponents = chunk.GetNativeArray(AttackCooldownTypeHandle);
             var attacks = chunk.GetNativeArray(AttackTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
+            var combatStates = chunk.GetNativeArray(CombatStateTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 var animation = animations[i];
+                var attackCooldown = attackCooldownComponents[i];
                 var attack = attacks[i];
                 var translation = translations[i];
                 var entity = entities[i];
+                var combatState = combatStates[i];
 
                 // Only process if attacking and attack rate ready
-                if (!attack.isAttacking || CurrentTime - attack.LastAttackTime < 1f / attack.AttackRate)
+                //if (!attack.isAttacking || CurrentTime - attack.LastAttackTime < 1f / attack.AttackRate)
+                if (combatState.CurrentState != CombatState.State.Attacking)
+                    //|| CurrentTime - attack.LastAttackTime < 1f / attack.AttackRate)
+                    //|| attack.AttackRateRemaining <= 0)
+                    continue;
+                if (combatState.CurrentState == CombatState.State.Attacking && attackCooldown.attackCoolTimeRemaining > 0)
                     continue;
 
 
-                float2 movingPosDownToSpriteBase = new float2(translation.Value.x, translation.Value.y - .125f);
+
+                    float2 movingPosDownToSpriteBase = new float2(translation.Value.x, translation.Value.y - .125f);
 
                 // Get attack cone based on direction
                 float2 attackDirection = GetDirection(animation.Direction, movingPosDownToSpriteBase);
@@ -111,7 +129,8 @@ public partial class PlayerAttackSystem : SystemBase
                 // Find targets in attack cone using quadrant system
                 FindTargetsInRectangle(entity, movingPosDownToSpriteBase, attackDirection, attack.Range, chunkIndex, ECB, animation, drawDebugLines);
 
-                attack.LastAttackTime = CurrentTime;
+                //attack.LastAttackTime = CurrentTime;
+                attack.AttackRateRemaining = attack.AttackRate;
                 attacks[i] = attack;
             }
         }
