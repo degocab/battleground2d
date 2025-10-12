@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.Networking.Types;
 
 [UpdateBefore(typeof(ApplyDamageSystem))]
 [UpdateAfter(typeof(CombatSystem))]
@@ -72,8 +73,11 @@ public partial class AttackResolutionSystem : SystemBase
                                 Damage = attackEvent.Damage,
                                 DamageType = 0
                             });
-                        }else if (isTargetDefending && !AreDirectionsOpposite(animationComponent.Direction, defenderAnimation.Direction))
+                        }
+                        else if (isTargetDefending && !AreDirectionsOpposite(animationComponent.Direction, defenderAnimation.Direction))
                         {
+
+
                             ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                             ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
                             {
@@ -101,7 +105,7 @@ public partial class AttackResolutionSystem : SystemBase
                     }
                 }
                 ecb.RemoveComponent<AttackEventComponent>(entityInQueryIndex, entity);
-            }).ScheduleParallel(Dependency);
+            }).WithoutBurst().ScheduleParallel(Dependency);
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
@@ -151,12 +155,14 @@ public partial class AttackResolutionSystem : SystemBase
         return true;
     }
 
-    private static bool AreDirectionsOpposite(EntitySpawner.Direction dir1, EntitySpawner.Direction dir2)
+    private static bool AreDirectionsOpposite(EntitySpawner.Direction attacker, EntitySpawner.Direction defender)
     {
-        return (dir1 == EntitySpawner.Direction.Left && dir2 == EntitySpawner.Direction.Right) ||
-               (dir1 == EntitySpawner.Direction.Right && dir2 == EntitySpawner.Direction.Left) ||
-               (dir1 == EntitySpawner.Direction.Up && dir2 == EntitySpawner.Direction.Down) ||
-               (dir1 == EntitySpawner.Direction.Down && dir2 == EntitySpawner.Direction.Up);
+        DefenseSystem.LogDirection(defender, attacker);
+
+        return (attacker == EntitySpawner.Direction.Left && defender == EntitySpawner.Direction.Right) ||
+               (attacker == EntitySpawner.Direction.Right && defender == EntitySpawner.Direction.Left) ||
+               (attacker == EntitySpawner.Direction.Up && defender == EntitySpawner.Direction.Down) ||
+               (attacker == EntitySpawner.Direction.Down && defender == EntitySpawner.Direction.Up);
     }
 }
 public struct DefendEventBuffer : IBufferElementData
@@ -193,13 +199,13 @@ public partial class DefenseSystem : SystemBase
     .ForEach((Entity entity, int entityInQueryIndex,
     ref AttackComponent attackComponent,
     ref DefenseComponent defense,
-    ref CombatState  combatState,
+    ref CombatState combatState,
              ref DynamicBuffer<DefendEventBuffer> defends) =>
     {
         if (defends.Length == 0)
         {
             //attackComponent.isTakingDamage = false;
-                //Debug.Log("no defends in buffer"); 
+            //Debug.Log("no defends in buffer"); 
             return;
         }
         // Check if entity has HasTarget component - use the existing hasTargetFromEntity
@@ -255,5 +261,48 @@ public partial class DefenseSystem : SystemBase
                (dir1 == EntitySpawner.Direction.Right && dir2 == EntitySpawner.Direction.Left) ||
                (dir1 == EntitySpawner.Direction.Up && dir2 == EntitySpawner.Direction.Down) ||
                (dir1 == EntitySpawner.Direction.Down && dir2 == EntitySpawner.Direction.Up);
+    }
+
+    public static void LogDirection(string source, EntitySpawner.Direction direction)
+    {
+        switch (direction)
+        {
+            case EntitySpawner.Direction.Up:
+                Debug.Log($"{source} Up");
+                break;
+            case EntitySpawner.Direction.Down:
+                Debug.Log($"{source} Down");
+                break;
+            case EntitySpawner.Direction.Left:
+                Debug.Log($"{source} Left");
+                break;
+            case EntitySpawner.Direction.Right:
+                Debug.Log($"{source} Right");
+                break;
+            default:
+                break;
+        }
+    }
+
+    internal static void LogDirection(EntitySpawner.Direction defender, EntitySpawner.Direction attacker)
+    {
+        Debug.Log($"defender: {GetDirection(defender)}| attacker:{GetDirection(attacker)}");
+    }
+
+    private static string GetDirection(EntitySpawner.Direction direction)
+    {
+        switch (direction)
+        {
+            case EntitySpawner.Direction.Up:
+                return "Up";
+            case EntitySpawner.Direction.Down:
+                return "Down";
+            case EntitySpawner.Direction.Left:
+                return "Left";
+            case EntitySpawner.Direction.Right:
+            default:
+                return "Right";
+
+        }
     }
 }

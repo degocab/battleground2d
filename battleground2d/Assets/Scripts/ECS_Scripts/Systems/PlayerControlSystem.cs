@@ -78,7 +78,7 @@ public class PlayerControlSystem : SystemBase
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);
         bool isDefending = Input.GetMouseButton(1);
-        Debug.Log($"Is Defending: {isDefending}");
+        //Debug.Log($"Is Defending: {isDefending}");
 
 
         UpdateCameraZoom();
@@ -286,7 +286,7 @@ public class PlayerControlSystem : SystemBase
     {
         //combatState.CurrentState = CombatState.State.Attacking;
         attackCooldown.attackCoolTimeRemaining = attackCooldown.attackCoolDownDuration;
-        Debug.Log("Attack Started");
+        //Debug.Log("Attack Started");
     }
 
     private void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
@@ -305,14 +305,14 @@ public class PlayerControlSystem : SystemBase
         animationComponent.finishAnimation = true;
         //animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
 
-        Debug.Log("Player attacked!");
+        //Debug.Log("Player attacked!");
     }
 
     private void SetToIdle(ref CombatState combatState, ref AnimationComponent animationComponent)
     {
         combatState.CurrentState = CombatState.State.Idle;
         animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
-        Debug.Log("Player is idle");
+        //Debug.Log("Player is idle");
 
     }
 }

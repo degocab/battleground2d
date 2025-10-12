@@ -371,7 +371,7 @@ public partial class CombatSystem : SystemBase
         private bool ShouldDefend(ref AttackComponent attack)
         {
             // Base defend chance (30% chance to defend)
-            float baseDefendChance = 0.92f;
+            float baseDefendChance = .99f;//0.92f;
 
             // Adjust based on health or other factors if needed
             // if (health.IsLow) baseDefendChance += 0.2f;

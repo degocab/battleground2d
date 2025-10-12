@@ -50,7 +50,7 @@ public class UnitFactory
     }
     private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 10000f);
 
         // Use provided command or create default move command
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);

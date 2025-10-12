@@ -7,16 +7,20 @@ using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
-[UpdateAfter(typeof(CollisionQuadrantSystem))] // Run AFTER quadrant system updates
-[UpdateBefore(typeof(CollisionDetectionSystem))]
+[UpdateAfter(typeof(TargetReevaluationSystem))] // Run AFTER quadrant system updates
+[UpdateBefore(typeof(CombatSystem))]
 public partial class PlayerAttackSystem : SystemBase
 {
+
+    private QuadrantSystem _quadrantSystem;
+
     private EntityQuery _playerQuery;
     private BeginSimulationEntityCommandBufferSystem _ecbSystem;
     EntitySpawner entitySpawner;
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+        _quadrantSystem = World.GetExistingSystem<QuadrantSystem>();
         _playerQuery = GetEntityQuery(
             ComponentType.ReadWrite<AttackComponent>(),
             ComponentType.ReadOnly<Translation>(),
@@ -32,14 +36,12 @@ public partial class PlayerAttackSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
-
-
         // Wait for CollisionQuadrantSystem to complete its update
         //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
         //quadrantSystem.Update();
         //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
         //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.Dependency);
-
+        //_quadrantSystem.Update();
         float currentTime = (float)Time.ElapsedTime;
         var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
@@ -67,7 +69,7 @@ public partial class PlayerAttackSystem : SystemBase
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(true),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             EntityTypeHandle = GetEntityTypeHandle(),
-            QuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap,
+            QuadrantMap = QuadrantSystem.QuadrantMultiHashMap,//CollisionQuadrantSystem.collisionQuadrantMap,
             drawDebugLines = DrawDebugLines
         }.ScheduleParallel(_playerQuery, Dependency);
 
@@ -88,7 +90,7 @@ public partial class PlayerAttackSystem : SystemBase
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
-        [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> QuadrantMap;
+        [ReadOnly] public NativeMultiHashMap<int, QuadrantData> QuadrantMap;
 
         [ReadOnly] public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
 
@@ -116,12 +118,12 @@ public partial class PlayerAttackSystem : SystemBase
                     //|| CurrentTime - attack.LastAttackTime < 1f / attack.AttackRate)
                     //|| attack.AttackRateRemaining <= 0)
                     continue;
-                if (combatState.CurrentState == CombatState.State.Attacking && attackCooldown.attackCoolTimeRemaining > 0)
+                if (combatState.CurrentState == CombatState.State.Attacking && attackCooldown.attackCoolTimeRemaining < attackCooldown.attackCoolDownDuration) //should only hit once at the beginning!
                     continue;
 
 
 
-                    float2 movingPosDownToSpriteBase = new float2(translation.Value.x, translation.Value.y - .125f);
+                float2 movingPosDownToSpriteBase = new float2(translation.Value.x, translation.Value.y - .125f);
 
                 // Get attack cone based on direction
                 float2 attackDirection = GetDirection(animation.Direction, movingPosDownToSpriteBase);
@@ -196,17 +198,17 @@ public partial class PlayerAttackSystem : SystemBase
 
                 do
                 {
-                    Entity targetEntity = targetData.entity;
+                    Entity targetEntity = targetData.Entity;
 
                     // Skip if already hit this frame or invalid
                     if (alreadyHit.Contains(targetEntity) || targetEntity == attacker || !TranslationFromEntity.HasComponent(targetEntity))
                         continue;
 
                     // Skip same unit types
-                    if (animation.UnitType == targetData.unitType)
+                    if (animation.UnitType == targetData.AnimationComponent.UnitType)
                         continue;
 
-                    float2 targetPos = targetData.position.xy;
+                    float2 targetPos = targetData.Position.xy;
 
                     // Early distance check - skip if too far for performance
                     float distSq = math.distancesq(attackerPos, targetPos);
