@@ -179,8 +179,8 @@ public partial class PlayerAttackSystem : SystemBase
             // Get relevant quadrant offsets based on attack direction
             var quadrantOffsets = GetRelevantQuadrantOffsets(animation.Direction);
 
-            int baseX = (int)math.floor(attackerPos.x / CollisionQuadrantSystem.quadrantCellSize);
-            int baseY = (int)math.floor(attackerPos.y / CollisionQuadrantSystem.quadrantCellSize);
+            int baseX = (int)math.floor(attackerPos.x / QuadrantSystem.quadrantCellSize);
+            int baseY = (int)math.floor(attackerPos.y / QuadrantSystem.quadrantCellSize);
 
             int hitCount = 0;
             NativeHashSet<Entity> alreadyHit = new NativeHashSet<Entity>(10, Allocator.Temp);
@@ -191,7 +191,7 @@ public partial class PlayerAttackSystem : SystemBase
                 int2 offset = quadrantOffsets[i];
                 int x = baseX + offset.x;
                 int y = baseY + offset.y;
-                int hash = x + y * CollisionQuadrantSystem.quadrantYMultiplier;
+                int hash = x + y * QuadrantSystem.QuadrantYMultiplier;
 
                 if (!QuadrantMap.TryGetFirstValue(hash, out var targetData, out var iterator))
                     continue;

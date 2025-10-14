@@ -35,8 +35,12 @@ public class QuadrantSystem : SystemBase
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         _query = GetEntityQuery(
 ComponentType.ReadOnly<Translation>(),
-ComponentType.ReadOnly<CommandData>(),
-ComponentType.Exclude<CommanderComponent>());
+ComponentType.ReadOnly<QuadrantEntity>(),
+ComponentType.ReadOnly<AnimationComponent>()
+
+//,ComponentType.ReadOnly<CommandData>()
+//,ComponentType.Exclude<CommanderComponent>()
+);
         QuadrantMultiHashMap = new NativeMultiHashMap<int, QuadrantData>(0, Allocator.Persistent);
 
 
@@ -121,9 +125,9 @@ ComponentType.Exclude<CommanderComponent>());
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
-        EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity), typeof(AnimationComponent));
+        //EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity), typeof(AnimationComponent));
         QuadrantMultiHashMap.Clear();
-        var entityCount = entityQuery.CalculateEntityCount();
+        var entityCount = _query.CalculateEntityCount();
         if (entityCount > QuadrantMultiHashMap.Capacity)
         {
             QuadrantMultiHashMap.Capacity = entityCount;
@@ -136,8 +140,8 @@ ComponentType.Exclude<CommanderComponent>());
             quadrantMultiHashMap = QuadrantMultiHashMap.AsParallelWriter(),
             AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true)
         };
-        Dependency = job.ScheduleParallel(entityQuery, Dependency);
-        //Dependency.Complete();
+        Dependency = job.ScheduleParallel(_query, Dependency);
+        Dependency.Complete();
 
 
         // Get mouse position in screen space
