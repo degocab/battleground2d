@@ -48,25 +48,25 @@ public class LoadingSystem : SystemBase
         }
 
 
-        timeSinceLastLog += Time.DeltaTime;
-        if (timeSinceLastLog >= LogIntervalSeconds)
-        {
-            timeSinceLastLog = 0f;
-            var sb = new StringBuilder();
-            sb.AppendLine($"=== ECS SYSTEM UPDATE ORDER [{System.DateTime.Now}] ===");
+        //timeSinceLastLog += Time.DeltaTime;
+        //if (timeSinceLastLog >= LogIntervalSeconds)
+        //{
+        //    timeSinceLastLog = 0f;
+        //    var sb = new StringBuilder();
+        //    sb.AppendLine($"=== ECS SYSTEM UPDATE ORDER [{System.DateTime.Now}] ===");
 
-            // Traverse main system groups
-            LogGroup(World.GetOrCreateSystem<InitializationSystemGroup>(), sb, 0);
-            LogGroup(World.GetOrCreateSystem<SimulationSystemGroup>(), sb, 0);
-            LogGroup(World.GetOrCreateSystem<PresentationSystemGroup>(), sb, 0);
+        //    // Traverse main system groups
+        //    LogGroup(World.GetOrCreateSystem<InitializationSystemGroup>(), sb, 0);
+        //    LogGroup(World.GetOrCreateSystem<SimulationSystemGroup>(), sb, 0);
+        //    LogGroup(World.GetOrCreateSystem<PresentationSystemGroup>(), sb, 0);
 
-            string output = sb.ToString();
-            Debug.Log(output);
+        //    string output = sb.ToString();
+        //    Debug.Log(output);
 
-            string logOutput = sb.ToString();
+        //    string logOutput = sb.ToString();
 
-            Debug.Log(logOutput);
-        }
+        //    Debug.Log(logOutput);
+        //}
     }
     private void LogGroup(ComponentSystemGroup group, StringBuilder sb, int indentLevel)
     {

@@ -52,7 +52,10 @@ public partial class AttackResolutionSystem : SystemBase
                     //bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
                     bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
                     var attack = attackComponentFromEntity[entity];
-                    if (ShouldAttackLand(attack.Range, animationComponent.Direction, attackEvent, translation.Value, targetPos,
+                    if (ShouldAttackLand(attack.Range, 
+                        //animationComponent.Direction
+                        attackEvent.AttackerDirection
+                        , attackEvent, translation.Value, targetPos,
                                currentTime, defenseFromEntity, animationFromEntity))
                     {
                         //combatState.CurrentState = CombatState.State.TakingDamage;
@@ -74,10 +77,19 @@ public partial class AttackResolutionSystem : SystemBase
                                 DamageType = 0
                             });
                         }
-                        else if (isTargetDefending && !AreDirectionsOpposite(animationComponent.Direction, defenderAnimation.Direction))
+                        else if (isTargetDefending && AreDirectionsOpposite(
+                            attackEvent.AttackerDirection
+                            , defenderAnimation.Direction))
                         {
+                            ecb.AddBuffer<DefendEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
+                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new DefendEventBuffer
+                            {
+                                //TODO: add force to apply physics later on???
+                            });
 
-
+                        }
+                        else
+                        {
                             ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                             ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
                             {
@@ -86,26 +98,14 @@ public partial class AttackResolutionSystem : SystemBase
                                 DamageType = 0
                             });
                         }
-                        else
-                        {
-                            //Debug.Log("blocked attack");
-                            ecb.AddBuffer<DefendEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
-                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new DefendEventBuffer
-                            {
-                                //TODO: add force to apply physics later on???
-                            });
-
-                        }
-
                     }
                     else
                     {
                         //Debug.Log("attack event buffer not added");
-
                     }
                 }
                 ecb.RemoveComponent<AttackEventComponent>(entityInQueryIndex, entity);
-            }).WithoutBurst().ScheduleParallel(Dependency);
+            }).WithBurst().ScheduleParallel(Dependency);
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
@@ -126,8 +126,6 @@ public partial class AttackResolutionSystem : SystemBase
 
         // 3. Check facing and defense
         var defenderAnimation = animationFromEntity[attackEvent.TargetEntity];
-        //bool isDefending = defenseFromEntity.HasComponent(attackEvent.TargetEntity) &&
-        //                  defenseFromEntity[attackEvent.TargetEntity].IsBlocking;
 
         return CanHitBasedOnFacingSimple(attackerPos.xy, defenderPos.xy,
                                  attackerFacing/*attackEvent.AttackerFacing*/, defenderAnimation.Direction//,
@@ -144,20 +142,12 @@ public partial class AttackResolutionSystem : SystemBase
             // Attacker might be hitting from side/back
             return true; // Always allow hits from non-frontal angles
         }
-
-        //// If facing each other and defender is blocking
-        //if (
-        //    isDefending && areFacingEachOther)
-        //{
-        //    return false; // Perfect block when facing each other
-        //}
-
         return true;
     }
 
     private static bool AreDirectionsOpposite(EntitySpawner.Direction attacker, EntitySpawner.Direction defender)
     {
-        DefenseSystem.LogDirection(defender, attacker);
+        //DefenseSystem.LogDirection(defender, attacker);
 
         return (attacker == EntitySpawner.Direction.Left && defender == EntitySpawner.Direction.Right) ||
                (attacker == EntitySpawner.Direction.Right && defender == EntitySpawner.Direction.Left) ||
@@ -167,9 +157,6 @@ public partial class AttackResolutionSystem : SystemBase
 }
 public struct DefendEventBuffer : IBufferElementData
 {
-    //public Entity Attacker;
-    //public float Damage;
-    //public int DamageType; // use int for enum-like simplicity
 }
 
 [UpdateAfter(typeof(AttackResolutionSystem))]
@@ -238,22 +225,6 @@ public partial class DefenseSystem : SystemBase
     }).WithBurst().ScheduleParallel();
 
     }
-
-    //private static bool CanBlockAttack(Entity defender, Entity attacker,
-    //                          ComponentDataFromEntity<DefenseComponent> defenseFromEntity,
-    //                          ComponentDataFromEntity<AnimationComponent> animationFromEntity, AttackComponent attackComponent)
-    //{
-    //    if (!defenseFromEntity.HasComponent(defender) || !animationFromEntity.HasComponent(defender))
-    //        return false;
-
-    //    var defense = defenseFromEntity[defender];
-    //    var defenderAnim = animationFromEntity[defender];
-    //    var attackerAnim = animationFromEntity[attacker];
-
-    //    // Only block if actively blocking and facing the right direction
-    //    return attackComponent.isDefending &&
-    //           AreDirectionsOpposite(defenderAnim.Direction, attackerAnim.Direction);
-    //}
 
     private static bool AreDirectionsOpposite(EntitySpawner.Direction dir1, EntitySpawner.Direction dir2)
     {

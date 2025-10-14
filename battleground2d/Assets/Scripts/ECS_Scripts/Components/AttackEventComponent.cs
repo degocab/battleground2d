@@ -13,4 +13,7 @@ public struct AttackEventComponent : IComponentData
     public float StrikeTime;    // Moment of impact
     public float RecoveryTime;  // Attack follow-through
     public float CurrentPhaseTimer;
+
+    public EntitySpawner.Direction AttackerDirection; // Add this
+    public EntitySpawner.Direction DefenderDirection; // Add this
 }

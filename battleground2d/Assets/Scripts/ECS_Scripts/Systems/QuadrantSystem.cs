@@ -137,7 +137,7 @@ ComponentType.Exclude<CommanderComponent>());
             AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true)
         };
         Dependency = job.ScheduleParallel(entityQuery, Dependency);
-        Dependency.Complete();
+        //Dependency.Complete();
 
 
         // Get mouse position in screen space
