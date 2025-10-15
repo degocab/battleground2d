@@ -1,4 +1,5 @@
 ﻿using System;
+
 using System.Reflection;
 using TMPro;
 using Unity.Burst;
@@ -39,19 +40,78 @@ public class MovementSystem : SystemBase
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
         if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
 
+        // Get mouse position for aiming
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -Camera.main.transform.position.z;
+        Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
+        float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
+
+        // We need to get the commander's position first
+        float2 commanderPosition = float2.zero;
+        bool foundCommander = false;
+
+        Entities
+            .WithAll<CommanderComponent>()
+            .ForEach((in Translation translation) =>
+            {
+                commanderPosition = translation.Value.xy;
+                foundCommander = true;
+            }).Run(); // Use Run() to execute immediately on main thread
+
+        // Calculate movement penalty based on angle between movement and aim
+        if (foundCommander)
+        {
+            float2 aimDirection = worldMousePosFloat - commanderPosition;
+            aimDirection = math.normalize(aimDirection);
+
+            float2 moveDirection = new float2(moveX, moveY);
+            float moveMagnitude = math.length(moveDirection);
+
+            if (moveMagnitude > 0)
+            {
+                moveDirection = math.normalize(moveDirection);
+
+                // Calculate dot product to get angle between movement and aim
+                float dotProduct = math.dot(moveDirection, aimDirection);
+
+                // Apply speed multipliers based on direction
+                float speedMultiplier = 1.0f;
+
+                if (dotProduct > 0.8f)
+                {
+                    speedMultiplier = 1.0f; // Moving forward (full speed)
+                }
+                else if (dotProduct > 0.3f)
+                {
+                    speedMultiplier = 0.8f; // Moving somewhat sideways
+                }
+                else if (dotProduct > -0.3f)
+                {
+                    speedMultiplier = 0.6f; // Moving mostly sideways
+                }
+                else
+                {
+                    speedMultiplier = 0.4f; // Moving backwards (slowest)
+                }
+
+                // Apply the speed penalty
+                moveX *= speedMultiplier;
+                moveY *= speedMultiplier;
+            }
+        }
 
         // This job sets the desired velocity based on input or AI for commander.
-        // For most units, it might be set by an AI system, not input.
         var inputJobHandle = Entities
             .WithName("SetCommanderVelocity")
-          .WithAll<CommanderComponent>() // Remove to let all units update
-          .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-          {
-              //movementSpeedComponent.moveX = moveX;
-              //movementSpeedComponent.moveY = moveY;
-              movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
-              movementSpeedComponent.isRunnning = isRunnning;
-          }).ScheduleParallel(Dependency);
+            .WithAll<CommanderComponent>()
+            .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+            {
+                movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
+                movementSpeedComponent.isRunnning = isRunnning;
+                movementSpeedComponent.isPlayerControlled = true;
+            }).ScheduleParallel(Dependency);
+
+        // ... rest of your existing jobs (speedJobHandle, animationJobHandle, etc.)
 
         // -- JOB 2: Apply Speed Modifiers (Burst Parallel) --
         // This job processes EVERY moving entity to finalize its desired velocity.
@@ -85,16 +145,17 @@ public class MovementSystem : SystemBase
         // Get direction for animation
                var animationJobHandle = Entities
             .WithName("UpdateAnimationFromVelocity")
-          .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
+          .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
           {
               float2 velocity = movementSpeedComponent.velocity.xy;
 
-              if (math.lengthsq(velocity) > 0.0001f) // Check if moving
-              {
-                  //compare abs values to deterimine dominant axis
-                  if (math.abs(velocity.x) > math.abs(velocity.y))
+
+              //update view direction
+              if ( movementSpeedComponent.isPlayerControlled) {
+                    float2 viewDirection = (worldMousePosFloat - transform.Value.xy);
+                  if (math.abs(viewDirection.x) > math.abs(viewDirection.y))
                   {
-                      if (velocity.x > 0)
+                      if (viewDirection.x > 0)
                       {
                           animationComponent.Direction = EntitySpawner.Direction.Right;
                           animationComponent.animationWidthOffset = 1;
@@ -107,7 +168,7 @@ public class MovementSystem : SystemBase
                   }
                   else
                   {
-                      if (velocity.y > 0)
+                      if (viewDirection.y > 0)
                       {
                           animationComponent.Direction = EntitySpawner.Direction.Up;
                           animationComponent.animationWidthOffset = 3;
@@ -118,7 +179,43 @@ public class MovementSystem : SystemBase
                           animationComponent.animationWidthOffset = 4;
                       }
                   }
+
               }
+              else
+              {
+                  if (math.lengthsq(velocity) > 0.0001f) // Check if moving
+                  {
+                      //compare abs values to deterimine dominant axis
+                      if (math.abs(velocity.x) > math.abs(velocity.y))
+                      {
+                          if (velocity.x > 0)
+                          {
+                              animationComponent.Direction = EntitySpawner.Direction.Right;
+                              animationComponent.animationWidthOffset = 1;
+                          }
+                          else
+                          {
+                              animationComponent.Direction = EntitySpawner.Direction.Left;
+                              animationComponent.animationWidthOffset = 2;
+                          }
+                      }
+                      else
+                      {
+                          if (velocity.y > 0)
+                          {
+                              animationComponent.Direction = EntitySpawner.Direction.Up;
+                              animationComponent.animationWidthOffset = 3;
+                          }
+                          else
+                          {
+                              animationComponent.Direction = EntitySpawner.Direction.Down;
+                              animationComponent.animationWidthOffset = 4;
+                          }
+                      }
+                  }
+              }
+
+
 
               animationComponent.prevDirection = animationComponent.Direction;
           }).ScheduleParallel(speedJobHandle);

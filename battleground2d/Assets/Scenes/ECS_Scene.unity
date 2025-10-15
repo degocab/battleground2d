@@ -552,14 +552,14 @@ MonoBehaviour:
       fix sprite layer, should be below all live sprites\n\t[x] fix units dying in
       idle or other states.\n[ ] change directional view to be independent of movement
       direction\r\n    [ ] walking backwards animation/states\r\n    [ ] update block
-      logic to use view direction vs movement direction\r\n[ ] Separate combat systems
-      (single responsibility)\r\n```\r\n\r\n### Week 2: Combat Feel & Polish\r\n```\r\n[x
-      ] Add simple AI for defense stance (enemies that actually defend)\r\n[ ] Smooth
-      out combat animations (attack/block/death)\r\n\t[ ] fix direction when attacking\n\t[
-      ] fix area of attack for player\n\t[ ] test out moving player attack logic
-      to ai\n[ ] Add Unit Crit chance system\r\n[ ] Create defend-while-moving animation
-      & logic\r\n[ ] fix units frozen while attacking (blocking movement during attack
-      animation)\r\n```"
+      logic to use view direction vs movement direction\r\n\t[ ] AI\n\t[x] Player\n[
+      ] Separate combat systems (single responsibility)\r\n```\r\n\r\n### Week 2:
+      Combat Feel & Polish\r\n```\r\n[x ] Add simple AI for defense stance (enemies
+      that actually defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n\t[
+      ] fix direction when attacking\n\t[ ] fix area of attack for player\n\t[ ]
+      test out moving player attack logic to ai\n[ ] Add Unit Crit chance system\r\n[
+      ] Create defend-while-moving animation & logic\r\n[ ] fix units frozen while
+      attacking (blocking movement during attack animation)\r\n```"
     state: 2
     show: 1
     deleteQuestion: 0

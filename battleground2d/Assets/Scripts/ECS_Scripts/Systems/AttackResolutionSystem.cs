@@ -77,7 +77,7 @@ public partial class AttackResolutionSystem : SystemBase
                                 DamageType = 0
                             });
                         }
-                        else if (isTargetDefending && AreDirectionsOpposite(
+                        else if (isTargetDefending && IsDefendingInHemicircleDirection(
                             attackEvent.AttackerDirection
                             , defenderAnimation.Direction))
                         {
@@ -153,6 +153,16 @@ public partial class AttackResolutionSystem : SystemBase
                (attacker == EntitySpawner.Direction.Right && defender == EntitySpawner.Direction.Left) ||
                (attacker == EntitySpawner.Direction.Up && defender == EntitySpawner.Direction.Down) ||
                (attacker == EntitySpawner.Direction.Down && defender == EntitySpawner.Direction.Up);
+    }
+
+    private static bool IsDefendingInHemicircleDirection(EntitySpawner.Direction attacker, EntitySpawner.Direction defender)
+    {
+        //DefenseSystem.LogDirection(defender, attacker);
+
+        return (attacker == EntitySpawner.Direction.Left && (defender == EntitySpawner.Direction.Right || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
+               (attacker == EntitySpawner.Direction.Right && (defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
+               (attacker == EntitySpawner.Direction.Up && (defender == EntitySpawner.Direction.Down || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right)) ||
+               (attacker == EntitySpawner.Direction.Down && (defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right));
     }
 }
 public struct DefendEventBuffer : IBufferElementData

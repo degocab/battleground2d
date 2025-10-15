@@ -4,6 +4,7 @@ using Unity.Mathematics;
 public struct MovementSpeedComponent : IComponentData
 {
     public float3 velocity;
+    public float3 viewDirection;
     public float randomSpeed;
 
 
@@ -16,4 +17,5 @@ public struct MovementSpeedComponent : IComponentData
     public float3 nextFloat3ToCheck;
     public float sqrDistance;
     public int frameCounter;
+    public bool isPlayerControlled;
 }
