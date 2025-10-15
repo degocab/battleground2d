@@ -39,7 +39,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
             {
                 float2 targetPos = float2.zero;
                 bool targetIsValid = false;
-
+      
                 if (hasTarget.Type == HasTarget.TargetType.Entity)
                 {
                     // Check if the target entity exists and has a Translation component

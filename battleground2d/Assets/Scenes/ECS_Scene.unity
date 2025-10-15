@@ -548,15 +548,16 @@ MonoBehaviour:
       replace isBlocking\n\t[x] replace isAttacking\n[x] fix ai units take dmg animation
       looping multiple times\n[x] add block phase system \r\n\t[x] add player block\n\t[x]
       add ai block\n\t[x] fix ai blocking regardless of direction\n[ ] setup death
-      phase (clean up dead units)\r\n\t[x] delete entities\n\t[] play death animation\n[
-      ] change directional view to be independent of movement direction\r\n    [
-      ] walking backwards animation/states\r\n    [ ] update block logic to use view
-      direction vs movement direction\r\n[ ] Separate combat systems (single responsibility)\r\n```\r\n\r\n###
-      Week 2: Combat Feel & Polish\r\n```\r\n[x ] Add simple AI for defense stance
-      (enemies that actually defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n[
-      ] Add Unit Crit chance system\r\n[ ] Create defend-while-moving animation &
-      logic\r\n[ ] fix units frozen while attacking (blocking movement during attack
-      animation)\r\n```"
+      phase (clean up dead units)\r\n\t[x] delete entities\n\t[x] play death animation\n\t[
+      ] fix sprite layer, should be below all live sprites\n\t[ ] fix units dying
+      in idle or other states.\n[ ] change directional view to be independent of
+      movement direction\r\n    [ ] walking backwards animation/states\r\n    [ ]
+      update block logic to use view direction vs movement direction\r\n[ ] Separate
+      combat systems (single responsibility)\r\n```\r\n\r\n### Week 2: Combat Feel
+      & Polish\r\n```\r\n[x ] Add simple AI for defense stance (enemies that actually
+      defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n[ ] Add
+      Unit Crit chance system\r\n[ ] Create defend-while-moving animation & logic\r\n[
+      ] fix units frozen while attacking (blocking movement during attack animation)\r\n```"
     state: 2
     show: 1
     deleteQuestion: 0

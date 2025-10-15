@@ -46,7 +46,8 @@ public partial class CombatSystem : SystemBase
             .ForEach((
                 ref AttackComponent attackComponent,
                 ref AttackCooldownComponent cooldown,
-                ref DefenseComponent defenseComponent) =>
+                ref DefenseComponent defenseComponent,
+                ref HealthComponent healthComponent) =>
             {
                 if (cooldown.attackCoolTimeRemaining > 0)
                     cooldown.attackCoolTimeRemaining -= deltaTime;
@@ -58,6 +59,8 @@ public partial class CombatSystem : SystemBase
                     defenseComponent.BlockDuration -= deltaTime;
                 if (attackComponent.DefendCooldownRemaining > 0)
                     attackComponent.DefendCooldownRemaining -= deltaTime;
+                if (healthComponent.timeRemaining > 0)
+                    healthComponent.timeRemaining -= deltaTime;
             }).ScheduleParallel();
 
         // Get the ComponentDataFromEntity for translations
@@ -154,6 +157,10 @@ public partial class CombatSystem : SystemBase
                         //Debug.Log($"AI is TakingDamage");
                         //attack.isTakingDamage = true;
                         //animation.AnimationType = EntitySpawner.AnimationType.TakeDamage;
+                        break;
+                        
+
+                    case CombatState.State.Dying:
                         break;
 
                     case CombatState.State.Defending:

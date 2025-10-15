@@ -22,12 +22,13 @@ public partial class SetAnimationTypeSystem : SystemBase
             .WithName("UpdateAllAnimations")
             .ForEach((Entity entity,
                      ref AnimationComponent animationComponent,
+                     ref HealthComponent health,
                      ref AttackComponent attackComponent,
                      ref AttackCooldownComponent cooldown,
                      ref CombatState combatState,
                      ref DefenseComponent defenseComponent,
-                     in MovementSpeedComponent movement,
-                     in HealthComponent health) =>
+                     in MovementSpeedComponent movement
+                     ) =>
             {
                 //// 1. Handle cooldowns and timers first
                 //if (cooldown.timeRemaining > 0)
@@ -36,9 +37,11 @@ public partial class SetAnimationTypeSystem : SystemBase
                 //}
 
                 // 2. Handle death animation (highest priority)
-                if (health.isDying)
+                //if (health.isDying)
+                if (combatState.CurrentState == CombatState.State.Dying)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
+                    health.deathAnimationDuration = 0f;
                     animationComponent.finishAnimation = true;
                     UpdatePreviousAnimationField(entity, ref animationComponent);
                     return; // Death overrides everything else

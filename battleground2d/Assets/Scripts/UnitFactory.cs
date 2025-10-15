@@ -50,7 +50,7 @@ public class UnitFactory
     }
     private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 10f);
 
         // Use provided command or create default move command
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
@@ -93,7 +93,7 @@ public class UnitFactory
     private void SetCombatComponents(Entity entity, float health)
     {
         entityManager.SetComponentData(entity, new CombatState { CurrentState = CombatState.State.Idle });
-        entityManager.SetComponentData(entity, new HealthComponent { Health = health, MaxHealth = health });
+        entityManager.SetComponentData(entity, new HealthComponent { Health = health, MaxHealth = health, deathAnimationDuration = 1000f});
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,

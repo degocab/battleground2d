@@ -28,6 +28,7 @@ public partial class CollisionQuadrantSystem : SystemBase
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<ECS_CircleCollider2DAuthoring>(),
             ComponentType.ReadOnly<CollidableTag>()
+            //, ComponentType.Exclude<DeadTagComponent>()
         );
 
         collisionQuadrantMap = new NativeMultiHashMap<int, CollisionQuadrantData>(0, Allocator.Persistent);

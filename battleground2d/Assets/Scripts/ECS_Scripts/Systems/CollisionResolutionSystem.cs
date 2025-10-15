@@ -15,6 +15,7 @@ public class CollisionResolutionSystem : SystemBase
 
         Entities
             .WithName("CollisionResolutionSystem")
+            //.WithNone<DeadTagComponent>()
             .WithBurst() // Optional: add after testing
             .ForEach((ref Translation translation, ref ECS_Velocity2D velocity, ref ECS_PhysicsBody2DAuthoring body, ref ECS_CircleCollider2DAuthoring collider, ref DynamicBuffer<CollisionEvent2D> collisions) =>
             {

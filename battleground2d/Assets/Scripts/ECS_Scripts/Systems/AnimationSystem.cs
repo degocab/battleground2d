@@ -33,6 +33,7 @@ public class AnimationSystem : SystemBase
             if (spriteSheetAnimationData.isFrozen)
             {
                 // Do nothing or handle frozen state (keep the last frame as it is)
+                translation.Value.z = 0;
                 return;
             }
             spriteSheetAnimationData.FrameTimer += deltaTime;

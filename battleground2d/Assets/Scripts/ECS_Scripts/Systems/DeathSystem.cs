@@ -1,4 +1,5 @@
 ﻿using Unity.Entities;
+using Unity.Transforms;
 using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -24,14 +25,37 @@ public partial class DeathSystem : SystemBase
             .WithName("ProcessDeath")
             .ForEach((Entity entity, int entityInQueryIndex,
                      ref HealthComponent health,
+                     ref CombatState combatState,
                      ref AnimationComponent animation) =>
             {
-                if (health.isDying)
+                if (combatState.CurrentState == CombatState.State.Dying)
                 {
-                    health.timeRemaining -= deltaTime;
-                    //animation.AnimationType = EntitySpawner.AnimationType.Die;
 
-                    if (health.timeRemaining <= 0) //wait for death animation to finish?
+                    // Add DeadTagComponent if entity doesn't have it yet
+                    //if (!HasComponent<DeadTagComponent>(entity))
+                    //{
+                    //}
+
+                    if (animation.isFrozen)
+                    {
+                        ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<ECS_CircleCollider2DAuthoring>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<TargetComponent>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<Unit>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<QuadrantEntity>(entityInQueryIndex, entity);
+                    }
+
+                    //freeze the final frame after animation is done
+                    if (animation.FrameCount - 1 == animation.CurrentFrame)
+                        animation.isFrozen = true;
+
+                    if (health.timeRemaining <= 0) //wait for death animation to finaish?
                     {
                         ecb.DestroyEntity(entityInQueryIndex, entity);
                     }
@@ -39,49 +63,52 @@ public partial class DeathSystem : SystemBase
 
             }).ScheduleParallel();
 
+        //clean up frozen animations
+
+        //Entities
+        //    .WithName("ProcessDeathComponents")
+        //    .WithAll<DeadTagComponent>()
+        //    .ForEach((Entity entity, int entityInQueryIndex,
+        //             ref HealthComponent health,
+        //             ref DeadTagComponent dead,
+        //             ref AnimationComponent animation) =>
+        //    {
+
+        //        // Add DeadTagComponent if entity doesn't have it yet
+        //        //if (!HasComponent<DeadTagComponent>(entity))
+        //        //{
+        //        //    ecb.AddComponent<DeadTagComponent>(entityInQueryIndex, entity);
+        //        //}
+
+        //        //freeze the final frame after animation is done
+        //        //if (animation.FrameCount - 1 == animation.CurrentFrame)
+        //        //    animation.isFrozen = true;
+
+        //        //if (health.timeRemaining <= 0) //wait for death animation to finaish?
+        //        //{
+        //        //    ecb.DestroyEntity(entityInQueryIndex, entity);
+        //        //}
+        //        if (animation.isFrozen)
+        //        {
+        //            ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<ECS_CircleCollider2DAuthoring>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+        //        }
+
+        //    }).ScheduleParallel();
+
+
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
+
+
 }
-
-
-//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
-//using Unity.Collections;
-//using Unity.Entities;
-
-//[UpdateAfter(typeof(RenderSystem))]
-//public class DeathSystem : SystemBase
-//{
-//    protected override void OnUpdate()
-//    {
-//        // Create an EntityCommandBuffer
-//        EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
-
-//        // Iterate through entities that are marked as dead
-//        //update movement x and y
-//        Entities
-//            .WithAll<HealthComponent>()
-//            .ForEach((ref Entity entity, ref HealthComponent health, ref AnimationComponent animation) =>
-//            {
-//                if (animation.isFrozen)
-//                {
-//                    // Mark the entity as dead and freeze the animation
-
-//                    //// Optionally remove components, destroy entity, or do other cleanup
-//                    ecb.RemoveComponent<HealthComponent>(entity);  // Example: Remove HealthComponent
-//                    ecb.RemoveComponent<MovementSpeedComponent>(entity);  // Example: Remove MovementComponent
-//                    ecb.RemoveComponent<AttackComponent>(entity);  // Example: Remove CombatComponent
-//                    ecb.RemoveComponent<AttackCooldownComponent>(entity);  // Example: Remove CombatComponent
-//                    ecb.RemoveComponent<PositionComponent>(entity);  // Example: Remove CombatComponent
-//                    //ecb.DestroyEntity(entity);  // Optionally destroy the entity
-//                }
-//            }).WithoutBurst().Run();
-
-//        // Apply the command buffer at the end of the frame
-//        ecb.Playback(EntityManager);
-//        ecb.Dispose();
-//    }
-//}
+public struct DeadTagComponent : IComponentData
+{
+    // This is a tag component, no data needed
+}

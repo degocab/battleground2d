@@ -21,7 +21,9 @@ public partial class CollisionDetectionSystem : SystemBase
     protected override void OnCreate()
     {
 
-        _entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>());
+        _entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>() 
+            //,ComponentType.Exclude<DeadTagComponent>()
+            );
         ecbSystem = World.GetOrCreateSystem<EntityCommandBufferSystem>();
 
         // 9 offsets for current + neighbors (including diagonals)

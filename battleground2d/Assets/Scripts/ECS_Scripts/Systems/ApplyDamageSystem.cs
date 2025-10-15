@@ -70,7 +70,8 @@ public partial class ApplyDamageSystem : SystemBase
 
                 if (health.Health <= 0)
                 {
-                    health.isDying = true;
+                    //health.isDying = true;
+                    combatState.CurrentState = CombatState.State.Dying;
                     health.timeRemaining = health.deathAnimationDuration;
                 }
 
