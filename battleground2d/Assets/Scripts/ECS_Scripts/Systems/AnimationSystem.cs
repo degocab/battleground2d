@@ -33,7 +33,6 @@ public class AnimationSystem : SystemBase
             if (spriteSheetAnimationData.isFrozen)
             {
                 // Do nothing or handle frozen state (keep the last frame as it is)
-                translation.Value.z = 0;
                 return;
             }
             spriteSheetAnimationData.FrameTimer += deltaTime;
@@ -56,8 +55,8 @@ public class AnimationSystem : SystemBase
                     float uvOffsetY = uvHeight * (spriteSheetAnimationData.animationHeightOffset + (spriteSheetAnimationData.UnitType == EntitySpawner.UnitType.Enemy ?  16 : 0)) ;
                     spriteSheetAnimationData.uv = new Vector4(uvWidth, uvHeight, uvOffsetX, uvOffsetY);
 
-                    float3 position = translation.Value;
-                    position.z = position.y * .01f;
+                    //float3 position = translation.Value;
+                    //position.z = position.y * .01f;
                     //spriteSheetAnimationData.matrix = Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
                 }
             }

@@ -132,7 +132,7 @@ public partial class PlayerAttackSystem : SystemBase
                 FindTargetsInRectangle(entity, movingPosDownToSpriteBase, attackDirection, attack.Range, chunkIndex, ECB, animation, drawDebugLines);
 
                 //attack.LastAttackTime = CurrentTime;
-                attack.AttackRateRemaining = attack.AttackRate;
+                attack.AttackRateRemaining = 0.5f;// attack.AttackRate;
                 attacks[i] = attack;
             }
         }

@@ -81,7 +81,8 @@ public partial class CollisionDetectionSystem : SystemBase
             EntityType = GetEntityTypeHandle(),
             QuadrantOffsets = quadrantOffsets,
             collisionQuadrantMap = CollisionQuadrantSystem.collisionQuadrantMap,
-            CollisionEvents = collisionEvents.AsParallelWriter()
+            CollisionEvents = collisionEvents.AsParallelWriter(),
+            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true) // Add this
         };
 
         JobHandle collisionJobHandle = collisionJob.ScheduleParallel(_entityQuery, Dependency);
@@ -141,6 +142,7 @@ public partial class CollisionDetectionSystem : SystemBase
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderType;
         [ReadOnly] public EntityTypeHandle EntityType;
+        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
 
         [ReadOnly] public NativeArray<int2> QuadrantOffsets;
         [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
@@ -148,6 +150,10 @@ public partial class CollisionDetectionSystem : SystemBase
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
+            // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
+            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+                return;
+
             var translations = chunk.GetNativeArray(TranslationType);
             var colliders = chunk.GetNativeArray(ColliderType);
             var entities = chunk.GetNativeArray(EntityType);

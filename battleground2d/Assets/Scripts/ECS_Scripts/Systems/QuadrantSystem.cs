@@ -90,10 +90,17 @@ ComponentType.ReadOnly<AnimationComponent>()
         [ReadOnly] public ComponentTypeHandle<Translation> translationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> quadrantEntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
         [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public NativeMultiHashMap<int, QuadrantData>.ParallelWriter quadrantMultiHashMap;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
+
+
+            // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
+            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+                return;
+
             var translations = chunk.GetNativeArray(translationTypeHandle);
             var entities = chunk.GetNativeArray(entityTypeHandle);
             var quadrantEntities = chunk.GetNativeArray(quadrantEntityTypeHandle);
@@ -138,7 +145,8 @@ ComponentType.ReadOnly<AnimationComponent>()
             quadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             entityTypeHandle = GetEntityTypeHandle(),
             quadrantMultiHashMap = QuadrantMultiHashMap.AsParallelWriter(),
-            AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true)
+            AnimationComponentTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true) 
         };
         Dependency = job.ScheduleParallel(_query, Dependency);
         Dependency.Complete();

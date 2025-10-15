@@ -41,7 +41,7 @@ public partial class SetAnimationTypeSystem : SystemBase
                 if (combatState.CurrentState == CombatState.State.Dying)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Die;
-                    health.deathAnimationDuration = 0f;
+                    //health.deathAnimationDuration = 0f;
                     animationComponent.finishAnimation = true;
                     UpdatePreviousAnimationField(entity, ref animationComponent);
                     return; // Death overrides everything else

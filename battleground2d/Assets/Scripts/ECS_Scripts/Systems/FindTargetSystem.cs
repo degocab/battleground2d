@@ -128,9 +128,14 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
+            // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
+            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+                return;
+
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
             var quadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
@@ -262,7 +267,8 @@ public partial class FindTargetSystem : SystemBase
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
-            EntityTypeHandle = GetEntityTypeHandle()
+            EntityTypeHandle = GetEntityTypeHandle(),
+            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true)
         };
 
         var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);

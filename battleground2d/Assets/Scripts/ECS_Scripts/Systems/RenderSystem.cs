@@ -31,12 +31,16 @@ public class RenderSystem : SystemBase
         public float3 position;
         public Matrix4x4 matrix;
         public Vector4 uv;
+        public bool isFrozen;
+        public Vector4 tintColor; // RED TINT FOR DEAD UNITS
     }
 
     private struct PositionComparer : IComparer<RenderData>
     {
         public int Compare(RenderData a, RenderData b)
         {
+            if (a.isFrozen != b.isFrozen)
+                return a.isFrozen ? -1 : 1; 
             if (a.position.y < b.position.y)
                 return 1;
             else
@@ -102,13 +106,31 @@ public class RenderSystem : SystemBase
 
             if (x > xMin && x < xMax && y < yTop_1 && y > yBottom)
             {
+
+                float3 renderPosition = translation.Value;
+                if (animation.isFrozen)
+                {
+                    renderPosition.z = 10f;
+
+                }
+                else
+                {
+                    renderPosition.z = renderPosition.y * .01f;
+
+                }
+
+
+
+
                 var renderData = new RenderData
                 {
                     entity = entity,
                     position = translation.Value,
                     //matrix = animation.matrix,
-                    matrix = Matrix4x4.TRS(translation.Value, Quaternion.identity, Vector3.one), // Calculate here!
-                    uv = animation.uv
+                    matrix = Matrix4x4.TRS(renderPosition, Quaternion.identity, Vector3.one), // Calculate here!
+                    uv = animation.uv,
+                    isFrozen = animation.isFrozen,
+                    tintColor = animation.isFrozen ? new Vector4(1f, 0.3f, 0.3f, 0.5f) : Vector4.one // RED TINT FOR DEAD UNITS
                 };
 
                 if (y < yTop_20) nativeList_20.AddNoResize(renderData);
@@ -176,6 +198,8 @@ public class RenderSystem : SystemBase
         public NativeArray<Matrix4x4> matrixArray;
         [NativeDisableContainerSafetyRestriction]
         public NativeArray<Vector4> uvArray;
+        [NativeDisableContainerSafetyRestriction]
+        public NativeArray<Vector4> tintColorArray; // RED TINT FOR DEAD UNITS
         public int startingIndex;
 
         public void Execute(int index)
@@ -183,6 +207,7 @@ public class RenderSystem : SystemBase
             RenderData renderData = nativeList[index];
             matrixArray[startingIndex + index] = renderData.matrix;
             uvArray[startingIndex + index] = renderData.uv;
+            tintColorArray[startingIndex + index] = renderData.tintColor; // RED TINT FOR DEAD UNITS
         }
     }
 
@@ -207,6 +232,9 @@ public class RenderSystem : SystemBase
     private Material material;
     private int shaderMainTexUVid;
 
+    private Vector4[] tintColorInstancedArray; // RED TINT FOR DEAD UNITS
+    private int shaderTintColorId; // RED TINT FOR DEAD UNITS
+
     private void InitDrawMeshInstancedSlicedData()
     {
         if (matrixInstancedArray != null) return; // Already initialized
@@ -216,6 +244,9 @@ public class RenderSystem : SystemBase
         shaderMainTexUVid = Shader.PropertyToID("_MainTex_UV");
         mesh = entitySpawner.quadMesh;
         material = materialRefs.WalkingSpriteSheetMaterial;
+
+        tintColorInstancedArray = new Vector4[DRAW_MESH_INSTANCED_SLICE_COUNT]; // RED TINT FOR DEAD UNITS
+        shaderTintColorId = Shader.PropertyToID("_TintColor"); // RED TINT FOR DEAD UNITS
 
         if (mesh == null)
         {
@@ -270,11 +301,6 @@ public class RenderSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
-        // Add this debug code:
-        //Entities.WithAll<CommanderComponent>().ForEach((Entity entity, ref Translation translation) =>
-        //{
-        //    Debug.Log($"Player Position: {translation.Value}");
-        //}).Run();
 
         Camera camera = Camera.main;
         float cameraWidth = camera.aspect * camera.orthographicSize;
@@ -387,6 +413,7 @@ public class RenderSystem : SystemBase
 
         NativeArray<Matrix4x4> matrixArray = new NativeArray<Matrix4x4>(visibleEntityTotal, Allocator.TempJob);
         NativeArray<Vector4> uvArray = new NativeArray<Vector4>(visibleEntityTotal, Allocator.TempJob);
+        NativeArray<Vector4> tintColorArray = new NativeArray<Vector4>(visibleEntityTotal, Allocator.TempJob); // Add this
 
         int startIndex = 0;
         JobHandle lastJobHandle = default;
@@ -398,6 +425,7 @@ public class RenderSystem : SystemBase
                 nativeList= nativeListArray[i],
                 matrixArray = matrixArray,
                 uvArray = uvArray,
+                tintColorArray = tintColorArray, // RED TINT FOR DEAD UNITS
                 startingIndex = startIndex
             };
             startIndex += nativeListArray[i].Length;
@@ -417,13 +445,18 @@ public class RenderSystem : SystemBase
 
             NativeArray<Matrix4x4>.Copy(matrixArray, i, matrixInstancedArray, 0, sliceSize);
             NativeArray<Vector4>.Copy(uvArray, i, uvInstancedArray, 0, sliceSize);
+            NativeArray<Vector4>.Copy(tintColorArray, i, tintColorInstancedArray, 0, sliceSize); // RED TINT FOR DEAD UNITS
+
+
             materialPropertyBlock.SetVectorArray(shaderMainTexUVid, uvInstancedArray);
+            materialPropertyBlock.SetVectorArray(shaderTintColorId, tintColorInstancedArray.ToArray()); // RED TINT FOR DEAD UNITS
 
             Graphics.DrawMeshInstanced(mesh, 0, material, matrixInstancedArray, sliceSize, materialPropertyBlock);
         }
 
         matrixArray.Dispose();
         uvArray.Dispose();
+        tintColorArray.Dispose(); // Add this
     }
 
 

@@ -23,6 +23,7 @@ public partial class DeathSystem : SystemBase
 
         Entities
             .WithName("ProcessDeath")
+                        .WithAll<DeadTagComponent>() // Only process entities that are marked as dead
             .ForEach((Entity entity, int entityInQueryIndex,
                      ref HealthComponent health,
                      ref CombatState combatState,
@@ -36,24 +37,25 @@ public partial class DeathSystem : SystemBase
                     //{
                     //}
 
-                    if (animation.isFrozen)
-                    {
-                        ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<ECS_CircleCollider2DAuthoring>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<TargetComponent>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<Unit>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<QuadrantEntity>(entityInQueryIndex, entity);
-                    }
 
                     //freeze the final frame after animation is done
-                    if (animation.FrameCount - 1 == animation.CurrentFrame)
+                    if (animation.FrameCount - 1 == animation.CurrentFrame && animation.AnimationType == EntitySpawner.AnimationType.Die)
+                    {
                         animation.isFrozen = true;
+
+                        //ecb.AddComponent<DeadTagComponent>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<ECS_CircleCollider2DAuthoring>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<TargetComponent>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<Unit>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<QuadrantEntity>(entityInQueryIndex, entity);
+                    }
 
                     if (health.timeRemaining <= 0) //wait for death animation to finaish?
                     {

@@ -55,10 +55,15 @@ public partial class CollisionQuadrantSystem : SystemBase
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ecsCircleCollider2DAuthoringType;
         [ReadOnly] public EntityTypeHandle EntityType;
         public NativeMultiHashMap<int, CollisionQuadrantData>.ParallelWriter QuadrantMap;
+        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
+
 
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentType;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
+            // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
+            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+                return;
             var translations = chunk.GetNativeArray(TranslationType);
             var animationComponents = chunk.GetNativeArray(AnimationComponentType);
             var entities = chunk.GetNativeArray(EntityType);
@@ -97,7 +102,8 @@ public partial class CollisionQuadrantSystem : SystemBase
             AnimationComponentType = GetComponentTypeHandle<AnimationComponent>(true),
             ecsCircleCollider2DAuthoringType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
             EntityType = GetEntityTypeHandle(),
-            QuadrantMap = collisionQuadrantMap.AsParallelWriter()
+            QuadrantMap = collisionQuadrantMap.AsParallelWriter(),
+            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true)
         };
 
         Dependency = job.ScheduleParallel(_collisionQuery, Dependency);

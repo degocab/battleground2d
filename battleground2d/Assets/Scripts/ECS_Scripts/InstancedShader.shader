@@ -4,13 +4,17 @@ Shader "Custom/InstancedShader"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Color", Color) = (1,1,1,1)
+        _AlphaCutoff ("Alpha Cutoff", Range(0,1)) = 0.1
     }
 
     SubShader
     {
-        Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" }
+        Tags { "Queue"="AlphaTest" "IgnoreProjector"="True" "RenderType"="TransparentCutout" } // Changed queue
         LOD 100
-        Blend SrcAlpha OneMinusSrcAlpha
+        
+        // Keep ZWrite On but use AlphaTest
+        ZWrite On
+        Cull Off
 
         Pass
         {
@@ -35,36 +39,37 @@ Shader "Custom/InstancedShader"
             };
 
             sampler2D _MainTex;
-            //float4 _MainTex_UV;
+            float _AlphaCutoff;
 
-            // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
-            // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
-            // #pragma instancing_options assumeuniformscaling
             UNITY_INSTANCING_BUFFER_START(Props)
               UNITY_DEFINE_INSTANCED_PROP(fixed4, _Color)
               UNITY_DEFINE_INSTANCED_PROP(fixed4, _MainTex_UV)
+              UNITY_DEFINE_INSTANCED_PROP(fixed4, _TintColor)
             UNITY_INSTANCING_BUFFER_END(Props)
 
             v2f vert (appdata v)
             {
                 v2f o;
-
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
 
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                //o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.uv = (v.uv * UNITY_ACCESS_INSTANCED_PROP(Props, _MainTex_UV).xy) + UNITY_ACCESS_INSTANCED_PROP(Props, _MainTex_UV).zw;
-
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
-
-                // sample the texture
                 fixed4 c = tex2D(_MainTex, i.uv) * UNITY_ACCESS_INSTANCED_PROP(Props, _Color);
+
+                 // Apply tint color
+                fixed4 tint = UNITY_ACCESS_INSTANCED_PROP(Props, _TintColor);
+                c.rgb = lerp(c.rgb, c.rgb * tint.rgb, tint.a);
+
+                // Alpha test - discard transparent pixels
+                if (c.a < _AlphaCutoff)
+                    discard;
 
                 return c;
             }

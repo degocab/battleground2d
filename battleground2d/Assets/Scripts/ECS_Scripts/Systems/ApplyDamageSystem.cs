@@ -58,22 +58,26 @@ public partial class ApplyDamageSystem : SystemBase
                 {
                     totalDamage += attacks[i].Damage;
                 }
+                attacks.Clear(); // Clear buffer for reuse
 
                 health.Health -= totalDamage;
+                if (health.Health <= 0)
+                {
+                    //health.isDying = true;
+                    combatState.CurrentState = CombatState.State.Dying;
+                    health.timeRemaining = health.deathAnimationDuration;
+                    ecb.AddComponent<DeadTagComponent>(entityInQueryIndex, entity);
+                    return;
+                }
+
                 //TODO: set to true if this doesnt trigger animation?
                 //attackComponent.isTakingDamage = true;
                 combatState.CurrentState = CombatState.State.TakingDamage;
 
                 cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 
-                attacks.Clear(); // Clear buffer for reuse
 
-                if (health.Health <= 0)
-                {
-                    //health.isDying = true;
-                    combatState.CurrentState = CombatState.State.Dying;
-                    health.timeRemaining = health.deathAnimationDuration;
-                }
+
 
                 ////DEBUG: Add debug output to verify damage is being applied
                 //#if UNITY_EDITOR
