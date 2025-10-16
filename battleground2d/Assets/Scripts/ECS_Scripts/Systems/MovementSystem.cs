@@ -30,86 +30,78 @@ public class MovementSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         var deltaTime = Time.DeltaTime;
-        float moveX = 0f;
-        float moveY = 0f;
-        bool isRunnning = false;
+        //float moveX = 0f;
+        //float moveY = 0f;
+        //bool isRunnning = false;
 
-        if (Input.GetKey(KeyCode.W)) moveY = 1f;
-        if (Input.GetKey(KeyCode.S)) moveY = -1f;
-        if (Input.GetKey(KeyCode.A)) moveX = -1f;
-        if (Input.GetKey(KeyCode.D)) moveX = 1f;
-        if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
+        //if (Input.GetKey(KeyCode.W)) moveY = 1f;
+        //if (Input.GetKey(KeyCode.S)) moveY = -1f;
+        //if (Input.GetKey(KeyCode.A)) moveX = -1f;
+        //if (Input.GetKey(KeyCode.D)) moveX = 1f;
+        //if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
 
-        // Get mouse position for aiming
-        Vector3 mousePosition = Input.mousePosition;
-        mousePosition.z = -Camera.main.transform.position.z;
-        Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
-        float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
+        //// Get mouse position for aiming
+        //Vector3 mousePosition = Input.mousePosition;
+        //mousePosition.z = -Camera.main.transform.position.z;
+        //Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
+        //float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
 
-        // We need to get the commander's position first
-        float2 commanderPosition = float2.zero;
-        bool foundCommander = false;
+        //// We need to get the commander's position first
+        //float2 commanderPosition = float2.zero;
 
-        Entities
-            .WithAll<CommanderComponent>()
-            .ForEach((in Translation translation) =>
-            {
-                commanderPosition = translation.Value.xy;
-                foundCommander = true;
-            }).Run(); // Use Run() to execute immediately on main thread
+        //// Calculate movement penalty based on angle between movement and aim
+        ////if (foundCommander)
+        //if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
+        //{
+        //    float2 aimDirection = worldMousePosFloat - commanderPosition;
+        //    aimDirection = math.normalize(aimDirection);
 
-        // Calculate movement penalty based on angle between movement and aim
-        if (foundCommander)
-        {
-            float2 aimDirection = worldMousePosFloat - commanderPosition;
-            aimDirection = math.normalize(aimDirection);
+        //    float2 moveDirection = new float2(moveX, moveY);
+        //    float moveMagnitude = math.length(moveDirection);
 
-            float2 moveDirection = new float2(moveX, moveY);
-            float moveMagnitude = math.length(moveDirection);
+        //    if (moveMagnitude > 0)
+        //    {
+        //        moveDirection = math.normalize(moveDirection);
 
-            if (moveMagnitude > 0)
-            {
-                moveDirection = math.normalize(moveDirection);
+        //        // Calculate dot product to get angle between movement and aim
+        //        float dotProduct = math.dot(moveDirection, aimDirection);
 
-                // Calculate dot product to get angle between movement and aim
-                float dotProduct = math.dot(moveDirection, aimDirection);
+        //        // Apply speed multipliers based on direction
+        //        float speedMultiplier = 1.0f;
 
-                // Apply speed multipliers based on direction
-                float speedMultiplier = 1.0f;
+        //        if (dotProduct > 0.8f)
+        //        {
+        //            speedMultiplier = 1.0f; // Moving forward (full speed)
+        //        }
+        //        else if (dotProduct > 0.3f)
+        //        {
+        //            speedMultiplier = 0.8f; // Moving somewhat sideways
+        //        }
+        //        else if (dotProduct > -0.3f)
+        //        {
+        //            speedMultiplier = 0.6f; // Moving mostly sideways
+        //        }
+        //        else
+        //        {
+        //            speedMultiplier = 0.4f; // Moving backwards (slowest)
+        //        }
 
-                if (dotProduct > 0.8f)
-                {
-                    speedMultiplier = 1.0f; // Moving forward (full speed)
-                }
-                else if (dotProduct > 0.3f)
-                {
-                    speedMultiplier = 0.8f; // Moving somewhat sideways
-                }
-                else if (dotProduct > -0.3f)
-                {
-                    speedMultiplier = 0.6f; // Moving mostly sideways
-                }
-                else
-                {
-                    speedMultiplier = 0.4f; // Moving backwards (slowest)
-                }
+        //        // Apply the speed penalty
+        //        moveX *= speedMultiplier;
+        //        moveY *= speedMultiplier;
+        //    }
+        //}
 
-                // Apply the speed penalty
-                moveX *= speedMultiplier;
-                moveY *= speedMultiplier;
-            }
-        }
-
-        // This job sets the desired velocity based on input or AI for commander.
-        var inputJobHandle = Entities
-            .WithName("SetCommanderVelocity")
-            .WithAll<CommanderComponent>()
-            .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-            {
-                movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
-                movementSpeedComponent.isRunnning = isRunnning;
-                movementSpeedComponent.isPlayerControlled = true;
-            }).ScheduleParallel(Dependency);
+        //// This job sets the desired velocity based on input or AI for commander.
+        //var inputJobHandle = Entities
+        //    .WithName("SetCommanderVelocity")
+        //    .WithAll<CommanderComponent>()
+        //    .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+        //    {
+        //        movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
+        //        movementSpeedComponent.isRunnning = isRunnning;
+        //        movementSpeedComponent.isPlayerControlled = true;
+        //    }).ScheduleParallel(Dependency);
 
         // ... rest of your existing jobs (speedJobHandle, animationJobHandle, etc.)
 
@@ -138,21 +130,23 @@ public class MovementSystem : SystemBase
               float3 vel = new float3(movementSpeedComponent.velocity.x, movementSpeedComponent.velocity.y, 0) * movementSpeedComponent.randomSpeed;
               vel.z = 0;
               movementSpeedComponent.velocity = vel;
-          }).ScheduleParallel(inputJobHandle);
+          }).ScheduleParallel(Dependency);
 
         // -- JOB 3: Update Animation State (Burst Parallel) --
         // This could also be a separate system after Physics.
         // Get direction for animation
                var animationJobHandle = Entities
             .WithName("UpdateAnimationFromVelocity")
-          .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent) =>
+          .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
           {
               float2 velocity = movementSpeedComponent.velocity.xy;
-
-
+              if (!movementSpeedComponent.isPlayerControlled) 
+              {
+                  movementSpeedComponent.aimDirection = movementSpeedComponent.velocity.xy;
+              }
               //update view direction
-              if ( movementSpeedComponent.isPlayerControlled) {
-                    float2 viewDirection = (worldMousePosFloat - transform.Value.xy);
+              if ( movementSpeedComponent.isPlayerControlled && (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending)) {
+                    float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
                   if (math.abs(viewDirection.x) > math.abs(viewDirection.y))
                   {
                       if (viewDirection.x > 0)

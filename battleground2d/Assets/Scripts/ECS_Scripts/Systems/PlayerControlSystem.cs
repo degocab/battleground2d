@@ -16,6 +16,7 @@ public class PlayerControlSystem : SystemBase
 {
     public Transform cameraMain;
     public static EntitySpawner entitySpawner;
+    private Vector3 cameraVelocity = Vector3.zero;
     protected override void OnStartRunning()
     {
         entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
@@ -39,6 +40,92 @@ public class PlayerControlSystem : SystemBase
         if (!HasSingleton<CommanderComponent>())
             return;
 
+        float moveX = 0f;
+        float moveY = 0f;
+        bool isRunnning = false;
+
+        if (Input.GetKey(KeyCode.W)) moveY = 1f;
+        if (Input.GetKey(KeyCode.S)) moveY = -1f;
+        if (Input.GetKey(KeyCode.A)) moveX = -1f;
+        if (Input.GetKey(KeyCode.D)) moveX = 1f;
+        if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
+
+        // Get mouse position for aiming
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -Camera.main.transform.position.z;
+        Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
+        float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
+
+        // Get commander position FIRST using .Run()
+        float2 commanderPosition = float2.zero;
+        //Entities
+        //    .WithAll<CommanderComponent>()
+        //    .ForEach((in Translation translation) =>
+        //    {
+        //        commanderPosition = translation.Value.xy;
+        //    }).Run();
+
+        // We need to get the commander's position first
+        //float2 commanderPosition = float2.zero;
+
+        // Calculate movement penalty based on angle between movement and aim
+        //if (foundCommander)
+        if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
+        {
+            float2 aimDirection = worldMousePosFloat - commanderPosition;
+            aimDirection = math.normalize(aimDirection);
+
+            float2 moveDirection = new float2(moveX, moveY);
+            float moveMagnitude = math.length(moveDirection);
+
+            if (moveMagnitude > 0)
+            {
+                moveDirection = math.normalize(moveDirection);
+
+                // Calculate dot product to get angle between movement and aim
+                float dotProduct = math.dot(moveDirection, aimDirection);
+
+                // Apply speed multipliers based on direction
+                float speedMultiplier = 1.0f;
+
+                if (dotProduct > 0.8f)
+                {
+                    speedMultiplier = 1.0f; // Moving forward (full speed)
+                }
+                else if (dotProduct > 0.3f)
+                {
+                    speedMultiplier = 0.8f; // Moving somewhat sideways
+                }
+                else if (dotProduct > -0.3f)
+                {
+                    speedMultiplier = 0.6f; // Moving mostly sideways
+                }
+                else
+                {
+                    speedMultiplier = 0.4f; // Moving backwards (slowest)
+                }
+
+                // Apply the speed penalty
+                moveX *= speedMultiplier;
+                moveY *= speedMultiplier;
+            }
+        }
+
+        // This job sets the desired velocity based on input or AI for commander.
+        //var inputJobHandle = 
+            Entities
+            .WithName("SetCommanderVelocity")
+            .WithAll<CommanderComponent>()
+            .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+            {
+                movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
+                movementSpeedComponent.isRunnning = isRunnning;
+                movementSpeedComponent.isPlayerControlled = true;
+                movementSpeedComponent.aimDirection = worldMousePosFloat;
+
+            }).Run();
+
+
         //var ecb = _ecbSystem.CreateCommandBuffer();
         var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
@@ -55,7 +142,7 @@ public class PlayerControlSystem : SystemBase
                 var commandCopy = newCommand;
 
                 // SINGLE job that does both operations safely
-                Entities
+                var commandJobHandle = Entities
                     .WithName("ProcessCommandInput")
                     .WithAll<Unit>()
                     .WithNone<CommanderComponent>()
@@ -67,13 +154,14 @@ public class PlayerControlSystem : SystemBase
                         // Then update command data
                         commandData = commandCopy;
 
-                    }).ScheduleParallel();
+                    }).ScheduleParallel(Dependency);
 
                 Debug.Log($"Assigned command: {newCommand.Command} to all units");
+                Dependency = commandJobHandle;
                 break; // Important: Only process one key per frame
             }
         }
-        this.Dependency.Complete();
+        //this.Dependency.Complete();
         float deltaTime = Time.DeltaTime;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);
@@ -83,6 +171,8 @@ public class PlayerControlSystem : SystemBase
 
         UpdateCameraZoom();
         float currentTime = (float)Time.ElapsedTime;
+
+        Dependency.Complete();
         Entities
             .WithoutBurst()
             .ForEach((
@@ -186,7 +276,8 @@ public class PlayerControlSystem : SystemBase
                 UpdateCameraPosition(translation.Value);
 
             }).Run();
-
+        // Add the command buffer system
+        _ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
     private bool isStillBlocking(DefenseComponent defenseComponent)
@@ -274,11 +365,24 @@ public class PlayerControlSystem : SystemBase
         Camera.main.orthographicSize = targetSize;
     }
 
+    //private void UpdateCameraPosition(float3 playerPosition)
+    //{
+    //    Vector3 cameraPosition = playerPosition;
+    //    cameraPosition.z = -13f;
+    //    Camera.main.transform.position = cameraPosition;
+    //}
     private void UpdateCameraPosition(float3 playerPosition)
     {
-        Vector3 cameraPosition = playerPosition;
-        cameraPosition.z = -13f;
-        Camera.main.transform.position = cameraPosition;
+        Vector3 targetPosition = playerPosition;
+        targetPosition.z = -13f;
+
+        Vector3 smoothedPosition = Vector3.SmoothDamp(
+            Camera.main.transform.position,
+            targetPosition,
+            ref cameraVelocity,
+            0.1f); // Adjust 0.1f for smooth time
+
+        Camera.main.transform.position = smoothedPosition;
     }
 
     private void StartAttack(ref CombatState combatState,

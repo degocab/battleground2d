@@ -18,4 +18,5 @@ public struct MovementSpeedComponent : IComponentData
     public float sqrDistance;
     public int frameCounter;
     public bool isPlayerControlled;
+    public float2 aimDirection;
 }

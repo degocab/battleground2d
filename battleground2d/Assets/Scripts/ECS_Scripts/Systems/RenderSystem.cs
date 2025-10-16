@@ -49,7 +49,7 @@ public class RenderSystem : SystemBase
     }
 
     [BurstCompile]
-    private struct CullJob : IJobForEachWithEntity<Translation, AnimationComponent>
+    private struct CullJob : IJobForEachWithEntity<Translation, AnimationComponent, Unit>
     {
         public float xMin;
         public float xMax;
@@ -99,7 +99,7 @@ public class RenderSystem : SystemBase
         [NativeDisableParallelForRestriction]
         public NativeList<RenderData>.ParallelWriter nativeList_20;
 
-        public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref AnimationComponent animation)
+        public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref AnimationComponent animation, [ReadOnly] ref Unit unit)
         {
             float x = translation.Value.x;
             float y = translation.Value.y;
@@ -130,7 +130,7 @@ public class RenderSystem : SystemBase
                     matrix = Matrix4x4.TRS(renderPosition, Quaternion.identity, Vector3.one), // Calculate here!
                     uv = animation.uv,
                     isFrozen = animation.isFrozen,
-                    tintColor = animation.isFrozen ? new Vector4(1f, 0.3f, 0.3f, 0.5f) : Vector4.one // RED TINT FOR DEAD UNITS
+                    tintColor = unit.Rank == 7 ? new Vector4(1.2f, 1.2f, 1.5f, 1f) : animation.isFrozen ? new Vector4(1f, 0.3f, 0.3f, 0.5f) : Vector4.one // RED TINT FOR DEAD UNITS
                 };
 
                 if (y < yTop_20) nativeList_20.AddNoResize(renderData);

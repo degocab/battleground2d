@@ -264,7 +264,7 @@ public partial class CombatSystem : SystemBase
             else if (waitingOnAttackRateCD && inRange)
             {
                 // On attack cooldown but still in range - decide whether to defend or stay vulnerable
-                if (ShouldDefend(ref attack))
+                if (ShouldDefend(ref attack, animation))
                 {
                     // Choose to defend - become invulnerable but can't attack
                     combatState.CurrentState = CombatState.State.Defending;
@@ -376,16 +376,18 @@ public partial class CombatSystem : SystemBase
             }
         }
 
-        private bool ShouldDefend(ref AttackComponent attack)
+        private bool ShouldDefend(ref AttackComponent attack, AnimationComponent animation)
         {
             // Base defend chance (30% chance to defend)
-            float baseDefendChance = .6f;//0.92f;
+            //float baseDefendChance = .6f;//0.92f;
+
+            float baseDefendChance = animation.UnitType == EntitySpawner.UnitType.Default ? .1f : 1f;
 
             // Adjust based on health or other factors if needed
             // if (health.IsLow) baseDefendChance += 0.2f;
 
             // Generate random value and check against defend chance
-            float randomValue = Random.NextFloat();
+            float randomValue = Random.NextFloat(0f,1f);
             bool shouldDefend = randomValue < baseDefendChance;
 
             // Debug log to see defend decisions (remove in final version)

@@ -157,7 +157,7 @@ public partial class PlayerAttackSystem : SystemBase
         private void FindTargetsInRectangle(Entity attacker, float2 attackerPos, float2 attackDirection,
                                   float range, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, AnimationComponent animation, bool debug)
         {
-            float unitWidth = 0.125f;
+            float unitWidth = 0.25f;
             float targetRadius = 0.125f;
 
             if (debug)
