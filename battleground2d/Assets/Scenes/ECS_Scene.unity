@@ -550,17 +550,11 @@ MonoBehaviour:
       add ai block\n\t[x] fix ai blocking regardless of direction\n[x] setup death
       phase (clean up dead units)\r\n\t[x] delete entities\n\t[x] play death animation\n\t[x]
       fix sprite layer, should be below all live sprites\n\t[x] fix units dying in
-      idle or other states.\n[ ] change directional view to be independent of movement
-      direction\r\n    [ ] walking backwards animation/states\r\n    [ ] update animation
-      direction to use view direction vs movement direction\r\n\t[ ] AI\n\t[x] Player\n\n```\r\n\r\n###
-      Week 2: Combat Feel & Polish\r\n```\r\n[x ] Add simple AI for defense stance
-      (enemies that actually defend)\r\n[ ] Smooth out combat animations (attack/block/death)\r\n\t[
-      ] fix direction when attacking\n\t[ ] fix area of attack for player\n\t[ ]
-      test out moving player attack logic to ai\n[ ] Add Unit Crit chance system\r\n[
-      ] Create defend-while-moving animation & logic\r\n[ ] fix units frozen while
-      attacking (blocking movement during attack animation)\r\n\n```"
-    state: 2
-    show: 1
+      idle or other states.\n[x] change directional view to be independent of movement
+      direction\r\n    [x] update animation direction to use view direction vs movement
+      direction\r\n\t[x] AI\n\t[x] Player\n\n```\r\n\r\n"
+    state: 3
+    show: 0
     deleteQuestion: 0
   - s: "## PHASE 2: FORMATIONS & TACTICS (After combat is solid)\r\n\r\n### Week
       3: Formation Foundation\r\n```\r\n[ ] Add FormationComponent & FormationGroupComponent\r\n[
@@ -569,8 +563,8 @@ MonoBehaviour:
       Formations\r\n```\r\n[ ] Implement Advance/Attack Move/Charge commands\r\n[
       ] Add Formation collision (groups avoid other groups)\r\n[ ] Dynamic rank promotion
       (middle\u2192front when gaps appear)\r\n```"
-    state: 0
-    show: 0
+    state: 2
+    show: 1
     deleteQuestion: 0
   - s: '## PHASE 3: UNIT VARIETY & AI
 
@@ -616,25 +610,15 @@ MonoBehaviour:
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: '## PHASE 5: ADVANCED FEATURES
-
-
-
-      ### Week 7+: Cinematic & Advanced
-
-      ```
-
-      [
-      ] Cavalry charge physics
-
-      [ ] Arrow physics
-
-      [ ] Background design
-
-      [
-      ] Captain/commander crit system (90% one-shot)
-
-      ```'
+  - s: "## PHASE 5: ADVANCED FEATURES\r\n###Week 7: Combat Feel & Polish\r\n```\r\n[x]
+      Add simple AI for defense stance(enemies that actually defend)\r\n[ ] Smooth
+      out combat animations (attack/block/death)\r\n[ ] fix direction when attacking\\n\\t[
+      ] fix area of attack for player\r\n[ ]test out moving player attack logic to
+      ai\r\n[ ] Add Unit Crit chance system\r\n[ ] Create defendwhilemoving animation
+      & logic\r\n[ ] fix units frozen while attacking (blocking movement during attack
+      animation)\r\n```\n### Week 8+: Cinematic & Advanced\r\n```\n[\r ] Cavalry
+      charge physics\r\n[ ] Arrow physics\r\n[ ] Background design\r\n[\r ] Captain/commander
+      crit system (90% one-shot)\n[ ] walking backwards animation/states"
     state: 0
     show: 0
     deleteQuestion: 0

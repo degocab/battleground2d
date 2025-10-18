@@ -24,7 +24,7 @@ public partial class PlayerAttackSystem : SystemBase
         _playerQuery = GetEntityQuery(
             ComponentType.ReadWrite<AttackComponent>(),
             ComponentType.ReadOnly<Translation>(),
-            ComponentType.ReadOnly<AnimationComponent>(),
+            ComponentType.ReadWrite<AnimationComponent>(),
             ComponentType.ReadOnly<PlayerInputComponent>()
         );
 
@@ -63,7 +63,7 @@ public partial class PlayerAttackSystem : SystemBase
             CurrentTime = currentTime,
             ECB = ecb,
             TranslationFromEntity = translationFromEntity,
-            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
             AttackCooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(true),
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(true),
@@ -85,7 +85,7 @@ public partial class PlayerAttackSystem : SystemBase
         [ReadOnly] public ComponentDataFromEntity<Translation> TranslationFromEntity;
         public bool drawDebugLines;
 
-        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AttackCooldownComponent> AttackCooldownTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
@@ -127,6 +127,8 @@ public partial class PlayerAttackSystem : SystemBase
 
                 // Get attack cone based on direction
                 float2 attackDirection = GetDirection(animation.Direction, movingPosDownToSpriteBase);
+
+                CombatUtils.SetAnimationDirection(ref animation, attackDirection);
 
                 // Find targets in attack cone using quadrant system
                 FindTargetsInRectangle(entity, movingPosDownToSpriteBase, attackDirection, attack.Range, chunkIndex, ECB, animation, drawDebugLines);

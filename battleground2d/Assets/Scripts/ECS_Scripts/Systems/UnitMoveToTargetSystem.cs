@@ -22,7 +22,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        float reachThreshold = 0.3f;
+        float reachThreshold = 0.275f;
 
         // *** THE KEY CHANGE FOR ENTITIES 0.16.0 ***
         // Get a ComponentDataFromEntity for Translation. This is the equivalent of ComponentLookup.
@@ -37,6 +37,24 @@ public partial class UnitMoveToTargetSystem : SystemBase
             //.WithReadOnly(translationFromEntity) // This is crucial for safety!
             .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget, ref CombatState combatState, ref DefenseComponent defenseComponent, ref CommandData commandData) =>
             {
+                // RESPECT COMBAT STATE - don't move if defending
+                if (combatState.CurrentState == CombatState.State.Attacking ||
+                    combatState.CurrentState == CombatState.State.Blocking)
+                {
+                    movementSpeed.velocity = float3.zero;
+                    return; // Exit early - don't process movement
+                }
+
+                //// Only move if in seeking or idle states
+                //if (combatState.CurrentState != CombatState.State.SeekingTarget &&
+                //    combatState.CurrentState != CombatState.State.Idle)
+                //{
+                //    movementSpeed.velocity = float3.zero;
+                //    return;
+                //}
+
+
+
                 float2 targetPos = float2.zero;
                 bool targetIsValid = false;
       

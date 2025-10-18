@@ -50,7 +50,7 @@ public class UnitFactory
     }
     private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
     {
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 10f);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
 
         // Use provided command or create default move command
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
@@ -97,7 +97,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,
-            Range = .2875f,
+            Range = .275f,//.2875f,
             isAttacking = false,
             //isDefending = false,
             AttackRate = 2f, // have to match for initial 

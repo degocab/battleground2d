@@ -70,8 +70,10 @@ public class PlayerControlSystem : SystemBase
 
         // Calculate movement penalty based on angle between movement and aim
         //if (foundCommander)
+
         if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
         {
+
             float2 aimDirection = worldMousePosFloat - commanderPosition;
             aimDirection = math.normalize(aimDirection);
 
@@ -109,15 +111,18 @@ public class PlayerControlSystem : SystemBase
                 moveX *= speedMultiplier;
                 moveY *= speedMultiplier;
             }
-        }
 
+        }
         // This job sets the desired velocity based on input or AI for commander.
         //var inputJobHandle = 
-            Entities
+        Entities
             .WithName("SetCommanderVelocity")
-            .WithAll<CommanderComponent>()
+            .WithAll<PlayerInputComponent>()
             .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
             {
+
+
+
                 movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
                 movementSpeedComponent.isRunnning = isRunnning;
                 movementSpeedComponent.isPlayerControlled = true;

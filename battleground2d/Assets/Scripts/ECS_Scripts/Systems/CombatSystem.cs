@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -26,6 +27,7 @@ public partial class CombatSystem : SystemBase
             ComponentType.ReadWrite<AttackCooldownComponent>(),
             ComponentType.ReadWrite<AnimationComponent>(),
             ComponentType.ReadWrite<DefenseComponent>(),
+            ComponentType.ReadWrite<MovementSpeedComponent>(),
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<HasTarget>(),
             ComponentType.Exclude<CommanderComponent>()
@@ -77,6 +79,7 @@ public partial class CombatSystem : SystemBase
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
             CooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(false),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
+            MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true),
             DefenseTypeHandle = GetComponentTypeHandle<DefenseComponent>(false),
@@ -100,6 +103,7 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<AttackCooldownComponent> CooldownTypeHandle;
         public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         public ComponentTypeHandle<DefenseComponent> DefenseTypeHandle;
+        public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
@@ -114,6 +118,7 @@ public partial class CombatSystem : SystemBase
             var hasTargets = chunk.GetNativeArray(HasTargetTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var defenses = chunk.GetNativeArray(DefenseTypeHandle);
+            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -125,6 +130,7 @@ public partial class CombatSystem : SystemBase
                 var hasTarget = hasTargets[i];
                 var entity = entities[i];
                 var defense = defenses[i];
+                var movementSpeed = movementSpeeds[i];
 
                 // Reset attack flags at start of each frame
                 //attack.isAttacking = false;
@@ -150,7 +156,7 @@ public partial class CombatSystem : SystemBase
                     case CombatState.State.Attacking:
                         //Debug.Log($"AI is attacking");
                         HandleAttackingState(ref combatState, ref attack, ref cooldown, ref animation,
-                                           entity, chunkIndex, translation, hasTarget, ref defense);
+                                           entity, chunkIndex, translation, hasTarget, ref defense, ref movementSpeed);
                         break;
 
                     case CombatState.State.TakingDamage:
@@ -166,7 +172,7 @@ public partial class CombatSystem : SystemBase
                     case CombatState.State.Defending:
                         //Debug.Log($"AI is Defending");
 
-                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget);
+                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget, ref movementSpeed);
                         break;
 
                     case CombatState.State.Blocking:
@@ -210,7 +216,7 @@ public partial class CombatSystem : SystemBase
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense)
+                                        Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -328,7 +334,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleDefendingState(ref CombatState combatState, ref AttackComponent attack,
-                                        ref AnimationComponent animation, Translation translation, HasTarget hasTarget)
+                                        ref AnimationComponent animation, Translation translation, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
         {
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
             {

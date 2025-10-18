@@ -335,7 +335,7 @@ public class RenderSystem : SystemBase
         yBottom -= marginY;
 
         int estimatedEntitiesTotal = GetEntityQuery(typeof(Translation)).CalculateEntityCount();
-        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES + 100;
+        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES * 2 + 200;
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {

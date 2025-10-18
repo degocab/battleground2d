@@ -135,84 +135,103 @@ public class MovementSystem : SystemBase
         // -- JOB 3: Update Animation State (Burst Parallel) --
         // This could also be a separate system after Physics.
         // Get direction for animation
-               var animationJobHandle = Entities
-            .WithName("UpdateAnimationFromVelocity")
-          .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
-          {
-              float2 velocity = movementSpeedComponent.velocity.xy;
-              if (!movementSpeedComponent.isPlayerControlled) 
-              {
-                  movementSpeedComponent.aimDirection = movementSpeedComponent.velocity.xy;
-              }
-              //update view direction
-              if ( movementSpeedComponent.isPlayerControlled && (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending)) {
-                    float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
-                  if (math.abs(viewDirection.x) > math.abs(viewDirection.y))
-                  {
-                      if (viewDirection.x > 0)
-                      {
-                          animationComponent.Direction = EntitySpawner.Direction.Right;
-                          animationComponent.animationWidthOffset = 1;
-                      }
-                      else
-                      {
-                          animationComponent.Direction = EntitySpawner.Direction.Left;
-                          animationComponent.animationWidthOffset = 2;
-                      }
-                  }
-                  else
-                  {
-                      if (viewDirection.y > 0)
-                      {
-                          animationComponent.Direction = EntitySpawner.Direction.Up;
-                          animationComponent.animationWidthOffset = 3;
-                      }
-                      else
-                      {
-                          animationComponent.Direction = EntitySpawner.Direction.Down;
-                          animationComponent.animationWidthOffset = 4;
-                      }
-                  }
-
-              }
-              else
-              {
-                  if (math.lengthsq(velocity) > 0.0001f) // Check if moving
-                  {
-                      //compare abs values to deterimine dominant axis
-                      if (math.abs(velocity.x) > math.abs(velocity.y))
-                      {
-                          if (velocity.x > 0)
-                          {
-                              animationComponent.Direction = EntitySpawner.Direction.Right;
-                              animationComponent.animationWidthOffset = 1;
-                          }
-                          else
-                          {
-                              animationComponent.Direction = EntitySpawner.Direction.Left;
-                              animationComponent.animationWidthOffset = 2;
-                          }
-                      }
-                      else
-                      {
-                          if (velocity.y > 0)
-                          {
-                              animationComponent.Direction = EntitySpawner.Direction.Up;
-                              animationComponent.animationWidthOffset = 3;
-                          }
-                          else
-                          {
-                              animationComponent.Direction = EntitySpawner.Direction.Down;
-                              animationComponent.animationWidthOffset = 4;
-                          }
-                      }
-                  }
-              }
+        var animationJobHandle = Entities
+     .WithName("UpdateAnimationFromVelocity")
+   .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
+   {
+       float2 velocity = movementSpeedComponent.velocity.xy;
+       //if (!movementSpeedComponent.isPlayerControlled) 
+       //{
+       //    movementSpeedComponent.aimDirection = movementSpeedComponent.velocity.xy;
+       //}
+       //update view direction
+       if (/* movementSpeedComponent.isPlayerControlled &&*/ (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending))
+       {
 
 
 
-              animationComponent.prevDirection = animationComponent.Direction;
-          }).ScheduleParallel(speedJobHandle);
+           if (movementSpeedComponent.isPlayerControlled)
+           {
+               float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
+               CombatUtils.SetAnimationDirection(ref animationComponent, viewDirection);
+           }
+           //else
+           //{
+
+           //    //movementSpeedComponent.aimDirection = velocity;// velocity;
+           //    //CombatUtils.SetAnimationDirection(ref animationComponent, movementSpeedComponent.aimDirection);
+
+           //}
+
+
+
+           //if (math.abs(viewDirection.x) > math.abs(viewDirection.y))
+           //{
+           //    if (viewDirection.x > 0)
+           //    {
+           //        animationComponent.Direction = EntitySpawner.Direction.Right;
+           //        animationComponent.animationWidthOffset = 1;
+           //    }
+           //    else
+           //    {
+           //        animationComponent.Direction = EntitySpawner.Direction.Left;
+           //        animationComponent.animationWidthOffset = 2;
+           //    }
+           //}
+           //else
+           //{
+           //    if (viewDirection.y > 0)
+           //    {
+           //        animationComponent.Direction = EntitySpawner.Direction.Up;
+           //        animationComponent.animationWidthOffset = 3;
+           //    }
+           //    else
+           //    {
+           //        animationComponent.Direction = EntitySpawner.Direction.Down;
+           //        animationComponent.animationWidthOffset = 4;
+           //    }
+           //}
+
+       }
+       else
+       {
+           if (math.lengthsq(velocity) > 0.0001f) // Check if moving
+           {
+               CombatUtils.SetAnimationDirection(ref animationComponent, velocity);
+               //compare abs values to deterimine dominant axis
+               //if (math.abs(velocity.x) > math.abs(velocity.y))
+               //{
+               //    if (velocity.x > 0)
+               //    {
+               //        animationComponent.Direction = EntitySpawner.Direction.Right;
+               //        animationComponent.animationWidthOffset = 1;
+               //    }
+               //    else
+               //    {
+               //        animationComponent.Direction = EntitySpawner.Direction.Left;
+               //        animationComponent.animationWidthOffset = 2;
+               //    }
+               //}
+               //else
+               //{
+               //    if (velocity.y > 0)
+               //    {
+               //        animationComponent.Direction = EntitySpawner.Direction.Up;
+               //        animationComponent.animationWidthOffset = 3;
+               //    }
+               //    else
+               //    {
+               //        animationComponent.Direction = EntitySpawner.Direction.Down;
+               //        animationComponent.animationWidthOffset = 4;
+               //    }
+               //}
+           }
+       }
+
+
+
+       animationComponent.prevDirection = animationComponent.Direction;
+   }).ScheduleParallel(speedJobHandle);
 
 
 
