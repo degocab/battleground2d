@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static EntitySpawner;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class UnitFactory
 {
@@ -16,29 +18,60 @@ public class UnitFactory
         this.entityManager = entityManager;
         this.archetypeFactory = new UnitArchetypeFactory(entityManager);
     }
-
+    private int _nextFormationID = 1;
     //public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
-    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationGenerator.FormationType formationType)
+    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationType formationType)
     {
-        var formationGenerator = new FormationGenerator();
-
+        int formationID = _nextFormationID++;
+        // Create the shared FormationGroupComponent
+        var formationGroup = new FormationGroupComponent
+        {
+            FormationID = _nextFormationID++,
+            AnchorPosition = spawnPosition,
+            FormationType = formationType,
+            UnitsPerRow = Mathf.CeilToInt(Mathf.Sqrt(count)),
+            UnitSpacing = 0.3f
+        };
 
         List<float2> positions = new List<float2>();
         switch (formationType)
         {
-            case FormationGenerator.FormationType.Phalanx:
-                positions = formationGenerator.GeneratePhalanxFormation(count, spawnPosition);
+            case FormationType.Phalanx:
+                positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition);
                 break;
-            case FormationGenerator.FormationType.Horde:
+            case FormationType.Horde:
             default:
-                positions = formationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.275f, 12345, spawnPosition);
+                positions = FormationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.275f, 12345, spawnPosition);
                 break;
         }
 
         for (int i = 0; i < positions.Count; i++)
         {
-            SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
+            //SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
+            SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, formationGroup);
         }
+    }
+
+    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, int formationID = 0, float2 formationOffset = default, FormationGroupComponent? formationGroup = null)
+    {
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);//, formationID, formationOffset);
+        entityManager.AddComponentData(unit, new FormationComponent
+        {
+            FormationID = formationID,
+            LocalOffset = formationOffset,
+            FormationPosition = position,
+            Status = FormationStatus.Hold
+        });
+        CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(position);
+        entityManager.SetComponentData(unit, command);
+        entityManager.AddSharedComponentData(unit, formationGroup.Value);
+
+        return unit;
+    }
+
+    private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection, float v, int formationID, float2 formationOffset)
+    {
+        throw new NotImplementedException();
     }
 
     //TODO: add bool for setting AI commander component
@@ -60,10 +93,10 @@ public class UnitFactory
     }
 
     // Overload for specific command types
-    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand, CommandType commandType)
-    {
-        return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateCommand(commandType));
-    }
+    //private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand, CommandType commandType)
+    //{
+    //    return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateCommand(commandType));
+    //}
 
     private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection, float health)
     {
@@ -200,7 +233,7 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(CommandData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent), typeof(HasTarget)
         );
     }
 

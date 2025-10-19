@@ -22,7 +22,6 @@ public partial class UnitMoveToTargetSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        float reachThreshold = 0.275f;
 
         // *** THE KEY CHANGE FOR ENTITIES 0.16.0 ***
         // Get a ComponentDataFromEntity for Translation. This is the equivalent of ComponentLookup.
@@ -54,7 +53,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 //}
 
 
-
+                float reachThreshold = 0.275f;
                 float2 targetPos = float2.zero;
                 bool targetIsValid = false;
       
@@ -78,6 +77,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 {
                     targetPos = hasTarget.TargetPosition;
                     targetIsValid = true;
+                    reachThreshold = 0.01f;// should reach position in formation
                 }
 
                 if (targetIsValid)
@@ -85,6 +85,8 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     float2 direction = math.normalize(targetPos - translation.Value.xy);
                     //direction.z = 0;
                     movementSpeed.velocity.xy = direction;
+
+                   
 
                     if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
                     {
@@ -95,7 +97,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                         //}
                         //ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                         movementSpeed.velocity = float3.zero;
-                        if (hasTarget.TargetEntity != Entity.Null )
+                        if (hasTarget.TargetEntity != Entity.Null) //TODO: change hasTarget.Type == HasTarget.TargetType.Entity?
                         {
                             //combatState.CurrentState = CombatState.State.Attacking;
                             // Only transition to Attacking from non-combat states
@@ -110,6 +112,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                         }
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
                     }
+                    
                 }
                 else
                 {

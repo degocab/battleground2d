@@ -1,16 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
 public class FormationGenerator
 {
-    public enum FormationType
-    {
-        Phalanx,
-        SinglePhalanx,
-        Horde
-    }
-    public List<float2> GeneratePhalanxFormation(int unitCount, float2 spawnPosition, int unitsPerPhalanx = 256,
+    //public enum FormationType
+    //{
+    //    Phalanx,
+    //    SinglePhalanx,
+    //    Horde
+    //}
+    public static List<float2> GeneratePhalanxFormation(int unitCount, float2 spawnPosition, int unitsPerPhalanx = 256,
         float unitSpacing = 0.275f, float phalanxSpacing = 1f)
     {
         var positions = new List<float2>();
@@ -34,7 +36,7 @@ public class FormationGenerator
     }
 
     // Update GenerateSinglePhalanx to accept X offset
-    private List<float2> GenerateSinglePhalanx(int unitCount, float unitSpacing, float yOffset, float xOffset = 0f)
+    public static List<float2> GenerateSinglePhalanx(int unitCount, float unitSpacing, float yOffset, float xOffset = 0f)
     {
         var positions = new List<float2>();
         int unitsPerRow = Mathf.CeilToInt(Mathf.Sqrt(unitCount));
@@ -53,7 +55,7 @@ public class FormationGenerator
         return positions;
     }
 
-    public List<float2> GenerateHordeFormation(int unitCount, float frontWidth = 20f,
+    public static List<float2> GenerateHordeFormation(int unitCount, float frontWidth = 20f,
         float depthVariation = 1f, float spacingNoise = 0.275f, uint seed = 12345, float2? position = null)
     {
         var positions = new List<float2>();
@@ -96,5 +98,10 @@ public class FormationGenerator
         }
 
         return positions;
+    }
+
+    internal static float2 GetFormationPosition(FormationComponent formation)
+    {
+        throw new NotImplementedException();
     }
 }
