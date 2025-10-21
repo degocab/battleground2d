@@ -78,10 +78,10 @@ public class EntitySpawner : MonoBehaviour
                 unitFactory = new UnitFactory(entityManager);
                 int entitiesToSpawn = spawnConfig.UnitCountToSpawn;
                 unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 5), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 10), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 15), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 20), FormationType.Phalanx);
+                //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 5), FormationType.Phalanx);
+                //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 10), FormationType.Phalanx);
+                //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 15), FormationType.Phalanx);
+                //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 20), FormationType.Phalanx);
 
                 //enemy
                 int enemyiesToSpawn = entitiesToSpawn / 4;

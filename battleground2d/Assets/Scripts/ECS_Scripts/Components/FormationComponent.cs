@@ -1,10 +1,6 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 
-//public struct FormationComponent : IComponentData
-//{
-//    public int formationType;  // 0 = Line, 1 = Grid, 2 = Wedge
-//}
 public struct FormationComponent : IComponentData
 {
     public Entity FormationLeader;
@@ -17,6 +13,8 @@ public struct FormationComponent : IComponentData
     public Entity PreviousTarget; // Store previous target for returning
     public float2 PreviousPosition; // Store previous position for returning
     public float2 AnchorPosition;
+    public int UnitsPerRow;
+    public float UnitSpacing;
 }
 
 public enum FormationStatus
@@ -40,8 +38,5 @@ public enum FormationType
 public struct FormationGroupComponent : ISharedComponentData
 {
     public int FormationID;
-    public float2 AnchorPosition;
-    public FormationType FormationType;
-    public int UnitsPerRow;
-    public float UnitSpacing;
+
 }

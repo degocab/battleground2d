@@ -1,82 +1,103 @@
 ﻿// Calculates all formation positions once per frame
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-
+using UnityEngine;
 [UpdateBefore(typeof(FormationCombatSystem))]
+[UpdateAfter(typeof(ProcessCommandSystem))]
 public class FormationManagerSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
-    private FormationGenerator _formationGenerator;
-    private EntityQuery _formationQuery;
+    private EntityQuery _formationGroupQuery;
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        _formationQuery = GetEntityQuery(typeof(FormationComponent), typeof(FormationGroupComponent));
+        _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+        _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
     }
 
     protected override void OnUpdate()
     {
         var ecb = _ecbSystem.CreateCommandBuffer();
 
-        // Get all unique formation groups
-        var uniqueGroups = new List<FormationGroupComponent>();
-        EntityManager.GetAllUniqueSharedComponentData<FormationGroupComponent>(uniqueGroups);
+        // Early exit if no formation groups
+        if (_formationGroupQuery.CalculateEntityCount() == 0)
+            return;
 
-        foreach (var group in uniqueGroups)
+        // Get all formation groups (shared components)
+        var formationGroups = new List<FormationGroupComponent>();
+        EntityManager.GetAllUniqueSharedComponentData(formationGroups);
+        var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.Temp);
+
+        // Process only non-zero formation IDs
+        for (int i = 0; i < formationGroups.Count; i++)
         {
-            if (group.FormationID == 0) continue;
-
-            // Filter query to this specific formation group
-            _formationQuery.SetSharedComponentFilter(group);
-
-            // Get all entities in this formation
-            var entities = _formationQuery.ToEntityArray(Allocator.TempJob);
-
-            if (entities.Length == 0)
+            if (formationGroups[i].FormationID != 0)
             {
-                entities.Dispose();
-                continue;
+                UpdateFormationPositions(formationGroups[i].FormationID, formationEntities[i], ecb);
             }
-
-            // Generate formation positions once for the entire group
-            List<float2> positions;
-            switch (group.FormationType)
-            {
-                case FormationType.Phalanx:
-                    positions = FormationGenerator.GeneratePhalanxFormation(
-                        entities.Length, group.AnchorPosition);
-                    break;
-                case FormationType.Horde:
-                default:
-                    positions = FormationGenerator.GenerateHordeFormation(
-                        entities.Length, 20f, 1f, group.UnitSpacing, 12345, group.AnchorPosition);
-                    break;
-            }
-
-            // Update each unit's FormationComponent
-            for (int i = 0; i < entities.Length; i++)
-            {
-                var formationComp = EntityManager.GetComponentData<FormationComponent>(entities[i]);
-                formationComp.FormationPosition = positions[i];
-                ecb.SetComponent( entities[i], formationComp);
-            }
-
-            entities.Dispose();
-            _formationQuery.ResetFilter();
         }
 
-        //uniqueGroups.Dispose();
+        formationEntities.Dispose();
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
+
+    private void UpdateFormationPositions(int formationID, Entity groupEntity, EntityCommandBuffer ecb)
+    {
+        // Early exit if group entity is invalid
+        if (!EntityManager.Exists(groupEntity))
+            return;
+
+        var formationQuery = GetEntityQuery(
+            ComponentType.ReadWrite<FormationComponent>(),
+            ComponentType.ReadOnly<FormationGroupComponent>()
+        );
+
+        var formationGroup = new FormationGroupComponent { FormationID = formationID };
+        formationQuery.SetSharedComponentFilter(formationGroup);
+
+        // Single allocation for unit data
+        var formationUnits = formationQuery.ToEntityArray(Allocator.Temp);
+        var currentFormations = formationQuery.ToComponentDataArray<FormationComponent>(Allocator.Temp);
+
+        if (formationUnits.Length == 0)
+        {
+            formationUnits.Dispose();
+            currentFormations.Dispose();
+            formationQuery.ResetFilter();
+            return;
+        }
+
+        // Get group data once
+        var groupData = EntityManager.GetComponentData<FormationComponent>(groupEntity);
+
+        // Generate positions - using static calls
+        List<float2> newPositions;
+        if (groupData.FormationType == FormationType.Phalanx)
+        {
+            newPositions = FormationGenerator.GeneratePhalanxFormation(formationUnits.Length, groupData.AnchorPosition);
+        }
+        else
+        {
+            newPositions = FormationGenerator.GenerateHordeFormation(formationUnits.Length, 20f, 1f, groupData.UnitSpacing, 12345, groupData.AnchorPosition);
+        }
+
+        // Batch update formation components
+        for (int i = 0; i < formationUnits.Length; i++)
+        {
+            var updatedFormation = currentFormations[i];
+            updatedFormation.FormationPosition = newPositions[i];
+            ecb.SetComponent(formationUnits[i], updatedFormation);
+        }
+
+        formationUnits.Dispose();
+        currentFormations.Dispose();
+        formationQuery.ResetFilter();
+    }
 }
-
-
 [UpdateAfter(typeof(FormationManagerSystem))]
 [UpdateBefore(typeof(CombatSystem))]
 public partial class FormationCombatSystem : SystemBase
@@ -120,8 +141,8 @@ public partial class FormationCombatSystem : SystemBase
     {
         // Override target to formation position
         hasTarget.Type = HasTarget.TargetType.Position;
-        //hasTarget.TargetPosition = formation.FormationPosition;
-        hasTarget.TargetPosition = new float2(formation.FormationPosition.x - 1.5f, formation.FormationPosition.y);
+        hasTarget.TargetPosition = formation.FormationPosition;
+        //hasTarget.TargetPosition = new float2(formation.FormationPosition.x, formation.FormationPosition.y);
 
         // Can still fight from formation position
         if (combatState.CurrentState == CombatState.State.Attacking)

@@ -18,7 +18,7 @@ public class UnitFactory
         this.entityManager = entityManager;
         this.archetypeFactory = new UnitArchetypeFactory(entityManager);
     }
-    private int _nextFormationID = 1;
+    private int _nextFormationID = 0;
     //public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
     public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationType formationType)
     {
@@ -26,11 +26,7 @@ public class UnitFactory
         // Create the shared FormationGroupComponent
         var formationGroup = new FormationGroupComponent
         {
-            FormationID = _nextFormationID++,
-            AnchorPosition = spawnPosition,
-            FormationType = formationType,
-            UnitsPerRow = Mathf.CeilToInt(Mathf.Sqrt(count)),
-            UnitSpacing = 0.3f
+            FormationID = formationID
         };
 
         List<float2> positions = new List<float2>();

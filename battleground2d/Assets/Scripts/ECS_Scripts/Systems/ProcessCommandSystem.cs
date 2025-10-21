@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Burst;
 using Unity.Collections;
@@ -6,6 +7,7 @@ using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
@@ -16,20 +18,92 @@ using static UnityEngine.EventSystems.EventTrigger;
 public class ProcessCommandSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
-    //private EntityQuery _query;
+    private EntityQuery _formationGroupQuery;
 
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         base.OnCreate();
+
+        _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
     }
 
-    [BurstCompile]
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+
+        //get commander 
+        // Check if we have a commander
+        EntityQuery _query = GetEntityQuery(
+ComponentType.ReadOnly<Unit>(),
+ComponentType.ReadWrite<CommandData>(),
+ComponentType.ReadWrite<CombatState>(),
+ComponentType.ReadOnly<DefenseComponent>(),
+ComponentType.ReadOnly<AttackComponent>(),
+ComponentType.ReadOnly<Translation>(),
+ComponentType.ReadOnly<AnimationComponent>(),
+ComponentType.ReadWrite<MovementSpeedComponent>(),
+ComponentType.Exclude<CommanderComponent>());
+
+        var ecb = _ecbSystem.CreateCommandBuffer();
+        //get command position and update anchor position for formations
+        List<FormationGroupComponent> formationGroups = new List<FormationGroupComponent>();
+        EntityManager.GetAllUniqueSharedComponentData(formationGroups);
+        var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.TempJob);
+
+        var groupLookup = new NativeHashMap<int, Entity>(formationGroups.Count, Allocator.TempJob);
+        for (int i = 0; i < formationGroups.Count; i++)
+        {
+            groupLookup.TryAdd(formationGroups[i].FormationID, formationEntities[i]);
+        }
+      
+        // this can prob move to formation manager, because we run that after Processing Commands
+        Entities
+            .WithName("ProcessCommands")
+            .WithAll<CommandData, FormationComponent>()
+            .ForEach((int entityInQueryIndex, Entity entity,
+                     ref CommandData command,
+                     ref FormationComponent formation) =>
+            {
+                if (command.Command == CommandType.MoveTo)
+                {
+                    // Update formation anchor position directly!
+                    formation.AnchorPosition = command.TargetPosition;
+                    ecb.SetComponent( entity, formation);
+                }
+            }).WithoutBurst().Run();
+
+
+
+
+        var job = new AssignCommandJob
+        {
+            //Time = UnityEngine.Time.deltaTime,
+            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            FormationComponentTypeHandle = GetComponentTypeHandle<FormationComponent>(false),
+            CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
+            EntityTypeHandle = GetEntityTypeHandle(),
+            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
+            AttackComponentTypeHandle = GetComponentTypeHandle<AttackComponent>(true),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
+            ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
+            //,entityManager = EntityManager
+        };
+
+        var handle = job.ScheduleParallel(_query, inputDeps);
+        _ecbSystem.AddJobHandleForProducer(handle);
+        return handle;
+    }
+
+[BurstCompile]
     private struct AssignCommandJob : IJobChunk
     {
         //public float Time;
 
         public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        public ComponentTypeHandle<FormationComponent> FormationComponentTypeHandle;
+        //public SharedComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<DefenseComponent> DefenseComponentTypeHandle;
@@ -40,11 +114,13 @@ public class ProcessCommandSystem : JobComponentSystem
 
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
+        //public EntityManager entityManager;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
 
             var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var formations = chunk.GetNativeArray(FormationComponentTypeHandle);
             var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
@@ -61,6 +137,7 @@ public class ProcessCommandSystem : JobComponentSystem
                 MovementSpeedComponent movementSpeed = movementSpeeds[i];
                 float2 entityPos = translation.Value.xy;
                 var command = commandDataArray[i];
+                var formation = formations[i];
                 var combatState = combatStateArray[i];
                 var defenseComponent = defenseComponents[i];
                 var attackComponent = attackComponents[i];
@@ -69,7 +146,7 @@ public class ProcessCommandSystem : JobComponentSystem
                     command.TargetEntity = Entity.Null;
 
                 ProcessCommand(ref command, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
-             animationData.Direction, chunkIndex, ECB);
+             animationData.Direction, chunkIndex, ECB, ref formation);
 
 
                 command.previousCommand = command.Command;
@@ -79,7 +156,8 @@ public class ProcessCommandSystem : JobComponentSystem
         private void ProcessCommand(ref CommandData command, ref CombatState combatState,
                                      ref MovementSpeedComponent movementSpeed, AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
                                      float2 entityPos, EntitySpawner.Direction direction,
-                                     int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+                                     int chunkIndex, EntityCommandBuffer.ParallelWriter ecb
+             , ref FormationComponent formation)
         {
 
             //maybe dont do anything if attacking/defending/blocking///process after?
@@ -101,7 +179,7 @@ public class ProcessCommandSystem : JobComponentSystem
                     break;
 
                 case CommandType.MoveTo:
-                    HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb);
+                    HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb, ref formation);
                     break;
 
                 case CommandType.Attack:
@@ -146,17 +224,18 @@ public class ProcessCommandSystem : JobComponentSystem
         }
 
         private void HandleMoveToCommand(ref CommandData command, Entity entity, float2 entityPos,
-                                       int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+                                       int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation)
         {
-            float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
-                command.TargetPosition : entityPos + command.TargetPosition;
+        //    float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
+        //        command.TargetPosition : entityPos + command.TargetPosition;
 
             ecb.AddComponent(chunkIndex, entity, new HasTarget
             {
                 Type = HasTarget.TargetType.Position,
-                TargetPosition = targetPos,
-                TargetEntity = Entity.Null
+                //TargetPosition = targetPos,
+                //TargetEntity = Entity.Null
             });
+            formation.AnchorPosition = command.TargetPosition;
 
             command.Command = CommandType.Idle;
         }
@@ -206,40 +285,6 @@ public class ProcessCommandSystem : JobComponentSystem
         }
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-
-        //get commander 
-        // Check if we have a commander
-        EntityQuery _query = GetEntityQuery(
-ComponentType.ReadOnly<Unit>(),
-ComponentType.ReadWrite<CommandData>(),
-ComponentType.ReadWrite<CombatState>(),
-ComponentType.ReadOnly<DefenseComponent>(),
-ComponentType.ReadOnly<AttackComponent>(),
-ComponentType.ReadOnly<Translation>(),
-ComponentType.ReadOnly<AnimationComponent>(),
-ComponentType.ReadWrite<MovementSpeedComponent>(),
-ComponentType.Exclude<CommanderComponent>());
-
-        var job = new AssignCommandJob
-        {
-            //Time = UnityEngine.Time.deltaTime,
-            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
-            CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
-            EntityTypeHandle = GetEntityTypeHandle(),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
-            AttackComponentTypeHandle = GetComponentTypeHandle<AttackComponent>(true),
-            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
-            MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
-            ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
-        };
-
-        var handle = job.ScheduleParallel(_query, inputDeps);
-        _ecbSystem.AddJobHandleForProducer(handle);
-        return handle;
-    }
 }
 
 public enum CommandType : byte
