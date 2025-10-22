@@ -85,7 +85,8 @@ public class EntitySpawner : MonoBehaviour
 
                 //enemy
                 int enemyiesToSpawn = entitiesToSpawn / 4;
-                //unitFactory.SpawnUnits(entitiesToSpawn / 2, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-3, 0), FormationType.Horde);
+                unitFactory.SpawnUnits(500
+                    , UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-3, 0), FormationType.Horde);
                 //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn / 4, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-9, 0), FormationType.Horde);
                 unitFactory.SpawnCommander();
 

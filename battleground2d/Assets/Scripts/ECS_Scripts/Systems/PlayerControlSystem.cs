@@ -161,8 +161,25 @@ public class PlayerControlSystem : SystemBase
 
                     }).ScheduleParallel(Dependency);
 
+
                 Debug.Log($"Assigned command: {newCommand.Command} to all units");
                 Dependency = commandJobHandle;
+
+
+
+                //update groups
+                Entities
+                     .WithName("UpdateOrdersForGroups")
+                     .WithAll<FormationGroupComponent>()
+                     .WithNone<CommanderComponent, Unit>()
+                     .ForEach((Entity entity, int entityInQueryIndex,
+                     ref FormationGroupComponent formationGroup, ref CommandData commandData) =>
+                     {
+
+                         // Then update command data
+                         commandData = commandCopy;
+
+                     }).WithoutBurst().Run();
                 break; // Important: Only process one key per frame
             }
         }
@@ -192,12 +209,12 @@ public class PlayerControlSystem : SystemBase
             ) =>
             {
 
-                if (combatState.CurrentState == CombatState.State.TakingDamage) 
+                if (combatState.CurrentState == CombatState.State.TakingDamage)
                 {
                     //combatState.CurrentState = CombatState.State.TakingDamage;
                     return;
                 }
-               
+
 
 
                 //attackComponent.isAttacking = false;

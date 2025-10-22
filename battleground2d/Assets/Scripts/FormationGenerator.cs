@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -100,8 +101,30 @@ public class FormationGenerator
         return positions;
     }
 
-    internal static float2 GetFormationPosition(FormationComponent formation)
+    public static void GeneratePhalanxFomationForJob(
+            NativeArray<float2> outputPositions,
+            int unitsPerRow = 0,
+            float unitSpacing = 0,
+            float2? anchor = null)
     {
-        throw new NotImplementedException();
+
+
+        float currentY = anchor.Value.y; // Start from spawn position's Y
+        unitSpacing = unitSpacing * 1.05f; //add a little variance????
+
+        int count = outputPositions.Length;
+        //int rows = (int)math.ceil((float)count / unitsPerRow);
+        unitsPerRow = Mathf.CeilToInt(Mathf.Sqrt(count));
+
+        for (int i = 0; i < count; i++)
+        {
+            int row = i / unitsPerRow;
+            int col = i % unitsPerRow;
+
+            float x = col * unitSpacing + anchor.Value.x;
+            float y = row * unitSpacing + anchor.Value.y;
+
+            outputPositions[i] = new float2(x, y);
+        }
     }
 }

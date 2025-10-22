@@ -45,30 +45,36 @@ ComponentType.ReadWrite<MovementSpeedComponent>(),
 ComponentType.Exclude<CommanderComponent>());
 
         var ecb = _ecbSystem.CreateCommandBuffer();
-        //get command position and update anchor position for formations
-        List<FormationGroupComponent> formationGroups = new List<FormationGroupComponent>();
-        EntityManager.GetAllUniqueSharedComponentData(formationGroups);
-        var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.TempJob);
+        ////get command position and update anchor position for formations
+        //List<FormationGroupComponent> formationGroups = new List<FormationGroupComponent>();
+        //EntityManager.GetAllUniqueSharedComponentData(formationGroups);
+        //var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.TempJob);
 
-        var groupLookup = new NativeHashMap<int, Entity>(formationGroups.Count, Allocator.TempJob);
-        for (int i = 0; i < formationGroups.Count; i++)
-        {
-            groupLookup.TryAdd(formationGroups[i].FormationID, formationEntities[i]);
-        }
-      
+        //var groupLookup = new NativeHashMap<int, Entity>(formationGroups.Count, Allocator.TempJob);
+        //for (int i = 0; i < formationGroups.Count; i++)
+        //{
+        //    groupLookup.TryAdd(formationGroups[i].FormationID, formationEntities[i]);
+        //}
+
         // this can prob move to formation manager, because we run that after Processing Commands
         Entities
             .WithName("ProcessCommands")
-            .WithAll<CommandData, FormationComponent>()
+            .WithAll<CommandData, FormationGroupComponent>()
             .ForEach((int entityInQueryIndex, Entity entity,
                      ref CommandData command,
-                     ref FormationComponent formation) =>
+                     ref FormationGroupComponent formationGroup) =>
             {
+                //Simple enemy AI command
+                if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy)
+                {
+                            command.Command = CommandType.FindTarget;
+
+                }
                 if (command.Command == CommandType.MoveTo)
                 {
                     // Update formation anchor position directly!
-                    formation.AnchorPosition = command.TargetPosition;
-                    ecb.SetComponent( entity, formation);
+                    formationGroup.AnchorPosition = command.TargetPosition;
+                    //ecb.SetComponent( entity, formation);
                 }
             }).WithoutBurst().Run();
 

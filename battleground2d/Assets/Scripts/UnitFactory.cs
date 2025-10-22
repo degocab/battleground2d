@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -26,29 +27,38 @@ public class UnitFactory
         // Create the shared FormationGroupComponent
         var formationGroup = new FormationGroupComponent
         {
-            FormationID = formationID
+            FormationID = formationID,
+            AnchorPosition = spawnPosition,
+            UnitType = unitType
         };
+
+        // FORMATION GROUP UPDATE //
+        Entity groupEntity = entityManager.CreateEntity();
+
 
         List<float2> positions = new List<float2>();
         switch (formationType)
         {
             case FormationType.Phalanx:
-                positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition);
+                positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition, 256 , .275f, 1);
+                formationGroup.UnitSpacing = .275f;
                 break;
             case FormationType.Horde:
             default:
                 positions = FormationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.275f, 12345, spawnPosition);
+                formationGroup.UnitSpacing = .275f;
                 break;
         }
-
+        entityManager.AddComponentData(groupEntity, formationGroup);
+        entityManager.AddComponentData(groupEntity, initialCommand);
         for (int i = 0; i < positions.Count; i++)
         {
             //SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
-            SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, formationGroup);
+            SpawnUnit(i, positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, groupEntity);
         }
     }
 
-    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, int formationID = 0, float2 formationOffset = default, FormationGroupComponent? formationGroup = null)
+    private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)
     {
         var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);//, formationID, formationOffset);
         entityManager.AddComponentData(unit, new FormationComponent
@@ -57,10 +67,12 @@ public class UnitFactory
             LocalOffset = formationOffset,
             FormationPosition = position,
             Status = FormationStatus.Hold
+            ,FormationGroupEntity = formationGroupEntity,
+            SlotIndex = i,
         });
         CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(position);
         entityManager.SetComponentData(unit, command);
-        entityManager.AddSharedComponentData(unit, formationGroup.Value);
+        //entityManager.AddSharedComponentData(unit, formationGroup.Value);
 
         return unit;
     }

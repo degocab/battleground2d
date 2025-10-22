@@ -1,5 +1,6 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
+using static EntitySpawner;
 
 public struct FormationComponent : IComponentData
 {
@@ -15,6 +16,7 @@ public struct FormationComponent : IComponentData
     public float2 AnchorPosition;
     public int UnitsPerRow;
     public float UnitSpacing;
+    public Entity? FormationGroupEntity;
 }
 
 public enum FormationStatus
@@ -35,8 +37,12 @@ public enum FormationType
     Testudo
 }
 
-public struct FormationGroupComponent : ISharedComponentData
+public struct FormationGroupComponent : IComponentData
 {
     public int FormationID;
+    public float2 AnchorPosition;
+    public int UnitsPerRow;
+    public float UnitSpacing;
+    public UnitType UnitType;//todo: change thsi to faction type?
 
 }

@@ -1,103 +1,160 @@
 ﻿// Calculates all formation positions once per frame
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.Profiling.Memory.Experimental;
 using UnityEngine;
 [UpdateBefore(typeof(FormationCombatSystem))]
 [UpdateAfter(typeof(ProcessCommandSystem))]
 public class FormationManagerSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
-    private EntityQuery _formationGroupQuery;
+    private EntityQuery _unitQuery;
 
     protected override void OnCreate()
     {
         _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
-        _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
+        _unitQuery = GetEntityQuery(typeof(FormationComponent));
     }
 
     protected override void OnUpdate()
     {
-        var ecb = _ecbSystem.CreateCommandBuffer();
+        var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
-        // Early exit if no formation groups
-        if (_formationGroupQuery.CalculateEntityCount() == 0)
-            return;
+        //get unit entites and formation components
+        var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
+        var formationComponents = _unitQuery.ToComponentDataArray<FormationComponent>(Allocator.TempJob);
 
-        // Get all formation groups (shared components)
-        var formationGroups = new List<FormationGroupComponent>();
-        EntityManager.GetAllUniqueSharedComponentData(formationGroups);
-        var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.Temp);
+        //map group to units
 
-        // Process only non-zero formation IDs
-        for (int i = 0; i < formationGroups.Count; i++)
+        var groupToUnitIndices = new NativeMultiHashMap<Entity, int>(unitEntities.Length, Allocator.TempJob);
+        var processedGroups = new NativeHashSet<Entity>(256, Allocator.TempJob);
+
+        //build map group -> unit indices
+        for (int i = 0; i < formationComponents.Length; i++)
         {
-            if (formationGroups[i].FormationID != 0)
+            var groupEnity = formationComponents[i].FormationGroupEntity.GetValueOrDefault(Entity.Null);
+            if (groupEnity != Entity.Null)
             {
-                UpdateFormationPositions(formationGroups[i].FormationID, formationEntities[i], ecb);
+                groupToUnitIndices.Add(groupEnity, i);
             }
         }
 
-        formationEntities.Dispose();
+        var entityManager = EntityManager;
+        var groupKeys = groupToUnitIndices.GetKeyArray(Allocator.TempJob);
+
+        //update units in each group
+        foreach (var groupEntity in groupKeys)
+        {
+            if (!processedGroups.Add(groupEntity)) continue;
+
+            if (!entityManager.Exists(groupEntity)) continue;
+            if (!entityManager.HasComponent<FormationGroupComponent>(groupEntity)) continue;
+
+            var groupData = entityManager.GetComponentData<FormationGroupComponent>(groupEntity);
+            //gather units in this group
+            var unitIndices = new NativeList<int>(Allocator.TempJob);
+            NativeMultiHashMapIterator<Entity> it;
+            int idx;
+            if (groupToUnitIndices.TryGetFirstValue(groupEntity, out idx, out it)) 
+            {
+                do { unitIndices.Add(idx);  
+                } while (groupToUnitIndices.TryGetNextValue(out idx, ref it));
+            }
+
+            // 🔹 Sort deterministically by entity index so units keep stable positions
+            //unitIndices.Sort(new EntityIndexComparer
+            //{
+            //    UnitEntities = unitEntities
+            //});
+
+            int unitCount = unitIndices.Length;
+            if (unitCount == 0) 
+            {
+                unitIndices.Dispose(); 
+                continue; 
+            }
+
+            var unitEntitiesForGroup = new NativeArray<Entity>(unitCount, Allocator.TempJob);
+            var newPositions = new NativeArray<float2>(unitCount, Allocator.TempJob);
+            var updatedFormations = new NativeArray<FormationComponent>(unitCount, Allocator.TempJob);
+
+            FormationGenerator.GeneratePhalanxFomationForJob(newPositions, groupData.UnitsPerRow, groupData.UnitSpacing, groupData.AnchorPosition);
+
+            for (int i = 0; i < unitCount; i++)
+            {
+                int unitIndex = unitIndices[i];
+                unitEntitiesForGroup[i] = unitEntities[unitIndex];
+                updatedFormations[i] = formationComponents[unitIndex]; //Copy existing data!
+            }
+
+            //assign update positions using parallel job
+            var applyJob = new ApplyFormationPositionJob 
+            {
+                Entities = unitEntitiesForGroup,
+                UpdatedFormations = updatedFormations,
+                NewPositions = newPositions,
+                ECB = ecb
+            };
+            Dependency = applyJob.Schedule(unitCount, 64, Dependency);
+
+            //clean up
+            unitIndices.Dispose();
+            //unitEntitiesForGroup.Dispose();
+            //newPositions.Dispose();
+            //updatedFormations.Dispose();
+
+        }
+        unitEntities.Dispose();
+        formationComponents.Dispose();
+        groupToUnitIndices.Dispose();
+        processedGroups.Dispose();
+        groupKeys.Dispose();
+
         _ecbSystem.AddJobHandleForProducer(Dependency);
+
+
     }
 
-    private void UpdateFormationPositions(int formationID, Entity groupEntity, EntityCommandBuffer ecb)
+
+    public struct EntityIndexComparer : IComparer<int>
     {
-        // Early exit if group entity is invalid
-        if (!EntityManager.Exists(groupEntity))
-            return;
+        [ReadOnly] public NativeArray<Entity> UnitEntities;
 
-        var formationQuery = GetEntityQuery(
-            ComponentType.ReadWrite<FormationComponent>(),
-            ComponentType.ReadOnly<FormationGroupComponent>()
-        );
-
-        var formationGroup = new FormationGroupComponent { FormationID = formationID };
-        formationQuery.SetSharedComponentFilter(formationGroup);
-
-        // Single allocation for unit data
-        var formationUnits = formationQuery.ToEntityArray(Allocator.Temp);
-        var currentFormations = formationQuery.ToComponentDataArray<FormationComponent>(Allocator.Temp);
-
-        if (formationUnits.Length == 0)
+        public int Compare(int a, int b)
         {
-            formationUnits.Dispose();
-            currentFormations.Dispose();
-            formationQuery.ResetFilter();
-            return;
+            var ea = UnitEntities[a];
+            var eb = UnitEntities[b];
+            if (ea.Index < eb.Index) return -1;
+            if (ea.Index > eb.Index) return 1;
+            return ea.Version.CompareTo(eb.Version);
         }
+    }
+    [BurstCompile]
+    private struct ApplyFormationPositionJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Entity> Entities;
+        public NativeArray<FormationComponent> UpdatedFormations;
+        [ReadOnly] public NativeArray<float2> NewPositions;
 
-        // Get group data once
-        var groupData = EntityManager.GetComponentData<FormationComponent>(groupEntity);
+        public EntityCommandBuffer.ParallelWriter ECB;
 
-        // Generate positions - using static calls
-        List<float2> newPositions;
-        if (groupData.FormationType == FormationType.Phalanx)
+        public void Execute(int index)
         {
-            newPositions = FormationGenerator.GeneratePhalanxFormation(formationUnits.Length, groupData.AnchorPosition);
+            if (Entities[index] == Entity.Null) return;
+            var formation = UpdatedFormations[index];
+            formation.FormationPosition = NewPositions[formation.SlotIndex];
+            ECB.SetComponent(index, Entities[index], formation);
         }
-        else
-        {
-            newPositions = FormationGenerator.GenerateHordeFormation(formationUnits.Length, 20f, 1f, groupData.UnitSpacing, 12345, groupData.AnchorPosition);
-        }
-
-        // Batch update formation components
-        for (int i = 0; i < formationUnits.Length; i++)
-        {
-            var updatedFormation = currentFormations[i];
-            updatedFormation.FormationPosition = newPositions[i];
-            ecb.SetComponent(formationUnits[i], updatedFormation);
-        }
-
-        formationUnits.Dispose();
-        currentFormations.Dispose();
-        formationQuery.ResetFilter();
     }
 }
+
 [UpdateAfter(typeof(FormationManagerSystem))]
 [UpdateBefore(typeof(CombatSystem))]
 public partial class FormationCombatSystem : SystemBase
