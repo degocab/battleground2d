@@ -585,7 +585,7 @@ MonoBehaviour:
 
       ```'
     state: 0
-    show: 0
+    show: 1
     deleteQuestion: 0
   - s: '## PHASE 4: PERFORMANCE & POLISH
 

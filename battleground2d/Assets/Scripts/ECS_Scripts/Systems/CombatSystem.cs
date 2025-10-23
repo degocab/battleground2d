@@ -132,56 +132,35 @@ public partial class CombatSystem : SystemBase
                 var defense = defenses[i];
                 var movementSpeed = movementSpeeds[i];
 
-                // Reset attack flags at start of each frame
-                //attack.isAttacking = false;
-                //attack.isDefending = false;
-                //attack.isTakingDamage = false;
-                //defense.IsBlocking = false;
-
                 // State machine logic
                 switch (combatState.CurrentState)
                 {
                     case CombatState.State.Idle:
                     default:
-                        //Debug.Log($"AI is idle");
                         HandleIdleState(ref combatState, ref animation, hasTarget);
                         break;
-
                     case CombatState.State.SeekingTarget:
-                        //Debug.Log($"AI is SeekingTarget");
-
                         HandleSeekingState(ref combatState, ref animation, ref attack, translation, hasTarget);
                         break;
 
                     case CombatState.State.Attacking:
-                        //Debug.Log($"AI is attacking");
                         HandleAttackingState(ref combatState, ref attack, ref cooldown, ref animation,
                                            entity, chunkIndex, translation, hasTarget, ref defense, ref movementSpeed);
                         break;
 
                     case CombatState.State.TakingDamage:
-                        //Debug.Log($"AI is TakingDamage");
-                        //attack.isTakingDamage = true;
-                        //animation.AnimationType = EntitySpawner.AnimationType.TakeDamage;
                         break;
-                        
-
                     case CombatState.State.Dying:
                         break;
 
                     case CombatState.State.Defending:
-                        //Debug.Log($"AI is Defending");
-
                         HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget, ref movementSpeed);
                         break;
 
                     case CombatState.State.Blocking:
-                        //Debug.Log($"AI is Blocking");
 
                         if (defense.BlockDuration <= 0f)
                         {
-                            //defense.IsBlocking = false;
-
                             // Transition back to appropriate state after blocking ends
                             if (hasTarget.TargetEntity != Entity.Null &&
                                 CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
@@ -194,13 +173,10 @@ public partial class CombatSystem : SystemBase
                                 // No valid target - go to idle
                                 combatState.CurrentState = CombatState.State.Idle;
                             }
-                            //Debug.Log("ai should NOOOTTTT be blocking");
                         }
                         else
                         {
                             combatState.CurrentState = CombatState.State.Blocking;
-                            //Debug.Log("ai should still be blocking");
-                            // Optionally, you could check if we should counter-attack or do something while blocking
                         }
                         break;
                 }
@@ -222,9 +198,7 @@ public partial class CombatSystem : SystemBase
 
             //if (defense.IsBlocking)  // You'll need to pass defense as a parameter
             if (combatState.CurrentState == CombatState.State.Defending)  // You'll need to pass defense as a parameter
-            {
                 return; // Stay in attacking state but don't process attack logic while blocking
-            }
 
             // Check if target is still valid
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
@@ -246,9 +220,6 @@ public partial class CombatSystem : SystemBase
             {
                 // Perform attack
                 attack.AttackRateRemaining = attack.AttackRate;
-                //attack.isAttacking = true;
-                //attack.isDefending = false;
-                //animation.AnimationType = EntitySpawner.AnimationType.Attack;
                 animation.finishAnimation = true;
                 cooldown.attackCoolTimeRemaining = cooldown.attackCoolDownDuration;
 
@@ -274,7 +245,6 @@ public partial class CombatSystem : SystemBase
                 {
                     // Choose to defend - become invulnerable but can't attack
                     combatState.CurrentState = CombatState.State.Defending;
-                    //attack.isDefending = true;
                     //animation.AnimationType = EntitySpawner.AnimationType.Defend;
                     attack.DefendCooldownRemaining = attack.DefendDuration;
                 }
@@ -283,7 +253,6 @@ public partial class CombatSystem : SystemBase
                     // Choose NOT to defend - stay in attacking state but vulnerable
                     // This allows the enemy to hit you while you're waiting for attack cooldown
                     animation.AnimationType = EntitySpawner.AnimationType.Idle;
-                    //attack.isDefending = false;
                 }
             }
             else
@@ -355,14 +324,11 @@ public partial class CombatSystem : SystemBase
                 // Attack cooldown finished - go back to attacking
                 combatState.CurrentState = CombatState.State.Attacking;
                 animation.AnimationType = EntitySpawner.AnimationType.Idle;
-                //attack.isDefending = false;
             }
             else
             {
                 // Continue defending while on cooldown
-                //attack.isDefending = true;
                 combatState.CurrentState = CombatState.State.Defending;
-                //animation.AnimationType = EntitySpawner.AnimationType.Defend;
             }
         }
 
@@ -384,21 +350,11 @@ public partial class CombatSystem : SystemBase
 
         private bool ShouldDefend(ref AttackComponent attack, AnimationComponent animation)
         {
-            // Base defend chance (30% chance to defend)
-            //float baseDefendChance = .6f;//0.92f;
-
             float baseDefendChance = animation.UnitType == EntitySpawner.UnitType.Default ? .1f : 1f;
-
-            // Adjust based on health or other factors if needed
-            // if (health.IsLow) baseDefendChance += 0.2f;
 
             // Generate random value and check against defend chance
             float randomValue = Random.NextFloat(0f,1f);
             bool shouldDefend = randomValue < baseDefendChance;
-
-            // Debug log to see defend decisions (remove in final version)
-            // if (shouldDefend) Debug.Log($"AI chose to defend! Random: {randomValue:F2} < {baseDefendChance:F2}");
-            // else Debug.Log($"AI chose to stay vulnerable! Random: {randomValue:F2} >= {baseDefendChance:F2}");
 
             return shouldDefend;
         }

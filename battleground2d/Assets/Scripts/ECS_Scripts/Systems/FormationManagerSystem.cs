@@ -1,6 +1,7 @@
 ﻿// Calculates all formation positions once per frame
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -16,11 +17,20 @@ public class FormationManagerSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _unitQuery;
-
+    /// <summary>
+    /// Holds a runtime mapping of FormationGroupEntity → UnitEntities
+    /// Built each frame by FormationManagerSystem
+    /// Read by systems like FormationCollisionSystem, FormationIntegritySystem, etc.
+    /// </summary>
+    public NativeMultiHashMap<Entity, Entity> _groupToUnits;
     protected override void OnCreate()
     {
         _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
         _unitQuery = GetEntityQuery(typeof(FormationComponent));
+
+        // Create a singleton to hold our cached mapping
+        //Entity cacheEntity = EntityManager.CreateEntity(typeof(FormationRuntimeCache));
+        //EntityManager.SetName(cacheEntity, "FormationRuntimeCache");
     }
 
     protected override void OnUpdate()
@@ -31,8 +41,9 @@ public class FormationManagerSystem : SystemBase
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
         var formationComponents = _unitQuery.ToComponentDataArray<FormationComponent>(Allocator.TempJob);
 
-        //map group to units
-
+        // ---------------------------------------------------------
+        // STEP 1: Build mapping of group → unit indices
+        // ---------------------------------------------------------
         var groupToUnitIndices = new NativeMultiHashMap<Entity, int>(unitEntities.Length, Allocator.TempJob);
         var processedGroups = new NativeHashSet<Entity>(256, Allocator.TempJob);
 
@@ -41,11 +52,45 @@ public class FormationManagerSystem : SystemBase
         {
             var groupEnity = formationComponents[i].FormationGroupEntity.GetValueOrDefault(Entity.Null);
             if (groupEnity != Entity.Null)
-            {
                 groupToUnitIndices.Add(groupEnity, i);
-            }
         }
 
+        // ---------------------------------------------------------
+        // STEP 2: Prepare the runtime cache for other systems
+        // ---------------------------------------------------------
+        //var cacheEntity = GetSingletonEntity<FormationRuntimeCache>();
+
+        //// Clean up last frame's cache (we'll rebuild it each frame)
+        //if (EntityManager.HasComponent<FormationRuntimeCache>(cacheEntity))
+        //{
+        //    var oldCache = EntityManager.GetComponentData<FormationRuntimeCache>(cacheEntity);
+        //    if (oldCache.GroupToUnits.IsCreated)
+        //        oldCache.GroupToUnits.Dispose();
+        //}
+        // Create a new mapping for this frame
+        if (_groupToUnits.IsCreated)
+        {
+            if (_groupToUnits.Capacity < unitEntities.Length)
+            {
+                _groupToUnits.Dispose();
+                _groupToUnits = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
+            }
+            else
+            {
+                _groupToUnits.Clear();
+            }
+        }
+        else
+        {
+            // Not created yet, create new
+            _groupToUnits = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
+        }
+        var groupToUnits = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length, Allocator.Persistent);
+
+
+        // ---------------------------------------------------------
+        // STEP 3: Iterate over each formation group
+        // ---------------------------------------------------------
         var entityManager = EntityManager;
         var groupKeys = groupToUnitIndices.GetKeyArray(Allocator.TempJob);
 
@@ -87,6 +132,26 @@ public class FormationManagerSystem : SystemBase
 
             FormationGenerator.GeneratePhalanxFomationForJob(newPositions, groupData.UnitsPerRow, groupData.UnitSpacing, groupData.AnchorPosition);
 
+            // Assume newPositions is NativeArray<float2> of unit positions calculated by your formation generator
+            float2 minPos = newPositions[0];
+            float2 maxPos = newPositions[0];
+
+            for (int i = 1; i < newPositions.Length; i++)
+            {
+                var pos = newPositions[i];
+                minPos = math.min(minPos, pos);
+                maxPos = math.max(maxPos, pos);
+            }
+
+            float unitRadius = .125f; // or fixed size depending on your unit scale
+            // Expand bounds by unit radius so units fit inside AABB
+            minPos -= new float2(unitRadius, unitRadius);
+            maxPos += new float2(unitRadius, unitRadius);
+            groupData.BoundsMin = minPos;
+            groupData.BoundsMax = maxPos;
+            entityManager.SetComponentData(groupEntity, groupData);
+
+
             for (int i = 0; i < unitCount; i++)
             {
                 int unitIndex = unitIndices[i];
@@ -111,6 +176,16 @@ public class FormationManagerSystem : SystemBase
             //updatedFormations.Dispose();
 
         }
+
+
+        // ---------------------------------------------------------
+        // STEP 4: Store the cache so other systems can read it
+        // ---------------------------------------------------------
+        _groupToUnits = groupToUnits;
+
+        // ---------------------------------------------------------
+        // STEP 5: Dispose temp data and finalize
+        // ---------------------------------------------------------
         unitEntities.Dispose();
         formationComponents.Dispose();
         groupToUnitIndices.Dispose();
@@ -229,3 +304,15 @@ public partial class FormationCombatSystem : SystemBase
         }
     }
 }
+
+
+
+///// <summary>
+///// Holds a runtime mapping of FormationGroupEntity → UnitEntities
+///// Built each frame by FormationManagerSystem
+///// Read by systems like FormationCollisionSystem, FormationIntegritySystem, etc.
+///// </summary>
+//public struct FormationRuntimeCache : IComponentData
+//{
+//    public NativeMultiHashMap<Entity, Entity> GroupToUnits;
+//}

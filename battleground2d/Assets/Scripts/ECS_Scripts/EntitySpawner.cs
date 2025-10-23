@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.Collections;
+﻿using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Physics;
-using Unity.Transforms;
 using UnityEngine;
-using static EntitySpawner;
-using static FormationGenerator;
-using static UnityEngine.EventSystems.EventTrigger;
-using static UnityEngine.UI.CanvasScaler;
 
 public class EntitySpawner : MonoBehaviour
 {

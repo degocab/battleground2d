@@ -17,6 +17,7 @@ public struct FormationComponent : IComponentData
     public int UnitsPerRow;
     public float UnitSpacing;
     public Entity? FormationGroupEntity;
+    public bool UnitCollision;
 }
 
 public enum FormationStatus
@@ -44,5 +45,7 @@ public struct FormationGroupComponent : IComponentData
     public int UnitsPerRow;
     public float UnitSpacing;
     public UnitType UnitType;//todo: change thsi to faction type?
-
+    public AABB GroupBounds;
+    public float2 BoundsMin; // AABB min corner
+    public float2 BoundsMax; // AABB max corner
 }

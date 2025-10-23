@@ -5,7 +5,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class FormationGenerator
+public static class FormationGenerator
 {
     //public enum FormationType
     //{
