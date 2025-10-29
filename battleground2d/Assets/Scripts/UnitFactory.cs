@@ -185,7 +185,7 @@ public class UnitFactory
             Direction = unitDirection,
             prevDirection = unitDirection,
             AnimationType = AnimationType.Idle,
-            CurrentFrame = UnityEngine.Random.Range(0, 5),
+            CurrentFrame = UnityEngine.Random.Range(0, 2),
             FrameCount = 2,
             FrameTimer = UnityEngine.Random.Range(0f, 1f),
             FrameTimerMax = 0.1f,

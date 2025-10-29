@@ -11,6 +11,7 @@ public struct FormationComponent : IComponentData
     public float2 FormationPosition;
     public FormationType FormationType;
     public FormationStatus Status;
+    public FormationColliderStatus ColliderStatus; 
     public Entity PreviousTarget; // Store previous target for returning
     public float2 PreviousPosition; // Store previous position for returning
     public float2 AnchorPosition;
@@ -18,8 +19,18 @@ public struct FormationComponent : IComponentData
     public float UnitSpacing;
     public Entity? FormationGroupEntity;
     public bool UnitCollision;
+    public bool WasJustAssignedToGroup; // NEW: Track fresh assignments
+    internal FormationColliderStatus PreviousColliderStatus;
 }
 
+/// <summary>
+/// Formation collider status to turn on or off unit/group collision
+/// </summary>
+public enum FormationColliderStatus
+{
+    Group,       // Use Group collider
+    Individual,       // User unit collider
+}
 public enum FormationStatus
 {
     None,       // No formation behavior
@@ -48,4 +59,6 @@ public struct FormationGroupComponent : IComponentData
     public AABB GroupBounds;
     public float2 BoundsMin; // AABB min corner
     public float2 BoundsMax; // AABB max corner
+    internal bool isColliding;
+    internal FormationStatus FormationGroupStatus;
 }

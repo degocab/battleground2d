@@ -32,14 +32,14 @@ public class CollisionResolutionSystem : SystemBase
                 for (int i = 0; i < collisions.Length; i++)
                 {
                     var collision = collisions[i];
-                    if (!entityManager.HasComponent<Translation>(collision.OtherEntity) ||
-                        !entityManager.HasComponent<ECS_CircleCollider2DAuthoring>(collision.OtherEntity) ||
-                        !entityManager.HasComponent<ECS_PhysicsBody2DAuthoring>(collision.OtherEntity))
-                        continue;
+                    //if (!entityManager.HasComponent<Translation>(collision.OtherEntity) ||
+                    //    !entityManager.HasComponent<ECS_CircleCollider2DAuthoring>(collision.OtherEntity) ||
+                    //    !entityManager.HasComponent<ECS_PhysicsBody2DAuthoring>(collision.OtherEntity))
+                    //    continue;
 
-                    float2 otherPos = entityManager.GetComponentData<Translation>(collision.OtherEntity).Value.xy;
-                    float otherRadius = entityManager.GetComponentData<ECS_CircleCollider2DAuthoring>(collision.OtherEntity).Radius;
-                    var otherBody = entityManager.GetComponentData<ECS_PhysicsBody2DAuthoring>(collision.OtherEntity);
+                    float2 otherPos = collision.OtherTranslation.Value.xy;
+                    float otherRadius = collision.OtherCollider.Radius;
+                    var otherBody = collision.OtherBody;
 
                     float2 delta = position - otherPos;
                     float dist = math.length(delta);

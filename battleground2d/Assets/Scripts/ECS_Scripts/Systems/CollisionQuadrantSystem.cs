@@ -14,7 +14,7 @@ using System.Linq;
 public partial class CollisionQuadrantSystem : SystemBase
 {
     public const int quadrantYMultiplier = 1000;
-    public const int quadrantCellSize = 8;
+    public const int quadrantCellSize = 1;
 
     public static NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
 
@@ -28,7 +28,8 @@ public partial class CollisionQuadrantSystem : SystemBase
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<ECS_CircleCollider2DAuthoring>(),
             ComponentType.ReadOnly<CollidableTag>()
-            //, ComponentType.Exclude<DeadTagComponent>()
+            //, ComponentType.ReadOnly<OutOfGroupTag>()
+        //, ComponentType.Exclude<DeadTagComponent>()
         );
 
         collisionQuadrantMap = new NativeMultiHashMap<int, CollisionQuadrantData>(0, Allocator.Persistent);
@@ -59,6 +60,8 @@ public partial class CollisionQuadrantSystem : SystemBase
 
 
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentType;
+        [ReadOnly] public ComponentTypeHandle<ECS_PhysicsBody2DAuthoring> ecsPhysicsBody2DAuthoringAuthoringType;
+
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
@@ -68,6 +71,7 @@ public partial class CollisionQuadrantSystem : SystemBase
             var animationComponents = chunk.GetNativeArray(AnimationComponentType);
             var entities = chunk.GetNativeArray(EntityType);
             var ECS_CircleCollider2DAuthorings = chunk.GetNativeArray(ecsCircleCollider2DAuthoringType);
+            var ecsPhysicsBody2DAuthorings = chunk.GetNativeArray(ecsPhysicsBody2DAuthoringAuthoringType);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -79,7 +83,10 @@ public partial class CollisionQuadrantSystem : SystemBase
                     entity = entities[i],
                     position = pos,
                     radius = ECS_CircleCollider2DAuthorings[i].Radius,
-                    unitType = animationComponents[i].UnitType,
+                    unitType = animationComponents[i].UnitType
+                    , CollisionSourceTranslation = translations[i]
+                    , CollisionSourceCollider = ECS_CircleCollider2DAuthorings[i]
+                    , CollisionSourceBody = ecsPhysicsBody2DAuthorings[i]
 
                 });
             }
@@ -101,6 +108,7 @@ public partial class CollisionQuadrantSystem : SystemBase
             TranslationType = GetComponentTypeHandle<Translation>(true),
             AnimationComponentType = GetComponentTypeHandle<AnimationComponent>(true),
             ecsCircleCollider2DAuthoringType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
+            ecsPhysicsBody2DAuthoringAuthoringType = GetComponentTypeHandle<ECS_PhysicsBody2DAuthoring>(true),
             EntityType = GetEntityTypeHandle(),
             QuadrantMap = collisionQuadrantMap.AsParallelWriter(),
             DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true)

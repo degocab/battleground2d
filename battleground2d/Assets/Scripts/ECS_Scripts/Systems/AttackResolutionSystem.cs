@@ -38,6 +38,7 @@ public partial class AttackResolutionSystem : SystemBase
             .WithReadOnly(combatStateDataFromEntity)
             .WithAll<AttackEventComponent>()
             .ForEach((Entity entity, int entityInQueryIndex,
+                    ref FormationComponent formation,
                     //ref AttackComponent attack,
                     in CombatState combatState,
                      in AttackEventComponent attackEvent,
@@ -48,6 +49,11 @@ public partial class AttackResolutionSystem : SystemBase
                 // Check if target still exists and is in range
                 if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
                 {
+                    //settting formatoin status to engagnge so unit can leave formatoin breifly
+                    formation.Status = FormationStatus.Engaged;
+
+
+
                     float3 targetPos = translationFromEntity[attackEvent.TargetEntity].Value;
                     //bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
                     bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;

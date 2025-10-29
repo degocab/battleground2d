@@ -178,6 +178,10 @@ public class PlayerControlSystem : SystemBase
 
                          // Then update command data
                          commandData = commandCopy;
+                         if (commandCopy.Command == CommandType.FindTarget)
+                         {
+                             formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                         }
 
                      }).WithoutBurst().Run();
                 break; // Important: Only process one key per frame

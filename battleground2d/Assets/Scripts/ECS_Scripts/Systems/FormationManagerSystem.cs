@@ -1,32 +1,31 @@
 ﻿// Calculates all formation positions once per frame
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.AccessControl;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEditor.Experimental.AssetImporters;
-using UnityEditor.Profiling.Memory.Experimental;
-using UnityEngine;
 [UpdateBefore(typeof(FormationCombatSystem))]
 [UpdateAfter(typeof(ProcessCommandSystem))]
 public class FormationManagerSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _unitQuery;
+    private EntityQuery _unitGroupQuery;
+    private NativeArray<Entity> _unitEntities;
     /// <summary>
     /// Holds a runtime mapping of FormationGroupEntity → UnitEntities
     /// Built each frame by FormationManagerSystem
     /// Read by systems like FormationCollisionSystem, FormationIntegritySystem, etc.
     /// </summary>
     public NativeMultiHashMap<Entity, Entity> _groupToUnits;
+
     protected override void OnCreate()
     {
         _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
         _unitQuery = GetEntityQuery(typeof(FormationComponent));
+        _unitGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
 
         // Create a singleton to hold our cached mapping
         //Entity cacheEntity = EntityManager.CreateEntity(typeof(FormationRuntimeCache));
@@ -38,6 +37,7 @@ public class FormationManagerSystem : SystemBase
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
         //get unit entites and formation components
+        int count = _unitQuery.CalculateEntityCount();
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
         var formationComponents = _unitQuery.ToComponentDataArray<FormationComponent>(Allocator.TempJob);
 
@@ -67,10 +67,13 @@ public class FormationManagerSystem : SystemBase
         //    if (oldCache.GroupToUnits.IsCreated)
         //        oldCache.GroupToUnits.Dispose();
         //}
+        var groupCount = _unitGroupQuery.CalculateEntityCount();
+
+
         // Create a new mapping for this frame
         if (_groupToUnits.IsCreated)
         {
-            if (_groupToUnits.Capacity < unitEntities.Length)
+            if (_groupToUnits.Capacity < groupCount)
             {
                 _groupToUnits.Dispose();
                 _groupToUnits = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
@@ -157,7 +160,11 @@ public class FormationManagerSystem : SystemBase
                 int unitIndex = unitIndices[i];
                 unitEntitiesForGroup[i] = unitEntities[unitIndex];
                 updatedFormations[i] = formationComponents[unitIndex]; //Copy existing data!
+                //save to dictionary??
+                groupToUnits.Add(groupEntity, unitEntities[unitIndex]);
             }
+
+
 
             //assign update positions using parallel job
             var applyJob = new ApplyFormationPositionJob 
@@ -165,6 +172,7 @@ public class FormationManagerSystem : SystemBase
                 Entities = unitEntitiesForGroup,
                 UpdatedFormations = updatedFormations,
                 NewPositions = newPositions,
+                groupData = groupData,
                 ECB = ecb
             };
             Dependency = applyJob.Schedule(unitCount, 64, Dependency);
@@ -176,8 +184,6 @@ public class FormationManagerSystem : SystemBase
             //updatedFormations.Dispose();
 
         }
-
-
         // ---------------------------------------------------------
         // STEP 4: Store the cache so other systems can read it
         // ---------------------------------------------------------
@@ -192,10 +198,29 @@ public class FormationManagerSystem : SystemBase
         processedGroups.Dispose();
         groupKeys.Dispose();
 
+
+        // STEP 6?
+        Entities
+            .WithAll<FormationComponent, CollidableTag>()
+            .WithBurst()
+            .ForEach((Entity entity, int entityInQueryIndex, ref FormationComponent formation) =>
+            {
+                if (formation.ColliderStatus == FormationColliderStatus.Group)
+                {
+                    ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
+                }
+
+            }).ScheduleParallel() ;
+
         _ecbSystem.AddJobHandleForProducer(Dependency);
 
 
+        CompleteDependency();
+
+
+
     }
+    readonly static System.Type typeOf = typeof(CollidableTag);
 
 
     public struct EntityIndexComparer : IComparer<int>
@@ -219,23 +244,75 @@ public class FormationManagerSystem : SystemBase
         [ReadOnly] public NativeArray<float2> NewPositions;
 
         public EntityCommandBuffer.ParallelWriter ECB;
+        [ReadOnly] internal FormationGroupComponent groupData;
 
         public void Execute(int index)
         {
             if (Entities[index] == Entity.Null) return;
             var formation = UpdatedFormations[index];
             formation.FormationPosition = NewPositions[formation.SlotIndex];
+            //if (formation.WasJustAssignedToGroup == false)
+            if (!groupData.isColliding)
+            {
+                //formation.WasJustAssignedToGroup = true;
+                formation.ColliderStatus = FormationColliderStatus.Group; 
+            }
             ECB.SetComponent(index, Entities[index], formation);
         }
     }
 }
 
-[UpdateAfter(typeof(FormationManagerSystem))]
+[UpdateAfter(typeof(FormationCollisionSystem))]
 [UpdateBefore(typeof(CombatSystem))]
 public partial class FormationCombatSystem : SystemBase
 {
+    private EndSimulationEntityCommandBufferSystem _ecbSystem;
+
+    public FormationManagerSystem fms;
+    protected override void OnCreate()
+    {
+        _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+    }
     protected override void OnUpdate()
     {
+        //var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+
+
+        //var groupEntities = GetEntityQuery(typeof(FormationGroupComponent)).ToEntityArray(Allocator.TempJob);
+        //var formationComponents = GetComponentDataFromEntity<FormationComponent>(false);
+
+        //for (int i = 0; i < groupEntities.Length; i++)
+        //{
+        //    var groupEntityA = groupEntities[i];
+        //    if (fms._groupToUnits.TryGetFirstValue(groupEntityA, out var unitEntity, out var it))
+        //    {
+        //        do
+        //        {
+        //            var formation = formationComponents[unitEntity];
+        //            formation.ColliderStatus = FormationColliderStatus.Individual;
+        //            formationComponents[unitEntity] = formation;
+        //        } while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref it));
+        //    }
+        //}
+
+        ////update formation unit's status
+        //Entities
+        //    .WithAll<FormationComponent>()
+        //    .WithBurst()
+        //    .ForEach((Entity entity, int entityInQueryIndex, ref FormationComponent formation) =>
+        //    {
+        //        // Only add CollidableTag if the collider status **just changed**
+        //    if (formation.ColliderStatus == FormationColliderStatus.Individual &&
+        //        formation.PreviousColliderStatus != FormationColliderStatus.Individual)
+        //    {
+        //        ecb.AddComponent<CollidableTag>(entityInQueryIndex, entity, new CollidableTag());
+        //    }
+
+        //        // Update previous status for next frame
+        //    formation.PreviousColliderStatus = formation.ColliderStatus;
+
+        //    }).ScheduleParallel();
+
         Entities
             .WithName("FormationCombatLogic")
             .WithAll<FormationComponent>()
@@ -266,6 +343,8 @@ public partial class FormationCombatSystem : SystemBase
                         break;
                 }
             }).ScheduleParallel();
+
+        CompleteDependency();
     }
 
     private static void HandleHoldFormation(ref HasTarget hasTarget, ref CombatState combatState,
@@ -290,8 +369,8 @@ public partial class FormationCombatSystem : SystemBase
         // Limited movement - can engage nearby enemies but stay roughly in position
         float maxEngageDistance = 1.5f; // How far from formation position they can move
 
-        if (hasTarget.Type == HasTarget.TargetType.Entity)
-        {
+        //if (hasTarget.Type == HasTarget.TargetType.Entity)
+        //{
             float2 formationPos = formation.FormationPosition;
             float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
 
@@ -302,7 +381,7 @@ public partial class FormationCombatSystem : SystemBase
                 hasTarget.TargetPosition = formationPos;
             }
         }
-    }
+    //}
 }
 
 
