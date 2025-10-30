@@ -24,18 +24,19 @@ public class UnitFactory
     public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationType formationType)
     {
         int formationID = _nextFormationID++;
-        // Create the shared FormationGroupComponent
-        var formationGroup = new FormationGroupComponent
-        {
-            FormationID = formationID,
-            AnchorPosition = spawnPosition,
-            UnitType = unitType
-        };
+
 
         // FORMATION GROUP UPDATE //
         Entity groupEntity = entityManager.CreateEntity();
 
-
+        // Create the shared FormationGroupComponent
+        var formationGroup = new FormationGroupComponent
+        {
+            FormationGroupEntity = groupEntity,
+            FormationID = formationID,
+            AnchorPosition = spawnPosition,
+            UnitType = unitType
+        };
         List<float2> positions = new List<float2>();
         switch (formationType)
         {

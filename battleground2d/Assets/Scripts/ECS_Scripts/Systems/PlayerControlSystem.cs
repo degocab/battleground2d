@@ -151,8 +151,12 @@ public class PlayerControlSystem : SystemBase
                     .WithName("ProcessCommandInput")
                     .WithAll<Unit>()
                     .WithNone<CommanderComponent>()
-                    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData) =>
+                    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData, in AnimationComponent animationComponent) =>
                     {
+                        if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                        {
+                            return;
+                        }
                         // First remove HasTarget component
                         parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
 
@@ -178,10 +182,10 @@ public class PlayerControlSystem : SystemBase
 
                          // Then update command data
                          commandData = commandCopy;
-                         if (commandCopy.Command == CommandType.FindTarget)
-                         {
-                             formationGroup.FormationGroupStatus = FormationStatus.Engaged;
-                         }
+                         //if (commandCopy.Command == CommandType.FindTarget)
+                         //{
+                         //    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                         //}
 
                      }).WithoutBurst().Run();
                 break; // Important: Only process one key per frame

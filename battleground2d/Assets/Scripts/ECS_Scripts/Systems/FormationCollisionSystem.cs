@@ -41,14 +41,14 @@ public class FormationCollisionSystem : SystemBase
         for (int i = 0; i < groupEntities.Length; i++)
         {
             var groupEntityA = groupEntities[i];
-            var groupA = formationGroups[groupEntityA];
+            var formationGroupDataA = formationGroups[groupEntityA];
 
             // Update bounds with current unit positions
             var boundsA = CalculateCurrentBoundsFromHashMap(groupEntityA, translations, unitRadius);
-            groupA.BoundsMin = boundsA.Min;
-            groupA.BoundsMax = boundsA.Max;
+            formationGroupDataA.BoundsMin = boundsA.Min;
+            formationGroupDataA.BoundsMax = boundsA.Max;
             //formationGroups[groupEntityA] = groupA;
-            groupA.isColliding = false;
+            formationGroupDataA.isColliding = false;
 
             DrawAABB(boundsA.Min, boundsA.Max, Color.green);
 
@@ -56,11 +56,11 @@ public class FormationCollisionSystem : SystemBase
             for (int j = i + 1; j < groupEntities.Length; j++)
             {
                 var groupEntityB = groupEntities[j];
-                var groupB = formationGroups[groupEntityB];
-                groupB.isColliding = false;
+                var formationGroupDataB = formationGroups[groupEntityB];
+                formationGroupDataB.isColliding = false;
                 var boundsB = CalculateCurrentBoundsFromHashMap(groupEntityB, translations, unitRadius);
-                groupB.BoundsMin = boundsB.Min;
-                groupB.BoundsMax = boundsB.Max;
+                formationGroupDataB.BoundsMin = boundsB.Min;
+                formationGroupDataB.BoundsMax = boundsB.Max;
                 //formationGroups[groupEntityB] = groupB;
 
                 if (AABBOverlap(boundsA.Min, boundsA.Max, boundsB.Min, boundsB.Max))
@@ -69,11 +69,14 @@ public class FormationCollisionSystem : SystemBase
 
                     // Handle collision - add OutOfGroupTag to units, etc.
                     HandleGroupCollision(formationComponents, groupEntityA, groupEntityB);
-                    groupB.isColliding = true;
-                    groupA.isColliding = true;
+                    formationGroupDataA.ShouldUpdateAnchorToCurrentPosition = true;
+                    formationGroupDataB.ShouldUpdateAnchorToCurrentPosition = true;
+
+                    formationGroupDataB.isColliding = true;
+                    formationGroupDataA.isColliding = true;
                 }
 
-                if (groupB.isColliding)
+                if (formationGroupDataB.isColliding)
                 {
                     // ✅ Iterate all members of this group
                     if (fms._groupToUnits.TryGetFirstValue(groupEntityB, out var unitEntity, out var it))
@@ -86,10 +89,10 @@ public class FormationCollisionSystem : SystemBase
                         } while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref it));
                     }
                 }
-                formationGroups[groupEntityB] = groupB;
+                formationGroups[groupEntityB] = formationGroupDataB;
 
             }
-            if (groupA.isColliding)
+            if (formationGroupDataA.isColliding)
             {
                 // ✅ Iterate all members of this group
                 if (fms._groupToUnits.TryGetFirstValue(groupEntityA, out var unitEntity, out var it))
@@ -102,7 +105,7 @@ public class FormationCollisionSystem : SystemBase
                     } while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref it));
                 } 
             }
-            formationGroups[groupEntityA] = groupA;
+            formationGroups[groupEntityA] = formationGroupDataA;
 
         }
 

@@ -19,6 +19,8 @@ public class ProcessCommandSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _formationGroupQuery;
+    public FormationManagerSystem fms;
+    private EntityManager entityManager;
 
     protected override void OnCreate()
     {
@@ -26,11 +28,15 @@ public class ProcessCommandSystem : JobComponentSystem
         base.OnCreate();
 
         _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
+        entityManager = EntityManager;
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-
+        if (fms == null)
+        {
+            fms = World.GetExistingSystem<FormationManagerSystem>();
+        }
         //get commander 
         // Check if we have a commander
         EntityQuery _query = GetEntityQuery(
@@ -67,15 +73,48 @@ ComponentType.Exclude<CommanderComponent>());
                 //Simple enemy AI command
                 if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy)
                 {
-                            command.Command = CommandType.FindTarget;
-
+                    command.Command = CommandType.Defend;
+                    return; //AI needs to handle its own
                 }
+
+                switch (command.Command)
+                {
+                    case CommandType.Idle:
+                        break;
+                    case CommandType.FindTarget:
+                        break;
+                    case CommandType.MoveTo:
+                        break;
+                    case CommandType.March:
+                        break;
+                    case CommandType.Charge:
+                        break;
+                    case CommandType.Attack:
+                        break;
+                    case CommandType.Defend:
+                        if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
+                        {
+                            //formationGroup.AnchorPosition = currentAveragePos;
+                            float distance = math.distance(currentAveragePos, formationGroup.AnchorPosition);
+
+                            // Only update if we've moved significantly from current anchor
+                            if (distance > 5f)
+                            {
+                                formationGroup.AnchorPosition = currentAveragePos;
+                            }
+                        }
+                        break;
+                    default:
+                        break;  
+                }
+
                 if (command.Command == CommandType.MoveTo)
                 {
                     // Update formation anchor position directly!
                     formationGroup.AnchorPosition = command.TargetPosition;
                     //ecb.SetComponent( entity, formation);
                 }
+                formationGroup.CurrentCommand = command.Command;
             }).WithoutBurst().Run();
 
 
@@ -102,25 +141,20 @@ ComponentType.Exclude<CommanderComponent>());
         return handle;
     }
 
-[BurstCompile]
+    [BurstCompile]
     private struct AssignCommandJob : IJobChunk
     {
-        //public float Time;
-
         public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
         public ComponentTypeHandle<FormationComponent> FormationComponentTypeHandle;
-        //public SharedComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
-        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<DefenseComponent> DefenseComponentTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<AttackComponent> AttackComponentTypeHandle;
+        public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
-
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<DefenseComponent> DefenseComponentTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AttackComponent> AttackComponentTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
-        public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
-        //public EntityManager entityManager;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
@@ -156,6 +190,10 @@ ComponentType.Exclude<CommanderComponent>());
 
 
                 command.previousCommand = command.Command;
+                commandDataArray[i] = command;  // You do this for command, but not for formation!
+                formations[i] = formation;  // You do this for command, but not for formation!
+                //combatStateArray[i] = combatState;  // You do this for command, but not for formation!
+                //movementSpeeds[i] = movementSpeed;  // You do this for command, but not for formation!
             }
         }
 
@@ -176,15 +214,15 @@ ComponentType.Exclude<CommanderComponent>());
 
                 case CommandType.March:
                 case CommandType.Charge:
-                    HandleMovementCommand(command.Command, ref combatState, ref movementSpeed,
-                                        entity, entityPos, direction, chunkIndex, ecb);
+                    HandleMovementCommand(command.Command, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb);
                     break;
-
                 case CommandType.FindTarget:
+                    formation.Status = FormationStatus.Hold;
                     HandleFindTargetCommand(ref command, ref combatState, entity, chunkIndex, ecb);
                     break;
 
                 case CommandType.MoveTo:
+                    formation.Status = FormationStatus.Hold;
                     HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb, ref formation);
                     break;
 
@@ -194,6 +232,7 @@ ComponentType.Exclude<CommanderComponent>());
 
                 case CommandType.Defend:
                     // TODO: Implement defend logic
+                    formation.Status = FormationStatus.Hold;
                     break;
             }
         }
@@ -232,8 +271,8 @@ ComponentType.Exclude<CommanderComponent>());
         private void HandleMoveToCommand(ref CommandData command, Entity entity, float2 entityPos,
                                        int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation)
         {
-        //    float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
-        //        command.TargetPosition : entityPos + command.TargetPosition;
+            //    float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
+            //        command.TargetPosition : entityPos + command.TargetPosition;
 
             ecb.AddComponent(chunkIndex, entity, new HasTarget
             {
@@ -290,7 +329,31 @@ ComponentType.Exclude<CommanderComponent>());
             }
         }
     }
+    private float2 CalculateAveragePositionForGroup(Entity groupEntity)
+    {
+        float2 sum = float2.zero;
+        int unitCount = 0;
 
+        // You'd need access to the formation manager system's _groupToUnits
+        var fms = World.GetExistingSystem<FormationManagerSystem>();
+        var translations = GetComponentDataFromEntity<Translation>(true);
+
+        if (fms._groupToUnits.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
+        {
+            do
+            {
+                if (translations.HasComponent(unitEntity))
+                {
+                    var pos = translations[unitEntity].Value;
+                    sum += new float2(pos.x, pos.y);
+                    unitCount++;
+                }
+            }
+            while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref iterator));
+        }
+
+        return unitCount > 0 ? sum / unitCount : float2.zero;
+    }
 }
 
 public enum CommandType : byte

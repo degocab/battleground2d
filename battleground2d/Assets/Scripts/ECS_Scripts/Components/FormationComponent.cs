@@ -61,4 +61,7 @@ public struct FormationGroupComponent : IComponentData
     public float2 BoundsMax; // AABB max corner
     internal bool isColliding;
     internal FormationStatus FormationGroupStatus;
+    internal CommandType CurrentCommand;
+    public bool ShouldUpdateAnchorToCurrentPosition; // NEW
+    internal Entity FormationGroupEntity;
 }

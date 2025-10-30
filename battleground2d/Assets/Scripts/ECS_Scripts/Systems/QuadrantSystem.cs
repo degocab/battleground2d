@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using System;
+using TMPro;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -15,6 +17,14 @@ using static UnityEngine.GraphicsBuffer;
 // next is convert it to jobs
 //com.unity.entities@0.16.0-preview.21
 //unity 2020.1.1f1
+
+
+/// <summary>
+///unity 2020.1.1f1 
+///Entities version 0.16.0-preview.21 - October 29, 2020.
+///collections Version 0.14.0-preview.16
+///Job Version 0.7.0-preview.17 - October 29, 2020
+/// </summary>
 
 [UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
 //[UpdateBefore(typeof(MovementSystem))]
@@ -175,6 +185,3 @@ ComponentType.ReadOnly<AnimationComponent>()
 
     }
 }
-
-
-

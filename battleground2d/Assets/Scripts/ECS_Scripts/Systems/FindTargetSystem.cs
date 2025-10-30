@@ -61,11 +61,12 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
+        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle; // Check if exists
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
-
+            bool chunkHasTarget = chunk.Has<HasTarget>(HasTargetTypeHandle);
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = chunkEntities[i];
@@ -73,12 +74,27 @@ public partial class FindTargetSystem : SystemBase
 
                 if (ClosestTargets[flatIndex].Entity != Entity.Null)
                 {
-                    ECB.AddComponent(chunkIndex, entity, new HasTarget
+                    //ECB.SetComponent(chunkIndex, entity, new HasTarget
+                    //{
+                    //    TargetEntity = ClosestTargets[flatIndex].Entity,
+                    //    TargetPosition = ClosestTargets[flatIndex].Position ,
+                    //    Type = HasTarget.TargetType.Entity
+                    //});
+                    var target = new HasTarget
                     {
                         TargetEntity = ClosestTargets[flatIndex].Entity,
                         TargetPosition = ClosestTargets[flatIndex].Position,
                         Type = HasTarget.TargetType.Entity
-                    });
+                    };
+
+                    if (chunkHasTarget)
+                    {
+                        ECB.SetComponent(chunkIndex, entity, target);
+                    }
+                    else
+                    {
+                        ECB.AddComponent(chunkIndex, entity, target);
+                    }
                 }
             }
         }
@@ -268,7 +284,8 @@ public partial class FindTargetSystem : SystemBase
             QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             EntityTypeHandle = GetEntityTypeHandle(),
-            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true)
+            DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true),
+            
         };
 
         var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);
@@ -277,7 +294,8 @@ public partial class FindTargetSystem : SystemBase
         {
             ClosestTargets = writeBuffer,
             EntityTypeHandle = GetEntityTypeHandle(),
-            ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter()
+            ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter(),
+            HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true)
         };
 
         var addHandle = addComponentJob.ScheduleParallel(_findTargetQuery, findHandle);
@@ -287,6 +305,7 @@ public partial class FindTargetSystem : SystemBase
         _useBuffer1 = !_useBuffer1;
 
         Dependency = addHandle;
+        //CompleteDependency();
     }
 }
 
