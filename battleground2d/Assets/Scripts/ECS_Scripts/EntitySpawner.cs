@@ -68,7 +68,7 @@ public class EntitySpawner : MonoBehaviour
             {
                 unitFactory = new UnitFactory(entityManager);
                 int entitiesToSpawn = spawnConfig.UnitCountToSpawn;
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(7, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(3, 0), FormationType.Phalanx);
                 //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, -5), FormationType.Phalanx);
                 //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 10), FormationType.Phalanx);
                 //unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateIdleCommand(), new float2(5, 15), FormationType.Phalanx);
@@ -77,9 +77,8 @@ public class EntitySpawner : MonoBehaviour
                 //enemy
                 int enemyiesToSpawn = entitiesToSpawn / 4;
                 unitFactory.SpawnUnits(200
-                    , UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-5, 0), FormationType.Horde);
-                unitFactory.SpawnUnits(200
-                    , UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-5, -5), FormationType.Horde);
+                    , UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-5, 0), FormationType.Phalanx);
+                //unitFactory.SpawnUnits(200 , UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-5, -5), FormationType.Horde);
                 //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn / 4, UnitType.Enemy, Direction.Right, CommandFactory.CreateIdleCommand(), new float2(-9, 0), FormationType.Horde);
                 unitFactory.SpawnCommander();
 

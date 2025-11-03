@@ -338,7 +338,7 @@ ComponentType.Exclude<CommanderComponent>());
         var fms = World.GetExistingSystem<FormationManagerSystem>();
         var translations = GetComponentDataFromEntity<Translation>(true);
 
-        if (fms._groupToUnits.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
+        if (fms._groupToUnitsMap.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
         {
             do
             {
@@ -349,7 +349,7 @@ ComponentType.Exclude<CommanderComponent>());
                     unitCount++;
                 }
             }
-            while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref iterator));
+            while (fms._groupToUnitsMap.TryGetNextValue(out unitEntity, ref iterator));
         }
 
         return unitCount > 0 ? sum / unitCount : float2.zero;

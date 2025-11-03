@@ -25,9 +25,14 @@ public partial class FormationCombatSystem : SystemBase
                      ref HasTarget hasTarget,
                      ref CombatState combatState,
                      in FormationComponent formation,
-                     in Translation translation) =>
+                     in Translation translation,
+                     in AnimationComponent animationComponent) =>
             {
-                switch (formation.Status)
+
+                var unitFormatonStatus = formation.Status;
+                if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                    unitFormatonStatus = FormationStatus.Broken;
+                switch (unitFormatonStatus)
                 {
                     case FormationStatus.Hold:
                     default:
@@ -73,7 +78,7 @@ public partial class FormationCombatSystem : SystemBase
                                       FormationComponent formation, Translation translation)
     {
         // Loose formation - more freedom to engage
-        float maxEngageDistance = 50f;
+        float maxEngageDistance = 10f;
 
         float2 formationPos = formation.FormationPosition;
         float distanceFromFormation = math.distance(translation.Value.xy, formationPos);

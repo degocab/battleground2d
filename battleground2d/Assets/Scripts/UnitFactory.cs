@@ -41,7 +41,8 @@ public class UnitFactory
         switch (formationType)
         {
             case FormationType.Phalanx:
-                positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition, 256 , .275f, 1);
+                //positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition, 256 , .275f, 1);
+                positions = FormationGenerator.GenerateSinglePhalanx(count , .275f, spawnPosition.y, spawnPosition.x);
                 formationGroup.UnitSpacing = .275f;
                 break;
             case FormationType.Horde:
@@ -61,6 +62,11 @@ public class UnitFactory
 
     private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)
     {
+        if (formationGroupEntity == null || formationGroupEntity == Entity.Null)
+        {
+            Debug.Log("null group entity ref");
+        }
+
         var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);//, formationID, formationOffset);
         entityManager.AddComponentData(unit, new FormationComponent
         {
@@ -86,7 +92,7 @@ public class UnitFactory
     //TODO: add bool for setting AI commander component
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float2(0, 0), UnitType.Default, 7, Direction.Right, 100000f);
+        var commander = CreateUnitBase(new float2(4, 0), UnitType.Default, 7, Direction.Right, 100000f);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }

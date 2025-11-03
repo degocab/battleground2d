@@ -180,12 +180,18 @@ public class RenderSystem : SystemBase
     [BurstCompile]
     private struct SortByPositionJob : IJob
     {
-        public PositionComparer comparer;
+        public PositionComparer? comparer;
         public NativeList<RenderData> sortList;
 
         public void Execute()
         {
-            sortList.Sort(comparer);
+            if (!sortList.IsCreated) Debug.Log("sortList is null for SortByPositionJob");
+            if (comparer == null) Debug.Log("sortList is null for SortByPositionJob");
+            else
+            {
+                sortList.Sort(comparer.Value);
+
+            }
         }
     }
 
@@ -335,7 +341,12 @@ public class RenderSystem : SystemBase
         yBottom -= marginY;
 
         int estimatedEntitiesTotal = GetEntityQuery(typeof(Translation)).CalculateEntityCount();
-        int estimatedPerSlice = estimatedEntitiesTotal / POSITION_SLICES * 2 + 200;
+        int estimatedPerSlice = 10000;// estimatedEntitiesTotal / POSITION_SLICES * 2 + 200;
+        //1024 = x / 20 * 2 + 200
+        //1024 = (x/20) +  200
+        //1024 - 200 = (x/20)
+        // 776 = x/20
+        // 776 * 20 = x
 
         for (int i = 0; i < POSITION_SLICES; i++)
         {

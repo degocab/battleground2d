@@ -27,5 +27,17 @@ public class AddCollisionBufferSystem : SystemBase
             })
             .WithStructuralChanges() // Ensure structural changes like adding components
             .Run(); // Run immediately as it's initialization
+
+        // Use a single ForEach to add the buffer only if it's missing
+        Entities
+            .WithNone<FormationCollisionTag>() // Only entities that don't have the buffer
+            .WithAll<FormationGroupComponent>()     // Only collidable entities
+            .ForEach((Entity entity) =>
+            {
+                // Add the CollisionEvent2D buffer component to the entity
+                EntityManager.AddBuffer<FormationCollisionTag>(entity);
+            })
+            .WithStructuralChanges() // Ensure structural changes like adding components
+            .Run(); // Run immediately as it's initialization
     }
 }

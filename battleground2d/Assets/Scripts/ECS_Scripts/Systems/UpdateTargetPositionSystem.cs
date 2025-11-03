@@ -38,22 +38,22 @@ public class UpdateTargetPositionSystem : SystemBase
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            var entities = chunk.GetNativeArray(EntityTypeHandle);
-            var hasTargetComponents = chunk.GetNativeArray(HasTargetTypeHandle);
+            //var entities = chunk.GetNativeArray(EntityTypeHandle);
+            //var hasTargetComponents = chunk.GetNativeArray(HasTargetTypeHandle);
 
-            for (int i = 0; i < chunk.Count; i++)
-            {
-                var hasTarget = hasTargetComponents[i];
+            //for (int i = 0; i < chunk.Count; i++)
+            //{
+            //    var hasTarget = hasTargetComponents[i];
 
-                if (hasTarget.Type == HasTarget.TargetType.Entity &&
-                    TargetTranslationLookup.HasComponent(hasTarget.TargetEntity))
-                {
-                    var targetTranslation = TargetTranslationLookup[hasTarget.TargetEntity];
-                    hasTarget.TargetPosition = targetTranslation.Value.xy;
+            //    if (hasTarget.Type == HasTarget.TargetType.Entity &&
+            //        TargetTranslationLookup.HasComponent(hasTarget.TargetEntity))
+            //    {
+            //        var targetTranslation = TargetTranslationLookup[hasTarget.TargetEntity];
+            //        hasTarget.TargetPosition = targetTranslation.Value.xy;
 
-                    hasTargetComponents[i] = hasTarget; // Write updated struct back
-                }
-            }
+            //        hasTargetComponents[i] = hasTarget; // Write updated struct back
+            //    }
+            //}
         }
     }
 }

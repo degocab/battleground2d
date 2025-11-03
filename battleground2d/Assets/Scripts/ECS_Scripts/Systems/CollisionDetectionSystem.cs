@@ -108,7 +108,7 @@ public partial class CollisionDetectionSystem : SystemBase
         int totalEntities = _entityQuery.CalculateEntityCount();
 
         const int maxCollisionsPerEntity = 16; // realistic max collisions per entity
-        int estimatedCapacity = math.max(1024, totalEntities * maxCollisionsPerEntity);
+        int estimatedCapacity = (totalEntities * 2 ) * maxCollisionsPerEntity;// math.max(1024, totalEntities * maxCollisionsPerEntity);
 
         if (collisionEvents.Capacity < estimatedCapacity)
         {

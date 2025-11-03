@@ -1,15 +1,27 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
+public struct FormationCollisionTag : IBufferElementData
+{
+    //public Entity entity;
+    //public float2 position;
+    //public float radius;
 
-public struct InGroupTag : IComponentData { }
-public struct OutOfGroupTag : IComponentData { }
+    //public EntitySpawner.UnitType unitType;
+
+    //// other date
+    //public Translation CollisionSourceTranslation;
+    //public ECS_CircleCollider2DAuthoring CollisionSourceCollider;
+    //public ECS_PhysicsBody2DAuthoring CollisionSourceBody;
+}
+
 
 [UpdateAfter(typeof(FormationManagerSystem))]
 public class FormationCollisionSystem : SystemBase
@@ -20,94 +32,170 @@ public class FormationCollisionSystem : SystemBase
     protected override void OnCreate()
     {
         _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+        collisionEvents = new NativeMultiHashMap<Entity, FormationCollisionTag>(1024, Allocator.Persistent);
     }
+    private NativeMultiHashMap<Entity, FormationCollisionTag> collisionEvents;
+
     protected override void OnUpdate()
     {
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-
+        if (fms == null)
+        {
+            fms = World.GetExistingSystem<FormationManagerSystem>();
+        }
         var formationGroups = GetComponentDataFromEntity<FormationGroupComponent>(false);
         var formationComponents = GetComponentDataFromEntity<FormationComponent>(false);
         var translations = GetComponentDataFromEntity<Translation>(true);
-        var groupEntities = GetEntityQuery(typeof(FormationGroupComponent)).ToEntityArray(Allocator.TempJob);
-        var groups = GetComponentDataFromEntity<FormationGroupComponent>(false);
+        var groupEntities = fms._groupToUnitsMap.GetKeyArray(Allocator.TempJob);//GetEntityQuery(typeof(FormationGroupComponent)).ToEntityArray(Allocator.TempJob);
+        var groups = fms._formationGroupMap;
 
         float unitRadius = 0.5f; // Your unit radius
+        int estimatedCapacity = (groupEntities.Length * 2) * 16;// math.max(1024, totalEntities * maxCollisionsPerEntity);
 
-        if (fms == null)
+        if (collisionEvents.Capacity < estimatedCapacity)
         {
-            fms = World.GetExistingSystem<FormationManagerSystem>(); 
+            // Dispose old and allocate new only if really needed, with a max cap to avoid overflow
+            int newCapacity = math.min(estimatedCapacity, 10_000_000); // limit max allocation
+            collisionEvents.Dispose();
+            collisionEvents = new NativeMultiHashMap<Entity, FormationCollisionTag>(newCapacity, Allocator.Persistent);
         }
-        // Calculate current bounds for each group and check collisions
-        for (int i = 0; i < groupEntities.Length; i++)
+        else
         {
-            var groupEntityA = groupEntities[i];
-            var formationGroupDataA = formationGroups[groupEntityA];
+            collisionEvents.Clear();
+        }
 
-            // Update bounds with current unit positions
-            var boundsA = CalculateCurrentBoundsFromHashMap(groupEntityA, translations, unitRadius);
-            formationGroupDataA.BoundsMin = boundsA.Min;
-            formationGroupDataA.BoundsMax = boundsA.Max;
-            //formationGroups[groupEntityA] = groupA;
-            formationGroupDataA.isColliding = false;
+        var FormationCollisionEvents = collisionEvents.AsParallelWriter();
+        var jbHandler = Entities
+             .WithReadOnly(groupEntities)
+             .WithReadOnly(groups)
+             .ForEach((Entity groupEntityA, int entityInQueryIndex, ref FormationGroupComponent formationGroupDataA) =>
+             {
+                 formationGroupDataA.isColliding = false;
 
-            DrawAABB(boundsA.Min, boundsA.Max, Color.green);
+                 DrawAABB(formationGroupDataA.BoundsMin, formationGroupDataA.BoundsMax, Color.green);
 
-            // Check collisions with other groups
-            for (int j = i + 1; j < groupEntities.Length; j++)
+                 // Check collisions with other groups
+                 for (int j = entityInQueryIndex + 1; j < groupEntities.Length; j++)
+                 {
+                     var groupEntityB = groupEntities[j];
+                     if (groups.TryGetValue(groupEntityB, out var formationGroupDataB))
+                     {
+                         formationGroupDataB.isColliding = false;
+
+                         if (AABBOverlap(formationGroupDataA.BoundsMin, formationGroupDataA.BoundsMax, formationGroupDataB.BoundsMin, formationGroupDataB.BoundsMax))
+                         {
+                             // Handle collision - add OutOfGroupTag to units, etc.
+                             //formationGroupDataA.ShouldUpdateAnchorToCurrentPosition = true;
+                             //formationGroupDataB.ShouldUpdateAnchorToCurrentPosition = true;
+
+                             //formationGroupDataB.isColliding = true;
+                             //formationGroupDataA.isColliding = true;
+
+                             FormationCollisionEvents.Add(groupEntityA, new FormationCollisionTag());
+                             FormationCollisionEvents.Add(groupEntityB, new FormationCollisionTag());
+                         }
+
+                     }
+                     //formationGroups[groupEntityB] = formationGroupDataB;
+                 }
+                 //formationGroups[groupEntityA] = formationGroupDataA;
+             })
+             .WithBurst().ScheduleParallel(Dependency);
+        //.WithoutBurst().Run();
+        jbHandler.Complete();
+
+
+
+        var tempCollisionEvents = collisionEvents;
+        //try to add all events 
+        Entities
+    .WithName("FormationCollisionAddBuffer")
+    .WithNone<DeadTagComponent>()
+    .WithBurst() // Optional: add after testing
+    .WithReadOnly(tempCollisionEvents) // Optional: add after testing
+    .ForEach((Entity entity, ref DynamicBuffer<FormationCollisionTag> buffer, ref FormationGroupComponent formationGroupComponent) =>
+    {
+        if (tempCollisionEvents.TryGetFirstValue(entity, out var other, out var it))
+        {
+            const int MaxCollisions = 16;
+            int count = 0;
+            do
             {
-                var groupEntityB = groupEntities[j];
-                var formationGroupDataB = formationGroups[groupEntityB];
-                formationGroupDataB.isColliding = false;
-                var boundsB = CalculateCurrentBoundsFromHashMap(groupEntityB, translations, unitRadius);
-                formationGroupDataB.BoundsMin = boundsB.Min;
-                formationGroupDataB.BoundsMax = boundsB.Max;
-                //formationGroups[groupEntityB] = groupB;
+                if (count++ < MaxCollisions)
+                    buffer.Add(new FormationCollisionTag());
+            }
+            while (tempCollisionEvents.TryGetNextValue(out other, ref it));
+        }
 
-                if (AABBOverlap(boundsA.Min, boundsA.Max, boundsB.Min, boundsB.Max))
+    }).Run(); // Run on main thread for now to access EntityManager
+
+
+        //try to add all events 
+        Entities
+    .WithName("FormationCollisionResolutionSystem")
+    .WithNone<DeadTagComponent>()
+    .WithBurst() // Optional: add after testing
+    .ForEach((ref DynamicBuffer<FormationCollisionTag> collisions, ref FormationGroupComponent formationGroupComponent) =>
+    {
+        formationGroupComponent.ShouldUpdateAnchorToCurrentPosition = false;
+        formationGroupComponent.isColliding = false;
+
+        if (collisions.Length == 0)
+        {
+            //velocity.Value = velocity.PrevValue;
+            Debug.Log("No formation collisions detected");
+            return;
+        }
+        formationGroupComponent.ShouldUpdateAnchorToCurrentPosition = true;
+        formationGroupComponent.isColliding = true;
+
+    }).Run(); // Run on main thread for now to access EntityManager
+
+
+
+
+
+
+        Dependency.Complete();
+
+
+
+        //set all units in each gruop to individual
+        if (!fms._formationGroupMap.IsCreated)
+            fms._formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(groupEntities.Length * 2, Allocator.Persistent);
+        else
+            fms._formationGroupMap.Clear();
+        var formationGroupWriter = fms._formationGroupMap.AsParallelWriter();
+        var addGroupToNativeHashMapJobHandle = Entities
+            .WithAll<FormationGroupComponent>()
+            .ForEach((Entity entity, ref FormationGroupComponent formationGroupComponent) =>
+            {
+                formationGroupWriter.TryAdd(entity, formationGroupComponent);
+            }).WithBurst().ScheduleParallel(Dependency);
+        addGroupToNativeHashMapJobHandle.Complete();
+
+        var formationGroupMapTemp = fms._formationGroupMap;
+        var formationColliderStatusUpdateJobHandle = Entities
+            .WithReadOnly(formationGroupMapTemp)
+            .ForEach((Entity entity, int entityInQueryIndex, ref FormationComponent formationComponent) =>
+            {
+                //get group formation component
+                if (formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var forGrpComp))
                 {
-                    UnityEngine.Debug.Log($"Formation groups {groupEntityA} and {groupEntityB} overlap!");
-
-                    // Handle collision - add OutOfGroupTag to units, etc.
-                    HandleGroupCollision(formationComponents, groupEntityA, groupEntityB);
-                    formationGroupDataA.ShouldUpdateAnchorToCurrentPosition = true;
-                    formationGroupDataB.ShouldUpdateAnchorToCurrentPosition = true;
-
-                    formationGroupDataB.isColliding = true;
-                    formationGroupDataA.isColliding = true;
-                }
-
-                if (formationGroupDataB.isColliding)
-                {
-                    // ✅ Iterate all members of this group
-                    if (fms._groupToUnits.TryGetFirstValue(groupEntityB, out var unitEntity, out var it))
+                    if (forGrpComp.isColliding)
                     {
-                        do
-                        {
-                            var formation = formationComponents[unitEntity];
-                            formation.ColliderStatus = FormationColliderStatus.Individual;
-                            formationComponents[unitEntity] = formation;
-                        } while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref it));
+                        formationComponent.ColliderStatus = FormationColliderStatus.Individual;
+
+                    }
+                    else
+                    {
+                        formationComponent.ColliderStatus = FormationColliderStatus.Group;
+
                     }
                 }
-                formationGroups[groupEntityB] = formationGroupDataB;
 
-            }
-            if (formationGroupDataA.isColliding)
-            {
-                // ✅ Iterate all members of this group
-                if (fms._groupToUnits.TryGetFirstValue(groupEntityA, out var unitEntity, out var it))
-                {
-                    do
-                    {
-                        var formation = formationComponents[unitEntity];
-                        formation.ColliderStatus = FormationColliderStatus.Individual;
-                        formationComponents[unitEntity] = formation;
-                    } while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref it));
-                } 
-            }
-            formationGroups[groupEntityA] = formationGroupDataA;
-
-        }
+            }).WithBurst().ScheduleParallel(Dependency);
+        formationColliderStatusUpdateJobHandle.Complete();
 
         groupEntities.Dispose();
 
@@ -127,116 +215,12 @@ public class FormationCollisionSystem : SystemBase
         formation.PreviousColliderStatus = formation.ColliderStatus;
 
     }).ScheduleParallel();
-    }
-
-    private AABB CalculateCurrentBoundsFromHashMap(Entity groupEntity, ComponentDataFromEntity<Translation> translations, float unitRadius)
-    {
-        float2 min = new float2(float.MaxValue, float.MaxValue);
-        float2 max = new float2(float.MinValue, float.MinValue);
-        int unitCount = 0;
-
-        // Use the pre-built hashmap to efficiently find all units in this group
-        if (fms._groupToUnits.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
-        {
-            do
-            {
-                if (translations.HasComponent(unitEntity))
-                {
-                    var pos = translations[unitEntity].Value;
-                    var pos2D = new float2(pos.x, pos.y);
-
-                    min = math.min(min, pos2D);
-                    max = math.max(max, pos2D);
-                    unitCount++;
-                }
-            }
-            while (fms._groupToUnits.TryGetNextValue(out unitEntity, ref iterator));
-        }
-
-        if (unitCount == 0)
-            return new AABB { Min = float2.zero, Max = float2.zero };
-
-        // Expand bounds by unit radius
-        return new AABB
-        {
-            Min = min - new float2(unitRadius, unitRadius),
-            Max = max + new float2(unitRadius, unitRadius)
-        };
-    }
-
-    private void HandleGroupCollision(ComponentDataFromEntity<FormationComponent> formations, Entity groupA, Entity groupB)
-    {
-        // Example: Convert to individual unit collision by adding OutOfGroupTag
-        // You might want to do this selectively based on your game rules
-
-        // var ecb = new EntityCommandBuffer(Allocator.Temp);
-
-        // Remove units from formation control temporarily
-        // if (_groupToUnits.TryGetFirstValue(groupA, out var unit, out var it))
-        // {
-        //     do { ecb.AddComponent<OutOfGroupTag>(unit); } 
-        //     while (_groupToUnits.TryGetNextValue(out unit, ref it));
-        // }
-        // 
-        // ecb.Playback(EntityManager);
-        // ecb.Dispose();
-
-        //if (formations.HasComponent(groupA))
-        //{
-        //    var formation = formations[groupA];
-        //    formation.ColliderStatus = FormationColliderStatus.Individual;
-
-        //    formations[groupA] = formation;
-        //}
-        //if (formations.HasComponent(groupB))
-        //{
-        //    var formation = formations[groupB];
-        //    formation.ColliderStatus = FormationColliderStatus.Individual;
-
-        //    formations[groupB] = formation;
-        //}
+        Dependency.Complete();
 
     }
-    protected  void OnUpdateOld()
-    {
 
-        //CollisionQuadrantData
-        //clean up group unit collisions
-        // we want to only have group collisions unless we re add them!
-        // Gather all formation groups into a native array
-        var formationGroups = GetComponentDataFromEntity<FormationGroupComponent>(true);
-        var groupEntities = GetEntityQuery(typeof(FormationGroupComponent)).ToEntityArray(Allocator.TempJob);
-        var groups = GetComponentDataFromEntity<FormationGroupComponent>(false);
 
-        // Simple double loop to check pairs
-        for (int i = 0; i < groupEntities.Length; i++)
-        {
-            var groupA = groups[groupEntities[i]];
-
-            for (int j = i + 1; j < groupEntities.Length; j++)
-            {
-                var groupB = groups[groupEntities[j]];
-
-                if (AABBOverlap(groupA.BoundsMin, groupA.BoundsMax, groupB.BoundsMin, groupB.BoundsMax))
-                {
-                    // Do something on overlap: e.g. log, set a flag, etc.
-                    UnityEngine.Debug.Log($"Formation groups {groupEntities[i]} and {groupEntities[j]} overlap!");
-
-                    //convert to individual unit collision
-                    //by adding tag OutOfGroupTag component
-                    //or add in formation state processing in FormatoinCombatSystem
-                }
-            }
-        }
-        for (int i = 0; i < groupEntities.Length; i++)
-        {
-            var group = groups[groupEntities[i]];
-            DrawAABB(group.BoundsMin, group.BoundsMax, Color.green);
-        }
-
-        groupEntities.Dispose();
-    }
-    void DrawAABB(float2 min, float2 max, Color color)
+    public static void DrawAABB(float2 min, float2 max, Color color)
     {
         //Debug.Log($"drawing min: {min}, max: {max}"); 
         Vector3 bottomLeft = new Vector3(min.x, min.y, 0);
@@ -254,55 +238,7 @@ public class FormationCollisionSystem : SystemBase
     {
         return !(maxA.x < minB.x || minA.x > maxB.x || maxA.y < minB.y || minA.y > maxB.y);
     }
-    public static AABB CalculateGroupBounds(NativeArray<float2> positions, float unitRadius)
-    {
-        if (positions.Length == 0)
-            return new AABB();
 
-        float minX = positions[0].x;
-        float maxX = positions[0].x;
-        float minY = positions[0].y;
-        float maxY = positions[0].y;
-
-        for (int i = 1; i < positions.Length; i++)
-        {
-            var pos = positions[i];
-            if (pos.x < minX) minX = pos.x;
-            if (pos.x > maxX) maxX = pos.x;
-            if (pos.y < minY) minY = pos.y;
-            if (pos.y > maxY) maxY = pos.y;
-        }
-
-        return new AABB
-        {
-            Min = new float2(minX - unitRadius, minY - unitRadius),
-            Max = new float2(maxX + unitRadius, maxY + unitRadius)
-        };
-    }
-    [BurstCompile]
-    public struct UpdateFormationJob : IJobParallelFor
-    {
-        public NativeArray<Entity> Entities;
-        [NativeDisableParallelForRestriction]
-        public ComponentDataFromEntity<Translation> TranslationFromEntity;
-        [NativeDisableParallelForRestriction]
-        public ComponentDataFromEntity<FormationComponent> FormationFromEntity;
-        public float DeltaTime;
-
-        public void Execute(int index)
-        {
-            Entity entity = Entities[index];
-
-
-
-            if (FormationFromEntity.HasComponent(entity))
-            {
-                var formation = FormationFromEntity[entity];
-                formation.ColliderStatus = FormationColliderStatus.Individual;
-                FormationFromEntity[entity] = formation;
-            }
-        }
-    }
 }
 
 
