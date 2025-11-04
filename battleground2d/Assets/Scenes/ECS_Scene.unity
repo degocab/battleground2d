@@ -1254,7 +1254,7 @@ MonoBehaviour:
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,
     type: 2}
-  DrawDebugLines: 0
+  DrawDebugLines: 1
   unitPrefab: {fileID: 952375374}
   spawnConfig: {fileID: 11400000, guid: 7500725a709982945b1f94e40b07aa93, type: 2}
 --- !u!4 &1877706034

@@ -137,14 +137,14 @@ public partial class FormationManagerSystem : SystemBase
                         anchor: formationGroup.AnchorPosition);
                     formationComponent.FormationPosition = pos;
 
-                    if (!formationGroup.isColliding)
-                    {
-                        formationComponent.ColliderStatus = FormationColliderStatus.Group;
-                    }
-                    else
-                    {
-                        formationComponent.ColliderStatus = FormationColliderStatus.Individual;
-                    }
+                    //if (!formationGroup.isColliding)
+                    //{
+                    //    formationComponent.ColliderStatus = FormationColliderStatus.Group;
+                    //}
+                    //else
+                    //{
+                    //    formationComponent.ColliderStatus = FormationColliderStatus.Individual;
+                    //}
                 }
             })
             .WithBurst().ScheduleParallel(Dependency);
@@ -193,7 +193,6 @@ public partial class FormationManagerSystem : SystemBase
             .WithReadOnly(_groupToUnitsMap)
             .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroupComponent) =>
             {
-                int groupUnitCount = 0;
 
                 if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
                 {
@@ -209,13 +208,13 @@ public partial class FormationManagerSystem : SystemBase
                     //tempGroupAveragePositions.TryAdd(groupEntity, averagePosition); 
 
                     // Calculate formation bounds mathematically (no array generation)
-                    var bounds = CalculateFormationBounds(groupUnitCount, formationGroupComponent.UnitsPerRow,
+                    var bounds = CalculateFormationBounds(groupValueCount, 16,
                         formationGroupComponent.UnitSpacing, formationGroupComponent.AnchorPosition);
 
                     // Update group bounds
                     //Debug.Log($"should drawwwwwwwwwwwwww min:{bounds.Min}, max:{bounds.Max}");
 
-                    //FormationCollisionSystem.DrawAABB(bounds.Min, bounds.Max, Color.green);
+                    FormationCollisionSystem.DrawAABB(bounds.Min, bounds.Max, Color.green);
 
                     formationGroupComponent.BoundsMin = bounds.Min;
                     formationGroupComponent.BoundsMax = bounds.Max;
@@ -309,19 +308,19 @@ public partial class FormationManagerSystem : SystemBase
 
         int totalRows = (unitCount + unitsPerRow - 1) / unitsPerRow;
 
-        // Calculate formation dimensions
+        // Calculate formation dimensions (same as position calculation)
         float formationWidth = (math.min(unitsPerRow, unitCount) - 1) * spacing;
         float formationHeight = (totalRows - 1) * spacing;
 
-        // Calculate bounds
+        // Calculate bounds WITH VERTICAL CENTERING (this was missing!)
         float2 min = new float2(
             anchor.x - formationWidth * 0.5f,
-            anchor.y
+            anchor.y - formationHeight * 0.5f  // Now centered vertically
         );
 
         float2 max = new float2(
             anchor.x + formationWidth * 0.5f,
-            anchor.y + formationHeight
+            anchor.y + formationHeight * 0.5f  // Now centered vertically  
         );
 
         // Expand bounds by unit radius
@@ -331,7 +330,6 @@ public partial class FormationManagerSystem : SystemBase
 
         return new FormationBounds { Min = min, Max = max };
     }
-
     // Pure math function to calculate single unit position in phalanx
     //[BurstCompile]
     //public static float2 CalculatePhalanxPosition(int unitIndex, int totalUnits, int unitsPerRow, float spacing, float2 anchor)
