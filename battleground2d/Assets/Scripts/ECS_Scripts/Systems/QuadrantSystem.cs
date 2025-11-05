@@ -44,7 +44,7 @@ public class QuadrantSystem : SystemBase
 
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         _query = GetEntityQuery(
-ComponentType.ReadOnly<Translation>(),
+ComponentType.ReadOnly<LocalTransform>(),
 ComponentType.ReadOnly<QuadrantEntity>(),
 ComponentType.ReadOnly<AnimationComponent>()
 
@@ -97,31 +97,31 @@ ComponentType.ReadOnly<AnimationComponent>()
     private struct SetQuadrantDataHashMapJob : IJobChunk
     {
 
-        [ReadOnly] public ComponentTypeHandle<Translation> translationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> transformTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> quadrantEntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentTypeHandle;
         [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
         [ReadOnly] public EntityTypeHandle entityTypeHandle;
         public NativeMultiHashMap<int, QuadrantData>.ParallelWriter quadrantMultiHashMap;
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
 
 
             // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
-            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+            if (chunk.Has(ref DeadTagTypeHandle))
                 return;
 
-            var translations = chunk.GetNativeArray(translationTypeHandle);
+            var transforms = chunk.GetNativeArray(ref transformTypeHandle);
             var entities = chunk.GetNativeArray(entityTypeHandle);
-            var quadrantEntities = chunk.GetNativeArray(quadrantEntityTypeHandle);
-            NativeArray<AnimationComponent> chunkAnimationComponents = chunk.GetNativeArray(AnimationComponentTypeHandle);
+            var quadrantEntities = chunk.GetNativeArray(ref quadrantEntityTypeHandle);
+            NativeArray<AnimationComponent> chunkAnimationComponents = chunk.GetNativeArray(ref AnimationComponentTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 var animationComponent = chunkAnimationComponents[i];  
 
                 //float2 translation2d = translations[i].Value.xy;
-                float2 translation2d = new float2(translations[i].Value.x, translations[i].Value.y - .25f);
+                float2 translation2d = new float2(transforms[i].Position.x, transforms[i].Position.y - .25f);
 
                 int hashMapKey = GetPositionHashMapKey(translation2d);
                 quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
@@ -140,7 +140,7 @@ ComponentType.ReadOnly<AnimationComponent>()
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         //EntityQuery entityQuery = GetEntityQuery(typeof(Translation), typeof(QuadrantEntity), typeof(AnimationComponent));
         QuadrantMultiHashMap.Clear();
@@ -151,7 +151,7 @@ ComponentType.ReadOnly<AnimationComponent>()
         }
         var job = new SetQuadrantDataHashMapJob
         {
-            translationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            transformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
             quadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             entityTypeHandle = GetEntityTypeHandle(),
             quadrantMultiHashMap = QuadrantMultiHashMap.AsParallelWriter(),
