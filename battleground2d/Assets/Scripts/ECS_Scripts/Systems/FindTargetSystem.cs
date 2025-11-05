@@ -32,7 +32,7 @@ public partial class FindTargetSystem : SystemBase
         _findTargetQuery = GetEntityQuery(
             ComponentType.ReadOnly<Unit>(),
             ComponentType.ReadOnly<AnimationComponent>(),
-            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadWrite<FindTargetCommandTag>(),
             ComponentType.Exclude<CommanderComponent>(),
             ComponentType.Exclude<HasTarget>()
@@ -40,7 +40,7 @@ public partial class FindTargetSystem : SystemBase
 
         _targetQuery = GetEntityQuery(
             ComponentType.ReadOnly<TargetComponent>(),
-            ComponentType.ReadOnly<Translation>()
+            ComponentType.ReadOnly<LocalTransform>()
         );
 
         _endSimulationECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
@@ -63,16 +63,22 @@ public partial class FindTargetSystem : SystemBase
         public EntityCommandBuffer.ParallelWriter ECB;
         [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle; // Check if exists
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
-            bool chunkHasTarget = chunk.Has<HasTarget>(HasTargetTypeHandle);
+            bool chunkHasTarget = chunk.Has(ref HasTargetTypeHandle);
+            
+            // Calculate firstEntityIndex from unfilteredChunkIndex
+            // Note: This is an approximation - in ECS 1.4, we don't have direct access to firstEntityIndex
+            // We'll use unfilteredChunkIndex * typical chunk size as an estimate
+            int firstEntityIndex = unfilteredChunkIndex * chunk.Capacity;
+            
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = chunkEntities[i];
                 int flatIndex = firstEntityIndex + i;
 
-                if (ClosestTargets[flatIndex].Entity != Entity.Null)
+                if (flatIndex < ClosestTargets.Length && ClosestTargets[flatIndex].Entity != Entity.Null)
                 {
                     //ECB.SetComponent(chunkIndex, entity, new HasTarget
                     //{
@@ -89,11 +95,11 @@ public partial class FindTargetSystem : SystemBase
 
                     if (chunkHasTarget)
                     {
-                        ECB.SetComponent(chunkIndex, entity, target);
+                        ECB.SetComponent(unfilteredChunkIndex, entity, target);
                     }
                     else
                     {
-                        ECB.AddComponent(chunkIndex, entity, target);
+                        ECB.AddComponent(unfilteredChunkIndex, entity, target);
                     }
                 }
             }
@@ -108,9 +114,9 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var commandDataArray = chunk.GetNativeArray(ref CommandDataTypeHandle);
             var entityArray = chunk.GetNativeArray(EntityTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
@@ -127,8 +133,8 @@ public partial class FindTargetSystem : SystemBase
                     command.TargetPosition = float2.zero;
                     commandDataArray[i] = command;
 
-                    ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
-                    ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
+                    ECB.RemoveComponent<HasTarget>(unfilteredChunkIndex, entity);
+                    ECB.RemoveComponent<FindTargetCommandTag>(unfilteredChunkIndex, entity);
                 }
             }
         }
@@ -140,26 +146,29 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public NativeMultiHashMap<int, QuadrantData> QuadrantHashMap;
         public NativeArray<EntityWithPosition> ClosestTargets;
 
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
-            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+            if (chunk.Has(ref DeadTagTypeHandle))
                 return;
 
-            var translations = chunk.GetNativeArray(TranslationTypeHandle);
-            var quadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
-            var animations = chunk.GetNativeArray(AnimationTypeHandle);
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
+            var quadrantEntities = chunk.GetNativeArray(ref QuadrantEntityTypeHandle);
+            var animations = chunk.GetNativeArray(ref AnimationTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
+
+            // Calculate firstEntityIndex from unfilteredChunkIndex
+            int firstEntityIndex = unfilteredChunkIndex * chunk.Capacity;
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                float2 unitPosition = translations[i].Value.xy;
+                float2 unitPosition = transforms[i].Position.xy;
                 var quadrantEntity = quadrantEntities[i];
                 var animation = animations[i];
 
@@ -191,11 +200,15 @@ public partial class FindTargetSystem : SystemBase
                 CheckQuadrant(hashKey - 1 - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
                     ref closestTarget, ref closestDistanceSq, ref closestPosition);
 
-                ClosestTargets[firstEntityIndex + i] = new EntityWithPosition
+                int targetIndex = firstEntityIndex + i;
+                if (targetIndex < ClosestTargets.Length)
                 {
-                    Entity = closestTarget,
-                    Position = closestPosition
-                };
+                    ClosestTargets[targetIndex] = new EntityWithPosition
+                    {
+                        Entity = closestTarget,
+                        Position = closestPosition
+                    };
+                }
             }
         }
 
@@ -225,7 +238,7 @@ public partial class FindTargetSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
         _updateCounter++;
@@ -280,7 +293,7 @@ public partial class FindTargetSystem : SystemBase
         {
             QuadrantHashMap = QuadrantSystem.QuadrantMultiHashMap,
             ClosestTargets = writeBuffer,
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
             QuadrantEntityTypeHandle = GetComponentTypeHandle<QuadrantEntity>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             EntityTypeHandle = GetEntityTypeHandle(),

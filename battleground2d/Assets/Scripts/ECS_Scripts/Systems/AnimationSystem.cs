@@ -23,37 +23,37 @@ public class AnimationSystem : SystemBase
     //}
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
-        var deltaTime = Time.DeltaTime;
+        var deltaTime = SystemAPI.Time.DeltaTime;
 
-        Entities.ForEach((ref AnimationComponent spriteSheetAnimationData, ref Translation translation) =>
+        foreach (var (spriteSheetAnimationData, transform) in SystemAPI.Query<RefRW<AnimationComponent>, RefRO<LocalTransform>>())
         {
 
-            if (spriteSheetAnimationData.isFrozen)
+            if (spriteSheetAnimationData.ValueRO.isFrozen)
             {
                 // Do nothing or handle frozen state (keep the last frame as it is)
-                return;
+                continue;
             }
-            spriteSheetAnimationData.FrameTimer += deltaTime;
+            spriteSheetAnimationData.ValueRW.FrameTimer += deltaTime;
 
-            if (spriteSheetAnimationData.FrameCount > 0)
+            if (spriteSheetAnimationData.ValueRO.FrameCount > 0)
             {
                 //float frameTimerMax = entitySpawner.frameTimerMaxDebug;
-                float frameTimerMax = spriteSheetAnimationData.FrameTimerMax;
-                while (spriteSheetAnimationData.FrameTimer >= frameTimerMax)
+                float frameTimerMax = spriteSheetAnimationData.ValueRO.FrameTimerMax;
+                while (spriteSheetAnimationData.ValueRO.FrameTimer >= frameTimerMax)
                 {
-                    spriteSheetAnimationData.FrameTimer -= frameTimerMax;
-                    spriteSheetAnimationData.CurrentFrame = (spriteSheetAnimationData.CurrentFrame + 1) % spriteSheetAnimationData.FrameCount;
+                    spriteSheetAnimationData.ValueRW.FrameTimer -= frameTimerMax;
+                    spriteSheetAnimationData.ValueRW.CurrentFrame = (spriteSheetAnimationData.ValueRO.CurrentFrame + 1) % spriteSheetAnimationData.ValueRO.FrameCount;
 
                     //float uvWidth = 1f / spriteSheetAnimationData.frameCount;
                     //float uvHeight = 1f;
                     var cellHeight = 1f / 24f;// => 24 is grid count of pixel art frames
                     float uvWidth = cellHeight;// divide by num of sprites horizontally
                     float uvHeight = cellHeight;// divide by num of sprites vertically
-                    float uvOffsetX = uvWidth * (spriteSheetAnimationData.CurrentFrame  +  (((spriteSheetAnimationData.animationWidthOffset -1 ))* spriteSheetAnimationData.FrameCount));
-                    float uvOffsetY = uvHeight * (spriteSheetAnimationData.animationHeightOffset + (spriteSheetAnimationData.UnitType == EntitySpawner.UnitType.Enemy ?  16 : 0)) ;
-                    spriteSheetAnimationData.uv = new Vector4(uvWidth, uvHeight, uvOffsetX, uvOffsetY);
+                    float uvOffsetX = uvWidth * (spriteSheetAnimationData.ValueRO.CurrentFrame  +  (((spriteSheetAnimationData.ValueRO.animationWidthOffset -1 ))* spriteSheetAnimationData.ValueRO.FrameCount));
+                    float uvOffsetY = uvHeight * (spriteSheetAnimationData.ValueRO.animationHeightOffset + (spriteSheetAnimationData.ValueRO.UnitType == EntitySpawner.UnitType.Enemy ?  16 : 0)) ;
+                    spriteSheetAnimationData.ValueRW.uv = new Vector4(uvWidth, uvHeight, uvOffsetX, uvOffsetY);
 
                     //float3 position = translation.Value;
                     //position.z = position.y * .01f;
@@ -67,6 +67,6 @@ public class AnimationSystem : SystemBase
             }
 
 
-        }).ScheduleParallel();
+        }
     }
 }

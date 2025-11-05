@@ -12,16 +12,16 @@ public class UpdateTargetPositionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _query = GetEntityQuery(typeof(HasTarget), typeof(Translation), typeof(FindTargetCommandTag));
+        _query = GetEntityQuery(typeof(HasTarget), typeof(LocalTransform), typeof(FindTargetCommandTag));
     }
 
     protected override void OnUpdate()
     {
-        var targetTranslationLookup = GetComponentDataFromEntity<Translation>(true);
+        var targetTransformLookup = GetComponentDataFromEntity<LocalTransform>(true);
 
         var job = new UpdateTargetPositionJob
         {
-            TargetTranslationLookup = targetTranslationLookup,
+            TargetTransformLookup = targetTransformLookup,
             HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(false),
             EntityTypeHandle = GetEntityTypeHandle()
         };
@@ -32,24 +32,24 @@ public class UpdateTargetPositionSystem : SystemBase
     [BurstCompile]
     private struct UpdateTargetPositionJob : IJobChunk
     {
-        [ReadOnly] public ComponentDataFromEntity<Translation> TargetTranslationLookup;
+        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TargetTransformLookup;
         public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             //var entities = chunk.GetNativeArray(EntityTypeHandle);
-            //var hasTargetComponents = chunk.GetNativeArray(HasTargetTypeHandle);
+            //var hasTargetComponents = chunk.GetNativeArray(ref HasTargetTypeHandle);
 
             //for (int i = 0; i < chunk.Count; i++)
             //{
             //    var hasTarget = hasTargetComponents[i];
 
             //    if (hasTarget.Type == HasTarget.TargetType.Entity &&
-            //        TargetTranslationLookup.HasComponent(hasTarget.TargetEntity))
+            //        TargetTransformLookup.HasComponent(hasTarget.TargetEntity))
             //    {
-            //        var targetTranslation = TargetTranslationLookup[hasTarget.TargetEntity];
-            //        hasTarget.TargetPosition = targetTranslation.Value.xy;
+            //        var targetTransform = TargetTransformLookup[hasTarget.TargetEntity];
+            //        hasTarget.TargetPosition = targetTransform.Position.xy;
 
             //        hasTargetComponents[i] = hasTarget; // Write updated struct back
             //    }

@@ -27,9 +27,9 @@ public class MovementSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
-        var deltaTime = Time.DeltaTime;
+        var deltaTime = SystemAPI.Time.DeltaTime;
         //float moveX = 0f;
         //float moveY = 0f;
         //bool isRunnning = false;
@@ -112,56 +112,55 @@ public class MovementSystem : SystemBase
         float maxRange = 1.125f;
         //float minRange = 1.75f;
         //float maxRange = 1.875f;
-        var speedJobHandle = Entities.WithName("ApplyRandomSpeed")
-          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
-          {
-              if (movementSpeedComponent.isRunnning)
-              {
-                  Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-                  movementSpeedComponent.randomSpeed = 2f;//random.NextFloat(minRange, maxRange);
-              }
-              else
-              {
-                  //Unity.Mathematics.Random random2 = new Unity.Mathematics.Random((uint)entity.Index);
-                  //velocity.randomSpeed = random2.NextFloat(.5f, .6f);
-                  movementSpeedComponent.randomSpeed = .5f;
-              }
+        foreach (var (transform, position, movementSpeed, entity) in SystemAPI.Query<RefRW<LocalTransform>, RefRW<PositionComponent>, RefRW<MovementSpeedComponent>>().WithEntityAccess())
+        {
+            if (movementSpeed.ValueRO.isRunnning)
+            {
+                Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
+                movementSpeed.ValueRW.randomSpeed = 2f;//random.NextFloat(minRange, maxRange);
+            }
+            else
+            {
+                //Unity.Mathematics.Random random2 = new Unity.Mathematics.Random((uint)entity.Index);
+                //velocity.randomSpeed = random2.NextFloat(.5f, .6f);
+                movementSpeed.ValueRW.randomSpeed = .5f;
+            }
 
-              float3 vel = new float3(movementSpeedComponent.velocity.x, movementSpeedComponent.velocity.y, 0) * movementSpeedComponent.randomSpeed;
-              vel.z = 0;
-              movementSpeedComponent.velocity = vel;
-          }).ScheduleParallel(Dependency);
+            float3 vel = new float3(movementSpeed.ValueRO.velocity.x, movementSpeed.ValueRO.velocity.y, 0) * movementSpeed.ValueRO.randomSpeed;
+            vel.z = 0;
+            movementSpeed.ValueRW.velocity = vel;
+        }
 
         // -- JOB 3: Update Animation State (Burst Parallel) --
         // This could also be a separate system after Physics.
         // Get direction for animation
-        var animationJobHandle = Entities
-     .WithName("UpdateAnimationFromVelocity")
-   .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
-   {
-       float2 velocity = movementSpeedComponent.velocity.xy;
-       //if (!movementSpeedComponent.isPlayerControlled) 
-       //{
-       //    movementSpeedComponent.aimDirection = movementSpeedComponent.velocity.xy;
-       //}
-       //update view direction
-       if (/* movementSpeedComponent.isPlayerControlled &&*/ (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending))
-       {
+        foreach (var (transform, movementSpeed, animationComponent, combatState) in SystemAPI.Query<RefRW<LocalTransform>, RefRW<MovementSpeedComponent>, RefRW<AnimationComponent>, RefRO<CombatState>>())
+        {
+            float2 velocity = movementSpeed.ValueRO.velocity.xy;
+            //if (!movementSpeedComponent.isPlayerControlled) 
+            //{
+            //    movementSpeedComponent.aimDirection = movementSpeedComponent.velocity.xy;
+            //}
+            //update view direction
+            if (/* movementSpeedComponent.isPlayerControlled &&*/ (combatState.ValueRO.CurrentState == CombatState.State.Attacking || combatState.ValueRO.CurrentState == CombatState.State.Defending))
+            {
 
 
 
-           if (movementSpeedComponent.isPlayerControlled)
-           {
-               float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
-               CombatUtils.SetAnimationDirection(ref animationComponent, viewDirection);
-           }
-           //else
-           //{
+                if (movementSpeed.ValueRO.isPlayerControlled)
+                {
+                    float2 viewDirection = (movementSpeed.ValueRO.aimDirection - transform.ValueRO.Position.xy);
+                    var anim = animationComponent.ValueRW;
+                    CombatUtils.SetAnimationDirection(ref anim, viewDirection);
+                    animationComponent.ValueRW = anim;
+                }
+                //else
+                //{
 
-           //    //movementSpeedComponent.aimDirection = velocity;// velocity;
-           //    //CombatUtils.SetAnimationDirection(ref animationComponent, movementSpeedComponent.aimDirection);
+                //    //movementSpeedComponent.aimDirection = velocity;// velocity;
+                //    //CombatUtils.SetAnimationDirection(ref animationComponent, movementSpeedComponent.aimDirection);
 
-           //}
+                //}
 
 
 
@@ -197,7 +196,9 @@ public class MovementSystem : SystemBase
        {
            if (math.lengthsq(velocity) > 0.0001f) // Check if moving
            {
-               CombatUtils.SetAnimationDirection(ref animationComponent, velocity);
+               var anim = animationComponent.ValueRW;
+               CombatUtils.SetAnimationDirection(ref anim, velocity);
+               animationComponent.ValueRW = anim;
                //compare abs values to deterimine dominant axis
                //if (math.abs(velocity.x) > math.abs(velocity.y))
                //{
@@ -230,40 +231,38 @@ public class MovementSystem : SystemBase
 
 
 
-       animationComponent.prevDirection = animationComponent.Direction;
-   }).ScheduleParallel(speedJobHandle);
+       animationComponent.ValueRW.prevDirection = animationComponent.ValueRO.Direction;
+        }
 
 
 
         // !!! REMOVE Dependency.Complete() !!! 
         // Let the scheduler handle it. Your CollisionSystem should use this Dependency.
 
-        var restrictMovemenJobHandle = Entities
-                .WithName("RestrictMovementByStates")
-                .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in AttackComponent attackComponent, in CombatState combatState) =>
-                {
+        foreach (var (movementSpeed, animationComponent, attackComponent, combatState) in SystemAPI.Query<RefRW<MovementSpeedComponent>, RefRW<AnimationComponent>, RefRO<AttackComponent>, RefRO<CombatState>>())
+        {
 
-                    switch (animationComponent.AnimationType)
+            switch (animationComponent.ValueRO.AnimationType)
+            {
+                case EntitySpawner.AnimationType.Attack:
+                case EntitySpawner.AnimationType.TakeDamage:
+                    //if (!attackComponent.isTakingDamage)
+                    if (combatState.ValueRO.CurrentState != CombatState.State.TakingDamage)
                     {
-                        case EntitySpawner.AnimationType.Attack:
-                        case EntitySpawner.AnimationType.TakeDamage:
-                            //if (!attackComponent.isTakingDamage)
-                            if (combatState.CurrentState != CombatState.State.TakingDamage)
-                            {
-                                movementSpeedComponent.velocity = float3.zero;
-                            }
-                            break;
-
-                        default:
-                            //dont do nothing
-                            break;
+                        movementSpeed.ValueRW.velocity = float3.zero;
                     }
+                    break;
 
-                }).ScheduleParallel(animationJobHandle);
+                default:
+                    //dont do nothing
+                    break;
+            }
+
+        }
 
 
         // Set the final dependency for the next system
-        Dependency = restrictMovemenJobHandle;
+        // Dependency is now handled automatically by SystemAPI.Query
     }
 
 }

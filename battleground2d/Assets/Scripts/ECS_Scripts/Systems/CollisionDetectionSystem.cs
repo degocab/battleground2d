@@ -22,7 +22,7 @@ public partial class CollisionDetectionSystem : SystemBase
     protected override void OnCreate()
     {
 
-        _entityQuery = GetEntityQuery(typeof(Translation), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>() 
+        _entityQuery = GetEntityQuery(typeof(LocalTransform), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>() 
             //,ComponentType.Exclude<DeadTagComponent>()
             );
         ecbSystem = World.GetOrCreateSystem<EntityCommandBufferSystem>();
@@ -125,7 +125,7 @@ public partial class CollisionDetectionSystem : SystemBase
 
         var collisionJob = new CollisionDetectionJob
         {
-            TranslationType = GetComponentTypeHandle<Translation>(true),
+            TransformType = GetComponentTypeHandle<LocalTransform>(true),
             ColliderType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
             BodyType = GetComponentTypeHandle<ECS_PhysicsBody2DAuthoring>(true),
             EntityType = GetEntityTypeHandle(),
@@ -144,7 +144,7 @@ public partial class CollisionDetectionSystem : SystemBase
             EntityHandle = GetEntityTypeHandle(),
             CollisionBufferHandle = GetBufferTypeHandle<CollisionEvent2D>(false)
             ,
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true)
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true)
             ,
             BodyTypeHandle = GetComponentTypeHandle<ECS_PhysicsBody2DAuthoring>(true)
             ,
@@ -239,23 +239,23 @@ public partial class CollisionDetectionSystem : SystemBase
     {
         [ReadOnly] public NativeMultiHashMap<Entity, CollisionQuadrantData> CollisionEvents;
         [ReadOnly] public EntityTypeHandle EntityHandle;
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
         [ReadOnly] public ComponentTypeHandle<ECS_PhysicsBody2DAuthoring> BodyTypeHandle;
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderTypeHandle;
         public BufferTypeHandle<CollisionEvent2D> CollisionBufferHandle;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             var entities = chunk.GetNativeArray(EntityHandle);
-            var translations = chunk.GetNativeArray(TranslationTypeHandle);
-            var bodies = chunk.GetNativeArray(BodyTypeHandle);
-            var colliders = chunk.GetNativeArray(ColliderTypeHandle);
-            var buffers = chunk.GetBufferAccessor(CollisionBufferHandle);
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
+            var bodies = chunk.GetNativeArray(ref BodyTypeHandle);
+            var colliders = chunk.GetNativeArray(ref ColliderTypeHandle);
+            var buffers = chunk.GetBufferAccessor(ref CollisionBufferHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = entities[i];
-                Translation translation = translations[i];
+                LocalTransform transform = transforms[i];
                 ECS_PhysicsBody2DAuthoring body = bodies[i];
                 ECS_CircleCollider2DAuthoring collider = colliders[i];
                 var buffer = buffers[i];
@@ -268,7 +268,7 @@ public partial class CollisionDetectionSystem : SystemBase
                     do
                     {
                         if (count++ < MaxCollisions)
-                            buffer.Add(new CollisionEvent2D { OtherEntity = other.entity, OtherBody = other.CollisionSourceBody, OtherCollider = other.CollisionSourceCollider, OtherTranslation = other.CollisionSourceTranslation });
+                            buffer.Add(new CollisionEvent2D { OtherEntity = other.entity, OtherBody = other.CollisionSourceBody, OtherCollider = other.CollisionSourceCollider, OtherTransform = other.CollisionSourceTransform });
                     }
                     while (CollisionEvents.TryGetNextValue(out other, ref it));
                 }
@@ -280,7 +280,7 @@ public partial class CollisionDetectionSystem : SystemBase
     [BurstCompile]
     struct CollisionDetectionJob : IJobChunk
     {
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformType;
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ColliderType;
         [ReadOnly] public ComponentTypeHandle<ECS_PhysicsBody2DAuthoring> BodyType;
         [ReadOnly] public EntityTypeHandle EntityType;
@@ -290,21 +290,21 @@ public partial class CollisionDetectionSystem : SystemBase
         [ReadOnly] public NativeMultiHashMap<int, CollisionQuadrantData> collisionQuadrantMap;
         public NativeMultiHashMap<Entity, CollisionQuadrantData>.ParallelWriter CollisionEvents;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
-            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+            if (chunk.Has(ref DeadTagTypeHandle))
                 return;
 
-            var translations = chunk.GetNativeArray(TranslationType);
-            var colliders = chunk.GetNativeArray(ColliderType);
+            var transforms = chunk.GetNativeArray(ref TransformType);
+            var colliders = chunk.GetNativeArray(ref ColliderType);
             var entities = chunk.GetNativeArray(EntityType);
-            var bodies = chunk.GetNativeArray(BodyType);
+            var bodies = chunk.GetNativeArray(ref BodyType);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entityA = entities[i];
-                float2 posA = translations[i].Value.xy;
+                float2 posA = transforms[i].Position.xy;
                 float radiusA = colliders[i].Radius;
 
                 int baseX = (int)math.floor(posA.x / CollisionQuadrantSystem.quadrantCellSize);
@@ -337,7 +337,7 @@ public partial class CollisionDetectionSystem : SystemBase
                         {
                             CollisionEvents.Add(entityA, /*entityB*/otherData);
                             CollisionEvents.Add(entityB, /*entityA*/
-                                new CollisionQuadrantData { CollisionSourceTranslation = translations[i],
+                                new CollisionQuadrantData { CollisionSourceTransform = transforms[i],
                                                             CollisionSourceCollider = colliders[i],
                                                             CollisionSourceBody = bodies[i]
                                 });

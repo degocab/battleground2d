@@ -28,7 +28,7 @@ public partial class CombatSystem : SystemBase
             ComponentType.ReadWrite<AnimationComponent>(),
             ComponentType.ReadWrite<DefenseComponent>(),
             ComponentType.ReadWrite<MovementSpeedComponent>(),
-            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadOnly<HasTarget>(),
             ComponentType.Exclude<CommanderComponent>()
         );
@@ -36,54 +36,49 @@ public partial class CombatSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
-        float deltaTime = Time.DeltaTime;
-        float currentTime = (float)Time.ElapsedTime;
+        float deltaTime = SystemAPI.Time.DeltaTime;
+        float currentTime = (float)SystemAPI.Time.ElapsedTime;
         //_random.NextUInt();
         // Reset cooldowns first
-        Entities
-            .WithName("ResetCoolDowns")
-            .ForEach((
-                ref AttackComponent attackComponent,
-                ref AttackCooldownComponent cooldown,
-                ref DefenseComponent defenseComponent,
-                ref HealthComponent healthComponent) =>
-            {
-                if (cooldown.attackCoolTimeRemaining > 0)
-                    cooldown.attackCoolTimeRemaining -= deltaTime;
-                if (cooldown.takingDmgTimeRemaining > 0)
-                    cooldown.takingDmgTimeRemaining -= deltaTime;
-                if (attackComponent.AttackRateRemaining > 0)
-                    attackComponent.AttackRateRemaining -= deltaTime;
-                if (defenseComponent.BlockDuration > 0)
-                    defenseComponent.BlockDuration -= deltaTime;
-                if (attackComponent.DefendCooldownRemaining > 0)
-                    attackComponent.DefendCooldownRemaining -= deltaTime;
-                if (healthComponent.timeRemaining > 0)
-                    healthComponent.timeRemaining -= deltaTime;
-            }).ScheduleParallel();
+        foreach (var (attackComponent, cooldown, defenseComponent, healthComponent) in 
+            SystemAPI.Query<RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<DefenseComponent>, RefRW<HealthComponent>>())
+        {
+            if (cooldown.PositionRO.attackCoolTimeRemaining > 0)
+                cooldown.PositionRW.attackCoolTimeRemaining -= deltaTime;
+            if (cooldown.PositionRO.takingDmgTimeRemaining > 0)
+                cooldown.PositionRW.takingDmgTimeRemaining -= deltaTime;
+            if (attackComponent.PositionRO.AttackRateRemaining > 0)
+                attackComponent.PositionRW.AttackRateRemaining -= deltaTime;
+            if (defenseComponent.PositionRO.BlockDuration > 0)
+                defenseComponent.PositionRW.BlockDuration -= deltaTime;
+            if (attackComponent.PositionRO.DefendCooldownRemaining > 0)
+                attackComponent.PositionRW.DefendCooldownRemaining -= deltaTime;
+            if (healthComponent.PositionRO.timeRemaining > 0)
+                healthComponent.PositionRW.timeRemaining -= deltaTime;
+        }
 
-        // Get the ComponentDataFromEntity for translations
-        ComponentDataFromEntity<Translation> translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        // Get the ComponentDataFromEntity for transforms
+        ComponentDataFromEntity<LocalTransform> transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
 
         var combatJob = new CombatJob
         {
             DeltaTime = deltaTime,
             CurrentTime = currentTime,
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter(),
-            TranslationFromEntity = translationFromEntity,
+            TransformFromEntity = transformFromEntity,
             EntityTypeHandle = GetEntityTypeHandle(),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
             CooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(false),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
             MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
             HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true),
             DefenseTypeHandle = GetComponentTypeHandle<DefenseComponent>(false),
-            Random = new Unity.Mathematics.Random((uint)(Time.ElapsedTime * 1000))
+            Random = new Unity.Mathematics.Random((uint)(SystemAPI.Time.ElapsedTime * 1000))
         };
 
         Dependency = combatJob.ScheduleParallel(_combatQuery, Dependency);
@@ -96,7 +91,7 @@ public partial class CombatSystem : SystemBase
         public float DeltaTime;
         public float CurrentTime;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentDataFromEntity<Translation> TranslationFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TransformFromEntity;
 
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
@@ -104,21 +99,21 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         public ComponentTypeHandle<DefenseComponent> DefenseTypeHandle;
         public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
         [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public Unity.Mathematics.Random Random;
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            var combatStates = chunk.GetNativeArray(CombatStateTypeHandle);
-            var attacks = chunk.GetNativeArray(AttackTypeHandle);
-            var cooldowns = chunk.GetNativeArray(CooldownTypeHandle);
-            var animations = chunk.GetNativeArray(AnimationTypeHandle);
-            var translations = chunk.GetNativeArray(TranslationTypeHandle);
-            var hasTargets = chunk.GetNativeArray(HasTargetTypeHandle);
+            var combatStates = chunk.GetNativeArray(ref CombatStateTypeHandle);
+            var attacks = chunk.GetNativeArray(ref AttackTypeHandle);
+            var cooldowns = chunk.GetNativeArray(ref CooldownTypeHandle);
+            var animations = chunk.GetNativeArray(ref AnimationTypeHandle);
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
+            var hasTargets = chunk.GetNativeArray(ref HasTargetTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-            var defenses = chunk.GetNativeArray(DefenseTypeHandle);
-            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
+            var defenses = chunk.GetNativeArray(ref DefenseTypeHandle);
+            var movementSpeeds = chunk.GetNativeArray(ref MovementSpeedTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -126,7 +121,7 @@ public partial class CombatSystem : SystemBase
                 var attack = attacks[i];
                 var cooldown = cooldowns[i];
                 var animation = animations[i];
-                var translation = translations[i];
+                var transform = transforms[i];
                 var hasTarget = hasTargets[i];
                 var entity = entities[i];
                 var defense = defenses[i];
@@ -192,7 +187,7 @@ public partial class CombatSystem : SystemBase
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
+                                        Entity entity, int chunkIndex, LocalTransform transform, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -207,8 +202,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             // Check cooldown states
             bool animationReady = cooldown.attackCoolTimeRemaining <= 0f;
@@ -269,7 +264,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
-                                      ref AttackComponent attack, Translation translation, HasTarget hasTarget)
+                                      ref AttackComponent attack, LocalTransform transform, HasTarget hasTarget)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -279,8 +274,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (inRange)
             {
@@ -303,7 +298,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleDefendingState(ref CombatState combatState, ref AttackComponent attack,
-                                        ref AnimationComponent animation, Translation translation, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
+                                        ref AnimationComponent animation, LocalTransform transform, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
         {
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
             {
@@ -311,8 +306,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (!inRange)
             {

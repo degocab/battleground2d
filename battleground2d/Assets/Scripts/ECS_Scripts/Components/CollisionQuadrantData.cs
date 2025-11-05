@@ -11,7 +11,7 @@ public struct CollisionQuadrantData
     public EntitySpawner.UnitType unitType;
 
     // other date
-    public Translation CollisionSourceTranslation;
+    public LocalTransform CollisionSourceTransform;
     public ECS_CircleCollider2DAuthoring CollisionSourceCollider;
     public ECS_PhysicsBody2DAuthoring CollisionSourceBody;
 }
