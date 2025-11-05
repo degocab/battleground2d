@@ -557,11 +557,11 @@ MonoBehaviour:
     show: 0
     deleteQuestion: 0
   - s: "## PHASE 2: FORMATIONS & TACTICS (After combat is solid)\r\n\r\n### Week
-      3: Formation Foundation\r\n```\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[
-      ] Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem
+      3: Formation Foundation\r\n```\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[x]
+      Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem
       \r\n[x] Implement Hold Position behavior\r\n```\r\n\r\n### Week 4: Advanced
-      Formations\r\n```\r\n[ ] Implement Advance/Attack Move/Charge commands\r\n[
-      ] Add Formation collision (groups avoid other groups)\r\n[ ] Dynamic rank promotion
+      Formations\r\n```\r\n[ ] Implement Advance/Attack Move/Charge commands\r\n[x]
+      Add Formation collision (groups avoid other groups)\r\n[ ] Dynamic rank promotion
       (middle\u2192front when gaps appear)\r\n```"
     state: 2
     show: 1

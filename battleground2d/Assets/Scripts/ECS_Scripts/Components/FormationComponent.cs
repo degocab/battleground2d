@@ -64,4 +64,6 @@ public struct FormationGroupComponent : IComponentData
     public CommandType CurrentCommand;
     public bool ShouldUpdateAnchorToCurrentPosition; // NEW
     public Entity FormationGroupEntity;
+
+    public float2 CurrentUnitAveragePosition;
 }

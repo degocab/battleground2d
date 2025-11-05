@@ -44,11 +44,13 @@ public class UnitFactory
                 //positions = FormationGenerator.GeneratePhalanxFormation(count, spawnPosition, 256 , .275f, 1);
                 positions = FormationGenerator.GenerateSinglePhalanx(count , .275f, spawnPosition.y, spawnPosition.x);
                 formationGroup.UnitSpacing = .275f;
+                formationGroup.UnitsPerRow = 16;
                 break;
             case FormationType.Horde:
             default:
                 positions = FormationGenerator.GenerateHordeFormation(count, 20f, 1f, 0.275f, 12345, spawnPosition);
                 formationGroup.UnitSpacing = .275f;
+                formationGroup.UnitsPerRow = 20;
                 break;
         }
         entityManager.AddComponentData(groupEntity, formationGroup);

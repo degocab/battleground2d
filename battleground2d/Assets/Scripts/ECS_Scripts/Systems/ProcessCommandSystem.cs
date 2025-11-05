@@ -21,6 +21,13 @@ public class ProcessCommandSystem : JobComponentSystem
     private EntityQuery _formationGroupQuery;
     public FormationManagerSystem fms;
     private EntityManager entityManager;
+    private EntityQuery _unitQuery;
+    private EntityQuery _unitGroupQuery;
+
+    [NativeDisableParallelForRestriction]
+    private NativeMultiHashMap<Entity, Entity> _groupToUnitsMap;
+    [NativeDisableParallelForRestriction]
+    private NativeHashMap<Entity, float2> _groupAveragePositions;
 
     protected override void OnCreate()
     {
@@ -29,14 +36,50 @@ public class ProcessCommandSystem : JobComponentSystem
 
         _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
         entityManager = EntityManager;
+        _unitQuery = GetEntityQuery(
+    ComponentType.ReadWrite<FormationComponent>(),
+    ComponentType.Exclude<DeadTagComponent>()
+);
+        _unitGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
+
     }
 
+    private void InitializeOrClearNativeMaps(int unitCount, int groupCount)
+    {
+        if (!_groupToUnitsMap.IsCreated)
+            _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(unitCount * 2, Allocator.Persistent);
+        else
+            _groupToUnitsMap.Clear();
+
+    }
+    private void PopulateGroupToUnitsMap(NativeArray<Entity> unitEntities, JobHandle inputDeps)
+    {
+        var groupToUnitsWriter = _groupToUnitsMap.AsParallelWriter();
+        Entities
+            .WithAll<FormationComponent>()
+            .ForEach((Entity entity, ref FormationComponent formationComponent) =>
+            {
+                if (formationComponent.FormationGroupEntity.HasValue)
+                {
+                    groupToUnitsWriter.Add(formationComponent.FormationGroupEntity.Value, entity);
+                }
+            }).WithBurst().Schedule(inputDeps).Complete();
+    }
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         if (fms == null)
         {
             fms = World.GetExistingSystem<FormationManagerSystem>();
         }
+        var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
+        var translations = GetComponentDataFromEntity<Translation>(true);
+        var groupCount = _unitGroupQuery.CalculateEntityCount();
+
+        InitializeOrClearNativeMaps(unitEntities.Length, groupCount);
+        PopulateGroupToUnitsMap(unitEntities, inputDeps);
+
+
+
         //get commander 
         // Check if we have a commander
         EntityQuery _query = GetEntityQuery(
@@ -92,17 +135,17 @@ ComponentType.Exclude<CommanderComponent>());
                     case CommandType.Attack:
                         break;
                     case CommandType.Defend:
-                        if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
-                        {
-                            //formationGroup.AnchorPosition = currentAveragePos;
-                            float distance = math.distance(currentAveragePos, formationGroup.AnchorPosition);
+                        //if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
+                        //{
+                        //formationGroup.AnchorPosition = currentAveragePos;
+                        float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
 
-                            // Only update if we've moved significantly from current anchor
-                            if (distance > 5f)
-                            {
-                                formationGroup.AnchorPosition = currentAveragePos;
-                            }
+                        // Only update if we've moved significantly from current anchor
+                        if (distance > 5f)
+                        {
+                            formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
                         }
+                        //}
                         break;
                     default:
                         break;  
@@ -338,7 +381,7 @@ ComponentType.Exclude<CommanderComponent>());
         var fms = World.GetExistingSystem<FormationManagerSystem>();
         var translations = GetComponentDataFromEntity<Translation>(true);
 
-        if (fms._groupToUnitsMap.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
+        if (_groupToUnitsMap.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
         {
             do
             {
@@ -349,7 +392,7 @@ ComponentType.Exclude<CommanderComponent>());
                     unitCount++;
                 }
             }
-            while (fms._groupToUnitsMap.TryGetNextValue(out unitEntity, ref iterator));
+            while (_groupToUnitsMap.TryGetNextValue(out unitEntity, ref iterator));
         }
 
         return unitCount > 0 ? sum / unitCount : float2.zero;
