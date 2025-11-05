@@ -46,18 +46,18 @@ public partial class CombatSystem : SystemBase
         foreach (var (attackComponent, cooldown, defenseComponent, healthComponent) in 
             SystemAPI.Query<RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<DefenseComponent>, RefRW<HealthComponent>>())
         {
-            if (cooldown.ValueRO.attackCoolTimeRemaining > 0)
-                cooldown.ValueRW.attackCoolTimeRemaining -= deltaTime;
-            if (cooldown.ValueRO.takingDmgTimeRemaining > 0)
-                cooldown.ValueRW.takingDmgTimeRemaining -= deltaTime;
-            if (attackComponent.ValueRO.AttackRateRemaining > 0)
-                attackComponent.ValueRW.AttackRateRemaining -= deltaTime;
-            if (defenseComponent.ValueRO.BlockDuration > 0)
-                defenseComponent.ValueRW.BlockDuration -= deltaTime;
-            if (attackComponent.ValueRO.DefendCooldownRemaining > 0)
-                attackComponent.ValueRW.DefendCooldownRemaining -= deltaTime;
-            if (healthComponent.ValueRO.timeRemaining > 0)
-                healthComponent.ValueRW.timeRemaining -= deltaTime;
+            if (cooldown.PositionRO.attackCoolTimeRemaining > 0)
+                cooldown.PositionRW.attackCoolTimeRemaining -= deltaTime;
+            if (cooldown.PositionRO.takingDmgTimeRemaining > 0)
+                cooldown.PositionRW.takingDmgTimeRemaining -= deltaTime;
+            if (attackComponent.PositionRO.AttackRateRemaining > 0)
+                attackComponent.PositionRW.AttackRateRemaining -= deltaTime;
+            if (defenseComponent.PositionRO.BlockDuration > 0)
+                defenseComponent.PositionRW.BlockDuration -= deltaTime;
+            if (attackComponent.PositionRO.DefendCooldownRemaining > 0)
+                attackComponent.PositionRW.DefendCooldownRemaining -= deltaTime;
+            if (healthComponent.PositionRO.timeRemaining > 0)
+                healthComponent.PositionRW.timeRemaining -= deltaTime;
         }
 
         // Get the ComponentDataFromEntity for transforms
@@ -113,7 +113,7 @@ public partial class CombatSystem : SystemBase
             var hasTargets = chunk.GetNativeArray(ref HasTargetTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var defenses = chunk.GetNativeArray(ref DefenseTypeHandle);
-            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
+            var movementSpeeds = chunk.GetNativeArray(ref MovementSpeedTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -121,7 +121,7 @@ public partial class CombatSystem : SystemBase
                 var attack = attacks[i];
                 var cooldown = cooldowns[i];
                 var animation = animations[i];
-                var translation = translations[i];
+                var transform = transforms[i];
                 var hasTarget = hasTargets[i];
                 var entity = entities[i];
                 var defense = defenses[i];
@@ -187,7 +187,7 @@ public partial class CombatSystem : SystemBase
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
+                                        Entity entity, int chunkIndex, LocalTransform transform, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -202,8 +202,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             // Check cooldown states
             bool animationReady = cooldown.attackCoolTimeRemaining <= 0f;
@@ -264,7 +264,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
-                                      ref AttackComponent attack, Translation translation, HasTarget hasTarget)
+                                      ref AttackComponent attack, LocalTransform transform, HasTarget hasTarget)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -274,8 +274,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (inRange)
             {
@@ -298,7 +298,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleDefendingState(ref CombatState combatState, ref AttackComponent attack,
-                                        ref AnimationComponent animation, Translation translation, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
+                                        ref AnimationComponent animation, LocalTransform transform, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
         {
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
             {
@@ -306,8 +306,8 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
+            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (!inRange)
             {
