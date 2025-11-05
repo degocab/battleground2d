@@ -115,33 +115,26 @@ public class PlayerControlSystem : SystemBase
         }
         // This job sets the desired velocity based on input or AI for commander.
         //var inputJobHandle = 
-        Entities
-            .WithName("SetCommanderVelocity")
-            .WithAll<PlayerInputComponent>()
-            .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-            {
-
-
-
-                movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
-                movementSpeedComponent.isRunnning = isRunnning;
-                movementSpeedComponent.isPlayerControlled = true;
-                movementSpeedComponent.aimDirection = worldMousePosFloat;
-
-            }).Run();
+        foreach (var movementSpeed in SystemAPI.Query<RefRW<MovementSpeedComponent>>().WithAll<PlayerInputComponent>())
+        {
+            movementSpeed.ValueRW.velocity = new float3(moveX, moveY, 0);
+            movementSpeed.ValueRW.isRunnning = isRunnning;
+            movementSpeed.ValueRW.isPlayerControlled = true;
+            movementSpeed.ValueRW.aimDirection = worldMousePosFloat;
+        }
 
 
         //var ecb = _ecbSystem.CreateCommandBuffer();
         var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         var commanderEntity = GetSingletonEntity<CommanderComponent>();
-        var commanderTranslation = GetComponent<Translation>(commanderEntity);
+        var commanderTransform = GetComponent<LocalTransform>(commanderEntity);
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
             if (Input.GetKeyDown((KeyCode)key))
             {
                 int commandType = key - (int)KeyCode.Alpha1;
-                var newCommand = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
+                var newCommand = CreateCommandFromNumber(commandType, commanderTransform.Position, GetMouseWorldPosition());
 
                 // Use a local variable to capture the command for the job
                 var commandCopy = newCommand;
@@ -172,27 +165,23 @@ public class PlayerControlSystem : SystemBase
 
 
                 //update groups
-                Entities
-                     .WithName("UpdateOrdersForGroups")
-                     .WithAll<FormationGroupComponent>()
-                     .WithNone<CommanderComponent, Unit>()
-                     .ForEach((Entity entity, int entityInQueryIndex,
-                     ref FormationGroupComponent formationGroup, ref CommandData commandData) =>
-                     {
-
-                         // Then update command data
-                         commandData = commandCopy;
-                         //if (commandCopy.Command == CommandType.FindTarget)
-                         //{
-                         //    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
-                         //}
-
-                     }).WithoutBurst().Run();
+                foreach (var (formationGroup, commandData, entity) in SystemAPI.Query<RefRW<FormationGroupComponent>, RefRW<CommandData>>()
+                    .WithAll<FormationGroupComponent>()
+                    .WithNone<CommanderComponent, Unit>()
+                    .WithEntityAccess())
+                {
+                    // Then update command data
+                    commandData.ValueRW = commandCopy;
+                    //if (commandCopy.Command == CommandType.FindTarget)
+                    //{
+                    //    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                    //}
+                }
                 break; // Important: Only process one key per frame
             }
         }
         //this.Dependency.Complete();
-        float deltaTime = Time.DeltaTime;
+        float deltaTime = SystemAPI.Time.DeltaTime;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         bool isAttacking = Input.GetMouseButtonDown(0);
         bool isDefending = Input.GetMouseButton(1);
@@ -200,28 +189,18 @@ public class PlayerControlSystem : SystemBase
 
 
         UpdateCameraZoom();
-        float currentTime = (float)Time.ElapsedTime;
+        float currentTime = (float)SystemAPI.Time.ElapsedTime;
 
         Dependency.Complete();
-        Entities
-            .WithoutBurst()
-            .ForEach((
-                ref PlayerInputComponent playerInput,
-                ref Translation translation,
-                ref CombatState combatState,
-                ref AttackComponent attackComponent,
-                ref AttackCooldownComponent attackCooldown,
-                ref AnimationComponent animationComponent,
-                ref MovementSpeedComponent movementSpeedComponent,
-                ref DefenseComponent defenseComponent
-            ) =>
-            {
+        foreach (var (playerInput, transform, combatState, attackComponent, attackCooldown, animationComponent, movementSpeed, defenseComponent) 
+            in SystemAPI.Query<RefRW<PlayerInputComponent>, RefRW<LocalTransform>, RefRW<CombatState>, RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<AnimationComponent>, RefRW<MovementSpeedComponent>, RefRW<DefenseComponent>>())
+        {
 
-                if (combatState.CurrentState == CombatState.State.TakingDamage)
-                {
-                    //combatState.CurrentState = CombatState.State.TakingDamage;
-                    return;
-                }
+            if (combatState.ValueRO.CurrentState == CombatState.State.TakingDamage)
+            {
+                //combatState.CurrentState = CombatState.State.TakingDamage;
+                continue;
+            }
 
 
 
