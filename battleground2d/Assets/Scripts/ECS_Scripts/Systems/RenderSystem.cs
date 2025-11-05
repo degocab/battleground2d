@@ -49,13 +49,18 @@ public class RenderSystem : SystemBase
     }
 
     [BurstCompile]
-    private struct CullJob : IJobForEachWithEntity<Translation, AnimationComponent, Unit>
+    private struct CullJob : IJobChunk
     {
         public float xMin;
         public float xMax;
         public float yBottom;
         public float yTop_1, yTop_2, yTop_3, yTop_4, yTop_5, yTop_6, yTop_7, yTop_8, yTop_9, yTop_10;
         public float yTop_11, yTop_12, yTop_13, yTop_14, yTop_15, yTop_16, yTop_17, yTop_18, yTop_19, yTop_20;
+
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<Unit> UnitTypeHandle;
+        [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         // Use NativeList ParallelWriter for thread-safe adds
         [NativeDisableParallelForRestriction]
@@ -99,60 +104,73 @@ public class RenderSystem : SystemBase
         [NativeDisableParallelForRestriction]
         public NativeList<RenderData>.ParallelWriter nativeList_20;
 
-        public void Execute(Entity entity, int index, [ReadOnly] ref Translation translation, [ReadOnly] ref AnimationComponent animation, [ReadOnly] ref Unit unit)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            float x = translation.Value.x;
-            float y = translation.Value.y;
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
+            var animations = chunk.GetNativeArray(ref AnimationTypeHandle);
+            var units = chunk.GetNativeArray(ref UnitTypeHandle);
+            var entities = chunk.GetNativeArray(EntityTypeHandle);
 
-            if (x > xMin && x < xMax && y < yTop_1 && y > yBottom)
+            for (int i = 0; i < chunk.Count; i++)
             {
+                var transform = transforms[i];
+                var animation = animations[i];
+                var unit = units[i];
+                var entity = entities[i];
 
-                float3 renderPosition = translation.Value;
-                if (animation.isFrozen)
+                float x = transform.Position.x;
+                float y = transform.Position.y;
+
+                if (x > xMin && x < xMax && y < yTop_1 && y > yBottom)
                 {
-                    renderPosition.z = 10f;
 
+                    float3 renderPosition = transform.Position;
+                    if (animation.isFrozen)
+                    {
+                        renderPosition.z = 10f;
+
+                    }
+                    else
+                    {
+                        renderPosition.z = renderPosition.y * .01f;
+
+                    }
+
+
+
+
+                    var renderData = new RenderData
+                    {
+                        entity = entity,
+                        position = transform.Position,
+                        //matrix = animation.matrix,
+                        matrix = Matrix4x4.TRS(renderPosition, Quaternion.identity, Vector3.one), // Calculate here!
+                        uv = animation.uv,
+                        isFrozen = animation.isFrozen,
+                        tintColor = unit.Rank == 7 ? new Vector4(1.2f, 1.2f, 1.5f, 1f) : animation.isFrozen ? new Vector4(1f, 0.3f, 0.3f, 0.5f) : Vector4.one // RED TINT FOR DEAD UNITS
+                    };
+
+                    if (y < yTop_20) nativeList_20.AddNoResize(renderData);
+                    else if (y < yTop_19) nativeList_19.AddNoResize(renderData);
+                    else if (y < yTop_18) nativeList_18.AddNoResize(renderData);
+                    else if (y < yTop_17) nativeList_17.AddNoResize(renderData);
+                    else if (y < yTop_16) nativeList_16.AddNoResize(renderData);
+                    else if (y < yTop_15) nativeList_15.AddNoResize(renderData);
+                    else if (y < yTop_14) nativeList_14.AddNoResize(renderData);
+                    else if (y < yTop_13) nativeList_13.AddNoResize(renderData);
+                    else if (y < yTop_12) nativeList_12.AddNoResize(renderData);
+                    else if (y < yTop_11) nativeList_11.AddNoResize(renderData);
+                    else if (y < yTop_10) nativeList_10.AddNoResize(renderData);
+                    else if (y < yTop_9) nativeList_9.AddNoResize(renderData);
+                    else if (y < yTop_8) nativeList_8.AddNoResize(renderData);
+                    else if (y < yTop_7) nativeList_7.AddNoResize(renderData);
+                    else if (y < yTop_6) nativeList_6.AddNoResize(renderData);
+                    else if (y < yTop_5) nativeList_5.AddNoResize(renderData);
+                    else if (y < yTop_4) nativeList_4.AddNoResize(renderData);
+                    else if (y < yTop_3) nativeList_3.AddNoResize(renderData);
+                    else if (y < yTop_2) nativeList_2.AddNoResize(renderData);
+                    else nativeList_1.AddNoResize(renderData);
                 }
-                else
-                {
-                    renderPosition.z = renderPosition.y * .01f;
-
-                }
-
-
-
-
-                var renderData = new RenderData
-                {
-                    entity = entity,
-                    position = translation.Value,
-                    //matrix = animation.matrix,
-                    matrix = Matrix4x4.TRS(renderPosition, Quaternion.identity, Vector3.one), // Calculate here!
-                    uv = animation.uv,
-                    isFrozen = animation.isFrozen,
-                    tintColor = unit.Rank == 7 ? new Vector4(1.2f, 1.2f, 1.5f, 1f) : animation.isFrozen ? new Vector4(1f, 0.3f, 0.3f, 0.5f) : Vector4.one // RED TINT FOR DEAD UNITS
-                };
-
-                if (y < yTop_20) nativeList_20.AddNoResize(renderData);
-                else if (y < yTop_19) nativeList_19.AddNoResize(renderData);
-                else if (y < yTop_18) nativeList_18.AddNoResize(renderData);
-                else if (y < yTop_17) nativeList_17.AddNoResize(renderData);
-                else if (y < yTop_16) nativeList_16.AddNoResize(renderData);
-                else if (y < yTop_15) nativeList_15.AddNoResize(renderData);
-                else if (y < yTop_14) nativeList_14.AddNoResize(renderData);
-                else if (y < yTop_13) nativeList_13.AddNoResize(renderData);
-                else if (y < yTop_12) nativeList_12.AddNoResize(renderData);
-                else if (y < yTop_11) nativeList_11.AddNoResize(renderData);
-                else if (y < yTop_10) nativeList_10.AddNoResize(renderData);
-                else if (y < yTop_9) nativeList_9.AddNoResize(renderData);
-                else if (y < yTop_8) nativeList_8.AddNoResize(renderData);
-                else if (y < yTop_7) nativeList_7.AddNoResize(renderData);
-                else if (y < yTop_6) nativeList_6.AddNoResize(renderData);
-                else if (y < yTop_5) nativeList_5.AddNoResize(renderData);
-                else if (y < yTop_4) nativeList_4.AddNoResize(renderData);
-                else if (y < yTop_3) nativeList_3.AddNoResize(renderData);
-                else if (y < yTop_2) nativeList_2.AddNoResize(renderData);
-                else nativeList_1.AddNoResize(renderData);
             }
         }
     }
@@ -304,7 +322,7 @@ public class RenderSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
 
@@ -340,7 +358,7 @@ public class RenderSystem : SystemBase
         yTop_1 += marginY;
         yBottom -= marginY;
 
-        int estimatedEntitiesTotal = GetEntityQuery(typeof(Translation)).CalculateEntityCount();
+        int estimatedEntitiesTotal = GetEntityQuery(typeof(LocalTransform)).CalculateEntityCount();
         int estimatedPerSlice = 10000;// estimatedEntitiesTotal / POSITION_SLICES * 2 + 200;
         //1024 = x / 20 * 2 + 200
         //1024 = (x/20) +  200
@@ -353,6 +371,13 @@ public class RenderSystem : SystemBase
             if (nativeListArray[i].Capacity < estimatedPerSlice) nativeListArray[i].Capacity = estimatedPerSlice;
             nativeListArray[i].Clear();
         }
+
+        // Create entity query for rendering
+        var renderQuery = GetEntityQuery(
+            ComponentType.ReadOnly<LocalTransform>(),
+            ComponentType.ReadOnly<AnimationComponent>(),
+            ComponentType.ReadOnly<Unit>()
+        );
 
         CullJob cullAndSortNativeListJob = new CullJob
         {
@@ -379,6 +404,10 @@ public class RenderSystem : SystemBase
             yTop_18 = yTop_18,
             yTop_19 = yTop_19,
             yTop_20 = yTop_20,
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
+            UnitTypeHandle = GetComponentTypeHandle<Unit>(true),
+            EntityTypeHandle = GetEntityTypeHandle(),
             nativeList_1 = nativeListArray[0].AsParallelWriter(),
             nativeList_2 = nativeListArray[1].AsParallelWriter(),
             nativeList_3 = nativeListArray[2].AsParallelWriter(),
@@ -401,7 +430,7 @@ public class RenderSystem : SystemBase
             nativeList_20 = nativeListArray[19].AsParallelWriter()
         };
 
-        JobHandle cullJobHandle = cullAndSortNativeListJob.Schedule(this, Dependency);
+        JobHandle cullJobHandle = cullAndSortNativeListJob.ScheduleParallel(renderQuery, Dependency);
         cullJobHandle.Complete();
 
         int visibleEntityTotal = 0;
