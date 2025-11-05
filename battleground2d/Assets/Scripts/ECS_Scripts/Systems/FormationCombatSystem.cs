@@ -25,7 +25,7 @@ public partial class FormationCombatSystem : SystemBase
                      ref HasTarget hasTarget,
                      ref CombatState combatState,
                      in FormationComponent formation,
-                     in Translation translation,
+                     in LocalTransform transform,
                      in AnimationComponent animationComponent) =>
             {
 
@@ -62,7 +62,7 @@ public partial class FormationCombatSystem : SystemBase
         float maxEngageDistance = 0.5f;
 
         float2 formationPos = formation.FormationPosition;
-        float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
+        float distanceFromFormation = math.distance(transform.Position.xy, formationPos);
 
         if (distanceFromFormation > maxEngageDistance)
         {
@@ -81,7 +81,7 @@ public partial class FormationCombatSystem : SystemBase
         float maxEngageDistance = 10f;
 
         float2 formationPos = formation.FormationPosition;
-        float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
+        float distanceFromFormation = math.distance(transform.Position.xy, formationPos);
 
         if (distanceFromFormation > maxEngageDistance)
         {

@@ -68,7 +68,7 @@ public partial class FormationManagerSystem : SystemBase
 
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
         var formationComponents = _unitQuery.ToComponentDataArray<FormationComponent>(Allocator.TempJob);
-        var translations = GetComponentDataFromEntity<Translation>(true);
+        var transforms = GetComponentDataFromEntity<LocalTransform>(true);
 
         var groupCount = _unitGroupQuery.CalculateEntityCount();
 
@@ -270,7 +270,7 @@ public partial class FormationManagerSystem : SystemBase
             //Entity unitEntity = unitEntities[unitIndex];
             if (translations.HasComponent(unitEntity))
             {
-                var translation = translations[unitEntity];
+                var transform = transforms[unitEntity];
                 sum += new float2(translation.Value.x, translation.Value.y);
                 validUnitCount++;
             }
@@ -291,7 +291,7 @@ public partial class FormationManagerSystem : SystemBase
             Entity unitEntity = unitEntities[unitIndex];
             if (translations.HasComponent(unitEntity))
             {
-                var translation = translations[unitEntity];
+                var transform = transforms[unitEntity];
                 sum += new float2(translation.Value.x, translation.Value.y);
                 validUnitCount++;
             }
