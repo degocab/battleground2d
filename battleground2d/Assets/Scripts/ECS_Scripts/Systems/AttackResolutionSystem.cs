@@ -21,8 +21,8 @@ public partial class AttackResolutionSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        float currentTime = (float)Time.ElapsedTime;
-        var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        float currentTime = (float)SystemAPI.Time.ElapsedTime;
+        var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
@@ -31,7 +31,7 @@ public partial class AttackResolutionSystem : SystemBase
 
         Dependency = Entities
             .WithName("AttackResolutionJob")
-            .WithReadOnly(translationFromEntity)
+            .WithReadOnly(transformFromEntity)
             .WithReadOnly(defenseFromEntity)
             .WithReadOnly(animationFromEntity)
             .WithReadOnly(attackComponentFromEntity)
@@ -42,26 +42,26 @@ public partial class AttackResolutionSystem : SystemBase
                     //ref AttackComponent attack,
                     in CombatState combatState,
                      in AttackEventComponent attackEvent,
-                     in Translation translation
+                     in LocalTransform transform
                      ,in AnimationComponent animationComponent
                      ) =>
             {
                 // Check if target still exists and is in range
-                if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
+                if (transformFromEntity.HasComponent(attackEvent.TargetEntity))
                 {
                     //settting formatoin status to engagnge so unit can leave formatoin breifly
                     formation.Status = FormationStatus.Engaged;
 
 
 
-                    float3 targetPos = translationFromEntity[attackEvent.TargetEntity].Value;
+                    float3 targetPos = transformFromEntity[attackEvent.TargetEntity].Position;
                     //bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
                     bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
                     var attack = attackComponentFromEntity[entity];
                     if (ShouldAttackLand(attack.Range, 
                         //animationComponent.Direction
                         attackEvent.AttackerDirection
-                        , attackEvent, translation.Value, targetPos,
+                        , attackEvent, transform.Position, targetPos,
                                currentTime, defenseFromEntity, animationFromEntity))
                     {
                         //combatState.CurrentState = CombatState.State.TakingDamage;

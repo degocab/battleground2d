@@ -23,7 +23,7 @@ public partial class PlayerAttackSystem : SystemBase
         _quadrantSystem = World.GetExistingSystem<QuadrantSystem>();
         _playerQuery = GetEntityQuery(
             ComponentType.ReadWrite<AttackComponent>(),
-            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadWrite<AnimationComponent>(),
             ComponentType.ReadOnly<PlayerInputComponent>()
         );
@@ -33,7 +33,7 @@ public partial class PlayerAttackSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
 
         // Wait for CollisionQuadrantSystem to complete its update
@@ -42,8 +42,8 @@ public partial class PlayerAttackSystem : SystemBase
         //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
         //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.Dependency);
         //_quadrantSystem.Update();
-        float currentTime = (float)Time.ElapsedTime;
-        var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        float currentTime = (float)SystemAPI.Time.ElapsedTime;
+        var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         // Use the quadrant system's dependency to ensure data is ready
         //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.World.);
@@ -62,12 +62,12 @@ public partial class PlayerAttackSystem : SystemBase
         {
             CurrentTime = currentTime,
             ECB = ecb,
-            TranslationFromEntity = translationFromEntity,
+            TransformFromEntity = transformFromEntity,
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
             AttackCooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(true),
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(true),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
             EntityTypeHandle = GetEntityTypeHandle(),
             QuadrantMap = QuadrantSystem.QuadrantMultiHashMap,//CollisionQuadrantSystem.collisionQuadrantMap,
             drawDebugLines = DrawDebugLines
@@ -82,33 +82,33 @@ public partial class PlayerAttackSystem : SystemBase
     {
         public float CurrentTime;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentDataFromEntity<Translation> TranslationFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TransformFromEntity;
         public bool drawDebugLines;
 
         public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AttackCooldownComponent> AttackCooldownTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         [ReadOnly] public NativeMultiHashMap<int, QuadrantData> QuadrantMap;
 
         [ReadOnly] public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
-            var animations = chunk.GetNativeArray(AnimationTypeHandle);
-            var attackCooldownComponents = chunk.GetNativeArray(AttackCooldownTypeHandle);
-            var attacks = chunk.GetNativeArray(AttackTypeHandle);
-            var translations = chunk.GetNativeArray(TranslationTypeHandle);
+            var animations = chunk.GetNativeArray(ref AnimationTypeHandle);
+            var attackCooldownComponents = chunk.GetNativeArray(ref AttackCooldownTypeHandle);
+            var attacks = chunk.GetNativeArray(ref AttackTypeHandle);
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-            var combatStates = chunk.GetNativeArray(CombatStateTypeHandle);
+            var combatStates = chunk.GetNativeArray(ref CombatStateTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 var animation = animations[i];
                 var attackCooldown = attackCooldownComponents[i];
                 var attack = attacks[i];
-                var translation = translations[i];
+                var transform = transforms[i];
                 var entity = entities[i];
                 var combatState = combatStates[i];
 
@@ -123,7 +123,7 @@ public partial class PlayerAttackSystem : SystemBase
 
 
 
-                float2 movingPosDownToSpriteBase = new float2(translation.Value.x, translation.Value.y - .125f);
+                float2 movingPosDownToSpriteBase = new float2(transform.Position.x, transform.Position.y - .125f);
 
                 // Get attack cone based on direction
                 float2 attackDirection = GetDirection(animation.Direction, movingPosDownToSpriteBase);
@@ -131,7 +131,7 @@ public partial class PlayerAttackSystem : SystemBase
                 CombatUtils.SetAnimationDirection(ref animation, attackDirection);
 
                 // Find targets in attack cone using quadrant system
-                FindTargetsInRectangle(entity, movingPosDownToSpriteBase, attackDirection, attack.Range, chunkIndex, ECB, animation, drawDebugLines);
+                FindTargetsInRectangle(entity, movingPosDownToSpriteBase, attackDirection, attack.Range, unfilteredChunkIndex, ECB, animation, drawDebugLines);
 
                 //attack.LastAttackTime = CurrentTime;
                 attack.AttackRateRemaining = 0.5f;// attack.AttackRate;
