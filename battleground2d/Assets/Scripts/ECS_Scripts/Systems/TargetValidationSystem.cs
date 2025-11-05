@@ -16,27 +16,23 @@ using Unity.Transforms;
 
         protected override void OnUpdate()
         {
-            if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
                 return;
 
-            var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-            var translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+            var ecb = _ecbSystem.CreateCommandBuffer();
+            var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
 
-            Entities
-                .WithName("ValidateTargets")
-                .WithReadOnly(translationFromEntity)
-                .WithAll<HasTarget>()
-                .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
+            foreach (var (hasTarget, entity) in SystemAPI.Query<RefRW<HasTarget>>().WithAll<HasTarget>().WithEntityAccess())
+            {
+                if (hasTarget.ValueRO.Type == HasTarget.TargetType.Entity &&
+                    hasTarget.ValueRO.TargetEntity != Entity.Null &&
+                    !transformFromEntity.HasComponent(hasTarget.ValueRO.TargetEntity))
                 {
-                    if (hasTarget.Type == HasTarget.TargetType.Entity &&
-                        hasTarget.TargetEntity != Entity.Null &&
-                        !translationFromEntity.HasComponent(hasTarget.TargetEntity))
-                    {
-                        ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-                    }
-                }).ScheduleParallel();
-
+                    ecb.AddComponent<FindTargetCommandTag>(entity);
+                    ecb.RemoveComponent<HasTarget>(entity);
+                }
+            }
+            
             _ecbSystem.AddJobHandleForProducer(Dependency);
         }
     }
