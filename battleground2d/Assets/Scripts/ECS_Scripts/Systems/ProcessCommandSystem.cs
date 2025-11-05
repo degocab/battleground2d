@@ -15,7 +15,7 @@ using static UnityEngine.EventSystems.EventTrigger;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TargetValidationSystem))]
 [UpdateAfter(typeof(PlayerControlSystem))]
-public class ProcessCommandSystem : JobComponentSystem
+public class ProcessCommandSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _formationGroupQuery;
@@ -31,7 +31,7 @@ public class ProcessCommandSystem : JobComponentSystem
         entityManager = EntityManager;
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    protected override void OnUpdate()
     {
         if (fms == null)
         {
@@ -45,7 +45,7 @@ ComponentType.ReadWrite<CommandData>(),
 ComponentType.ReadWrite<CombatState>(),
 ComponentType.ReadOnly<DefenseComponent>(),
 ComponentType.ReadOnly<AttackComponent>(),
-ComponentType.ReadOnly<Translation>(),
+ComponentType.ReadOnly<LocalTransform>(),
 ComponentType.ReadOnly<AnimationComponent>(),
 ComponentType.ReadWrite<MovementSpeedComponent>(),
 ComponentType.Exclude<CommanderComponent>());
@@ -63,59 +63,57 @@ ComponentType.Exclude<CommanderComponent>());
         //}
 
         // this can prob move to formation manager, because we run that after Processing Commands
-        Entities
-            .WithName("ProcessCommands")
-            .WithAll<CommandData, FormationGroupComponent>()
-            .ForEach((int entityInQueryIndex, Entity entity,
-                     ref CommandData command,
-                     ref FormationGroupComponent formationGroup) =>
+        foreach (var (command, formationGroup, entity) in 
+            SystemAPI.Query<RefRW<CommandData>, RefRW<FormationGroupComponent>>()
+                .WithAll<CommandData, FormationGroupComponent>()
+                .WithEntityAccess())
+        {
+            //Simple enemy AI command
+            if (formationGroup.ValueRO.UnitType == EntitySpawner.UnitType.Enemy)
             {
-                //Simple enemy AI command
-                if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy)
-                {
-                    command.Command = CommandType.Defend;
-                    return; //AI needs to handle its own
-                }
+                command.ValueRW.Command = CommandType.Defend;
+                continue; //AI needs to handle its own
+            }
 
-                switch (command.Command)
-                {
-                    case CommandType.Idle:
-                        break;
-                    case CommandType.FindTarget:
-                        break;
-                    case CommandType.MoveTo:
-                        break;
-                    case CommandType.March:
-                        break;
-                    case CommandType.Charge:
-                        break;
-                    case CommandType.Attack:
-                        break;
-                    case CommandType.Defend:
-                        if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
+            switch (command.ValueRO.Command)
+            {
+                case CommandType.Idle:
+                    break;
+                case CommandType.FindTarget:
+                    break;
+                case CommandType.MoveTo:
+                    break;
+                case CommandType.March:
+                    break;
+                case CommandType.Charge:
+                    break;
+                case CommandType.Attack:
+                    break;
+                case CommandType.Defend:
+                    if (fms._groupAveragePositions.TryGetValue(formationGroup.ValueRO.FormationGroupEntity, out var currentAveragePos))
+                    {
+                        //formationGroup.AnchorPosition = currentAveragePos;
+                        float distance = math.distance(currentAveragePos, formationGroup.ValueRO.AnchorPosition);
+
+                        // Only update if we've moved significantly from current anchor
+                        if (distance > 5f)
                         {
-                            //formationGroup.AnchorPosition = currentAveragePos;
-                            float distance = math.distance(currentAveragePos, formationGroup.AnchorPosition);
-
-                            // Only update if we've moved significantly from current anchor
-                            if (distance > 5f)
-                            {
-                                formationGroup.AnchorPosition = currentAveragePos;
-                            }
+                            formationGroup.ValueRW.AnchorPosition = currentAveragePos;
                         }
-                        break;
-                    default:
-                        break;  
-                }
+                    }
+                    break;
+                default:
+                    break;  
+            }
 
-                if (command.Command == CommandType.MoveTo)
-                {
-                    // Update formation anchor position directly!
-                    formationGroup.AnchorPosition = command.TargetPosition;
-                    //ecb.SetComponent( entity, formation);
-                }
-                formationGroup.CurrentCommand = command.Command;
-            }).WithoutBurst().Run();
+            if (command.ValueRO.Command == CommandType.MoveTo)
+            {
+                // Update formation anchor position directly!
+                formationGroup.ValueRW.AnchorPosition = command.ValueRO.TargetPosition;
+                //ecb.SetComponent( entity, formation);
+            }
+            formationGroup.ValueRW.CurrentCommand = command.ValueRO.Command;
+        }
 
 
 
@@ -127,7 +125,7 @@ ComponentType.Exclude<CommanderComponent>());
             FormationComponentTypeHandle = GetComponentTypeHandle<FormationComponent>(false),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
-            TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
+            TransformTypeHandle = GetComponentTypeHandle<LocalTransform>(true),
             DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
             AttackComponentTypeHandle = GetComponentTypeHandle<AttackComponent>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
@@ -136,9 +134,9 @@ ComponentType.Exclude<CommanderComponent>());
             //,entityManager = EntityManager
         };
 
-        var handle = job.ScheduleParallel(_query, inputDeps);
+        var handle = job.ScheduleParallel(_query, Dependency);
         _ecbSystem.AddJobHandleForProducer(handle);
-        return handle;
+        Dependency = handle;
     }
 
     [BurstCompile]
@@ -150,32 +148,32 @@ ComponentType.Exclude<CommanderComponent>());
         public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<DefenseComponent> DefenseComponentTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AttackComponent> AttackComponentTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
 
-            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
-            var formations = chunk.GetNativeArray(FormationComponentTypeHandle);
-            var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
+            var commandDataArray = chunk.GetNativeArray(ref CommandDataTypeHandle);
+            var formations = chunk.GetNativeArray(ref FormationComponentTypeHandle);
+            var combatStateArray = chunk.GetNativeArray(ref CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-            var translations = chunk.GetNativeArray(TranslationTypeHandle);
-            var animations = chunk.GetNativeArray(AnimationTypeHandle);
-            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
-            var defenseComponents = chunk.GetNativeArray(DefenseComponentTypeHandle);
-            var attackComponents = chunk.GetNativeArray(AttackComponentTypeHandle);
+            var transforms = chunk.GetNativeArray(ref TransformTypeHandle);
+            var animations = chunk.GetNativeArray(ref AnimationTypeHandle);
+            var movementSpeeds = chunk.GetNativeArray(ref MovementSpeedTypeHandle);
+            var defenseComponents = chunk.GetNativeArray(ref DefenseComponentTypeHandle);
+            var attackComponents = chunk.GetNativeArray(ref AttackComponentTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = entities[i];
-                Translation translation = translations[i];
+                LocalTransform transform = transforms[i];
                 AnimationComponent animationData = animations[i];
                 MovementSpeedComponent movementSpeed = movementSpeeds[i];
-                float2 entityPos = translation.Value.xy;
+                float2 entityPos = transform.Position.xy;
                 var command = commandDataArray[i];
                 var formation = formations[i];
                 var combatState = combatStateArray[i];
@@ -186,7 +184,7 @@ ComponentType.Exclude<CommanderComponent>());
                     command.TargetEntity = Entity.Null;
 
                 ProcessCommand(ref command, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
-             animationData.Direction, chunkIndex, ECB, ref formation);
+             animationData.Direction, unfilteredChunkIndex, ECB, ref formation);
 
 
                 command.previousCommand = command.Command;

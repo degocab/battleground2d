@@ -26,21 +26,21 @@ public class GridSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         //draw rectangle and store first qaudtree
         var boundary = new Rectangle(500f, 500f, 1000f, 1000f);
         var qtree = new QuadTree(boundary, 4);
 
 
-        EntityQuery query = GetEntityQuery(typeof(Translation), typeof(GridID));
+        EntityQuery query = GetEntityQuery(typeof(LocalTransform), typeof(GridID));
 
-        // Iterate through all entities with Translation and GridID components
-        Dependency = Entities.ForEach((ref Translation translation, ref GridID grid) =>
+        // Iterate through all entities with LocalTransform and GridID components
+        foreach (var (transform, grid) in SystemAPI.Query<RefRO<LocalTransform>, RefRW<GridID>>())
         {
             // Find the grid cell index based on the entity's position
-            int gridX = Mathf.FloorToInt(translation.Value.x / divisionSize.x);
-            int gridY = Mathf.FloorToInt(translation.Value.y / divisionSize.y);
+            int gridX = Mathf.FloorToInt(transform.ValueRO.Position.x / divisionSize.x);
+            int gridY = Mathf.FloorToInt(transform.ValueRO.Position.y / divisionSize.y);
 
             // Ensure the grid values are clamped to prevent index out-of-range errors
             gridX = math.clamp(gridX, 0, gridSize - 1);
@@ -50,10 +50,10 @@ public class GridSystem : SystemBase
             int gridId = gridY * gridSize + gridX;
 
             // Update the GridID component with the calculated grid ID
-            grid.Value = gridId;
+            grid.ValueRW.Value = gridId;
 
 
-        }).WithBurst().ScheduleParallel(Dependency);
+        }
 
         
     }
