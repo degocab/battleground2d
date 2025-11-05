@@ -11,7 +11,7 @@ public struct CollisionEvent2D : IBufferElementData
     public bool OtherIsStatic;
 
     // other date
-    public Translation OtherTranslation;
+    public LocalTransform OtherTransform;
     public ECS_CircleCollider2DAuthoring OtherCollider;
     public ECS_PhysicsBody2DAuthoring OtherBody;
 }

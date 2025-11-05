@@ -25,7 +25,7 @@ public partial class CollisionQuadrantSystem : SystemBase
         base.OnCreate();
 
         _collisionQuery = GetEntityQuery(
-            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<LocalTransform>(),
             ComponentType.ReadOnly<ECS_CircleCollider2DAuthoring>(),
             ComponentType.ReadOnly<CollidableTag>()
             //, ComponentType.ReadOnly<OutOfGroupTag>()
@@ -52,7 +52,7 @@ public partial class CollisionQuadrantSystem : SystemBase
     [BurstCompile]
     private struct SetCollisionQuadrantMapJob : IJobChunk
     {
-        [ReadOnly] public ComponentTypeHandle<Translation> TranslationType;
+        [ReadOnly] public ComponentTypeHandle<LocalTransform> TransformType;
         [ReadOnly] public ComponentTypeHandle<ECS_CircleCollider2DAuthoring> ecsCircleCollider2DAuthoringType;
         [ReadOnly] public EntityTypeHandle EntityType;
         public NativeMultiHashMap<int, CollisionQuadrantData>.ParallelWriter QuadrantMap;
@@ -62,21 +62,21 @@ public partial class CollisionQuadrantSystem : SystemBase
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationComponentType;
         [ReadOnly] public ComponentTypeHandle<ECS_PhysicsBody2DAuthoring> ecsPhysicsBody2DAuthoringAuthoringType;
 
-        public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+        public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
         {
             // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
-            if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
+            if (chunk.Has(ref DeadTagTypeHandle))
                 return;
-            var translations = chunk.GetNativeArray(TranslationType);
-            var animationComponents = chunk.GetNativeArray(AnimationComponentType);
+            var transforms = chunk.GetNativeArray(ref TransformType);
+            var animationComponents = chunk.GetNativeArray(ref AnimationComponentType);
             var entities = chunk.GetNativeArray(EntityType);
-            var ECS_CircleCollider2DAuthorings = chunk.GetNativeArray(ecsCircleCollider2DAuthoringType);
-            var ecsPhysicsBody2DAuthorings = chunk.GetNativeArray(ecsPhysicsBody2DAuthoringAuthoringType);
+            var ECS_CircleCollider2DAuthorings = chunk.GetNativeArray(ref ecsCircleCollider2DAuthoringType);
+            var ecsPhysicsBody2DAuthorings = chunk.GetNativeArray(ref ecsPhysicsBody2DAuthoringAuthoringType);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 //float2 pos = translations[i].Value.xy;
-                float2 pos = new float2(translations[i].Value.x, translations[i].Value.y - .25f);
+                float2 pos = new float2(transforms[i].Position.x, transforms[i].Position.y - .25f);
                 int key = GetPositionHashMapKey(pos);
                 QuadrantMap.Add(key, new CollisionQuadrantData
                 {
@@ -84,7 +84,7 @@ public partial class CollisionQuadrantSystem : SystemBase
                     position = pos,
                     radius = ECS_CircleCollider2DAuthorings[i].Radius,
                     unitType = animationComponents[i].UnitType
-                    , CollisionSourceTranslation = translations[i]
+                    , CollisionSourceTransform = transforms[i]
                     , CollisionSourceCollider = ECS_CircleCollider2DAuthorings[i]
                     , CollisionSourceBody = ecsPhysicsBody2DAuthorings[i]
 
@@ -95,7 +95,7 @@ public partial class CollisionQuadrantSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+        if (SystemAPI.GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         collisionQuadrantMap.Clear();
         int count = _collisionQuery.CalculateEntityCount();
@@ -105,7 +105,7 @@ public partial class CollisionQuadrantSystem : SystemBase
 
         var job = new SetCollisionQuadrantMapJob
         {
-            TranslationType = GetComponentTypeHandle<Translation>(true),
+            TransformType = GetComponentTypeHandle<LocalTransform>(true),
             AnimationComponentType = GetComponentTypeHandle<AnimationComponent>(true),
             ecsCircleCollider2DAuthoringType = GetComponentTypeHandle<ECS_CircleCollider2DAuthoring>(true),
             ecsPhysicsBody2DAuthoringAuthoringType = GetComponentTypeHandle<ECS_PhysicsBody2DAuthoring>(true),
