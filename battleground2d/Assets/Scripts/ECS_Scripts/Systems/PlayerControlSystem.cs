@@ -214,7 +214,7 @@ public partial class PlayerControlSystem : SystemBase
                 //{
                 //    attackComponent.AttackRateRemaining -= deltaTime;
                 //}
-                if (attackCooldown.attackCoolTimeRemaining > 0f)
+            if (attackCooldown.ValueRO.attackCoolTimeRemaining > 0f)
                 {
                     //attackCooldown.timeRemaining -= deltaTime;
                     isAttacking = true;
@@ -222,9 +222,9 @@ public partial class PlayerControlSystem : SystemBase
 
 
 
-                // Step 2: Determine whether we are allowed to attack
-                bool animationReady = attackCooldown.attackCoolTimeRemaining <= 0f;
-                bool attackReady = attackComponent.AttackRateRemaining <= 0f;
+            // Step 2: Determine whether we are allowed to attack
+            bool animationReady = attackCooldown.ValueRO.attackCoolTimeRemaining <= 0f;
+            bool attackReady = attackComponent.ValueRO.AttackRateRemaining <= 0f;
                 bool canAttack = animationReady && attackReady;
 
                 // Step 3: RESET flags at the start of each frame
@@ -233,17 +233,17 @@ public partial class PlayerControlSystem : SystemBase
                 //defenseComponent.IsBlocking = false;
 
 
-                bool blocking = isStillBlocking(defenseComponent);
+            bool blocking = isStillBlocking(defenseComponent.ValueRO);
 
                 // Step 4: Handle state transitions
                 if (isAttacking)
                 {
                     if (canAttack)
                     {
-                        PerformAttack(ref combatState, ref attackComponent, ref animationComponent);
-                        StartAttack(ref combatState, ref attackCooldown); // animation system will handle timeRemaining now
+                        PerformAttack(ref combatState.ValueRW, ref attackComponent.ValueRW, ref animationComponent.ValueRW);
+                        StartAttack(ref combatState.ValueRW, ref attackCooldown.ValueRW); // animation system will handle timeRemaining now
                         //attackComponent.isAttacking = true; // SET FLAG
-                        playerInput.stillAttacking = true;
+                        playerInput.ValueRW.stillAttacking = true;
                     }
                     else
                     {
@@ -253,7 +253,7 @@ public partial class PlayerControlSystem : SystemBase
                         }
                         else
                         {
-                            SetToIdle(ref combatState, ref animationComponent);
+                            SetToIdle(ref combatState.ValueRW, ref animationComponent.ValueRW);
 
                         }
                     }
@@ -261,30 +261,30 @@ public partial class PlayerControlSystem : SystemBase
                 else if (blocking)
                 {
                     //keep blocking, shuld override defending
-                    defenseComponent.IsBlocking = true;
-                    combatState.CurrentState = CombatState.State.Blocking;
+                    defenseComponent.ValueRW.IsBlocking = true;
+                    combatState.ValueRW.CurrentState = CombatState.State.Blocking;
                 }
                 else if (isDefending)
                 {
                     //defenseComponent.IsBlocking = true;
                     //attackComponent.isDefending = true;
-                    combatState.CurrentState = CombatState.State.Defending;
+                    combatState.ValueRW.CurrentState = CombatState.State.Defending;
                 }
                 else if (animationReady && !attackReady)
                 {
-                    // We’ve recovered from animation but are still waiting on attack rate cooldown
-                    SetToIdle(ref combatState, ref animationComponent);
+                    // We have recovered from animation but are still waiting on attack rate cooldown
+                    SetToIdle(ref combatState.ValueRW, ref animationComponent.ValueRW);
                 }
                 else
                 {
-                    SetToIdle(ref combatState, ref animationComponent);
+                    SetToIdle(ref combatState.ValueRW, ref animationComponent.ValueRW);
                 }
 
 
-                ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
-                UpdateCameraPosition(translation.Value);
+                ProcessMovement(ref movementSpeed.ValueRW, GetMovementInput(), isRunning);
+                UpdateCameraPosition(transform.ValueRO.Position);
 
-            }).Run();
+        }
         // Add the command buffer system
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
