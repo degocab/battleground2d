@@ -192,9 +192,14 @@ public partial class PlayerControlSystem : SystemBase
         float currentTime = (float)SystemAPI.Time.ElapsedTime;
 
         Dependency.Complete();
-        foreach (var (playerInput, transform, combatState, attackComponent, attackCooldown, animationComponent, movementSpeed, defenseComponent) 
-            in SystemAPI.Query<RefRW<PlayerInputComponent>, RefRW<LocalTransform>, RefRW<CombatState>, RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<AnimationComponent>, RefRW<MovementSpeedComponent>, RefRW<DefenseComponent>>())
+        // Split query into two parts due to 7-parameter limit on SystemAPI.Query
+        foreach (var (playerInput, transform, combatState, attackComponent, attackCooldown, animationComponent, movementSpeed) 
+            in SystemAPI.Query<RefRW<PlayerInputComponent>, RefRW<LocalTransform>, RefRW<CombatState>, RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<AnimationComponent>, RefRW<MovementSpeedComponent>>()
+            .WithAll<DefenseComponent>())
         {
+            // Get the DefenseComponent separately since we exceeded the 7-param limit
+            var entity = SystemAPI.GetSingletonEntity<PlayerInputComponent>();
+            var defenseComponent = SystemAPI.GetComponentRW<DefenseComponent>(entity);
 
             if (combatState.ValueRO.CurrentState == CombatState.State.TakingDamage)
             {
