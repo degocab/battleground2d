@@ -15,7 +15,7 @@ public class LoadingSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>();
 
         // Create the game state entity
         EntityManager.CreateEntity(typeof(GameStateComponent));
@@ -56,9 +56,9 @@ public class LoadingSystem : SystemBase
             sb.AppendLine($"=== ECS SYSTEM UPDATE ORDER ===");
 
             // Traverse main system groups
-            LogGroup(World.GetOrCreateSystem<InitializationSystemGroup>(), sb, 0);
-            LogGroup(World.GetOrCreateSystem<SimulationSystemGroup>(), sb, 0);
-            LogGroup(World.GetOrCreateSystem<PresentationSystemGroup>(), sb, 0);
+            LogGroup(World.GetOrCreateSystemManaged<InitializationSystemGroup>(), sb, 0);
+            LogGroup(World.GetOrCreateSystemManaged<SimulationSystemGroup>(), sb, 0);
+            LogGroup(World.GetOrCreateSystemManaged<PresentationSystemGroup>(), sb, 0);
 
             string output = sb.ToString();
             Debug.Log(output);

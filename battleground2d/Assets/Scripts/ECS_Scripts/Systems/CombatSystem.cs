@@ -18,7 +18,7 @@ public partial class CombatSystem : SystemBase
     private Unity.Mathematics.Random _random;
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
 
         // Create query for entities that can engage in combat
         _combatQuery = GetEntityQuery(
@@ -47,21 +47,21 @@ public partial class CombatSystem : SystemBase
             SystemAPI.Query<RefRW<AttackComponent>, RefRW<AttackCooldownComponent>, RefRW<DefenseComponent>, RefRW<HealthComponent>>())
         {
             if (cooldown.PositionRO.attackCoolTimeRemaining > 0)
-                cooldown.PositionRW.attackCoolTimeRemaining -= deltaTime;
+                cooldown.ValueRW.attackCoolTimeRemaining -= deltaTime;
             if (cooldown.PositionRO.takingDmgTimeRemaining > 0)
-                cooldown.PositionRW.takingDmgTimeRemaining -= deltaTime;
+                cooldown.ValueRW.takingDmgTimeRemaining -= deltaTime;
             if (attackComponent.PositionRO.AttackRateRemaining > 0)
-                attackComponent.PositionRW.AttackRateRemaining -= deltaTime;
+                attackComponent.ValueRW.AttackRateRemaining -= deltaTime;
             if (defenseComponent.PositionRO.BlockDuration > 0)
-                defenseComponent.PositionRW.BlockDuration -= deltaTime;
+                defenseComponent.ValueRW.BlockDuration -= deltaTime;
             if (attackComponent.PositionRO.DefendCooldownRemaining > 0)
-                attackComponent.PositionRW.DefendCooldownRemaining -= deltaTime;
+                attackComponent.ValueRW.DefendCooldownRemaining -= deltaTime;
             if (healthComponent.PositionRO.timeRemaining > 0)
-                healthComponent.PositionRW.timeRemaining -= deltaTime;
+                healthComponent.ValueRW.timeRemaining -= deltaTime;
         }
 
         // Get the ComponentDataFromEntity for transforms
-        ComponentDataFromEntity<LocalTransform> transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
+        ComponentLookup<LocalTransform> transformFromEntity = GetComponentLookup<LocalTransform>(true);
 
         var combatJob = new CombatJob
         {
@@ -91,7 +91,7 @@ public partial class CombatSystem : SystemBase
         public float DeltaTime;
         public float CurrentTime;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TransformFromEntity;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformFromEntity;
 
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
@@ -158,7 +158,7 @@ public partial class CombatSystem : SystemBase
                         {
                             // Transition back to appropriate state after blocking ends
                             if (hasTarget.TargetEntity != Entity.Null &&
-                                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+                                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TransformFromEntity))
                             {
                                 // Still have valid target - go back to attacking
                                 combatState.CurrentState = CombatState.State.Attacking;
@@ -196,13 +196,13 @@ public partial class CombatSystem : SystemBase
                 return; // Stay in attacking state but don't process attack logic while blocking
 
             // Check if target is still valid
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TransformFromEntity))
             {
                 TransitionToSeeking(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            float3 targetPos = TransformFromEntity[hasTarget.TargetEntity].Position;
             bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             // Check cooldown states
@@ -268,13 +268,13 @@ public partial class CombatSystem : SystemBase
         {
             combatState.StateTimer += DeltaTime;
 
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TransformFromEntity))
             {
                 TransitionToIdle(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            float3 targetPos = TransformFromEntity[hasTarget.TargetEntity].Position;
             bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (inRange)
@@ -300,13 +300,13 @@ public partial class CombatSystem : SystemBase
         private void HandleDefendingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AnimationComponent animation, LocalTransform transform, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
         {
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TransformFromEntity))
             {
                 TransitionToSeeking(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Position;
+            float3 targetPos = TransformFromEntity[hasTarget.TargetEntity].Position;
             bool inRange = CombatUtils.IsTargetInRange(translation.Position, targetPos, attack.Range);
 
             if (!inRange)
@@ -330,7 +330,7 @@ public partial class CombatSystem : SystemBase
         private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, HasTarget hasTarget)
         {
             if (hasTarget.TargetEntity != Entity.Null &&
-                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TransformFromEntity))
             {
                 combatState.CurrentState = CombatState.State.SeekingTarget;
                 combatState.TargetEntity = hasTarget.TargetEntity;

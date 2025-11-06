@@ -13,7 +13,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>();
     }
 
     [BurstCompile]
@@ -26,7 +26,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
         // *** THE KEY CHANGE FOR ENTITIES 0.16.0 ***
         // Get a ComponentDataFromEntity for Translation. This is the equivalent of ComponentLookup.
         // The 'true' argument makes it read-only, which is necessary for Burst and parallel jobs.
-        //ComponentDataFromEntity<Translation> translationFromEntity = GetComponentDataFromEntity<Translation>(true);
+        //ComponentDataFromEntity<Translation> translationFromEntity = GetComponentLookup<Translation>(true);
 
         foreach (var (transform, movementSpeed, hasTarget, combatState, defenseComponent, commandData, entity) 
             in SystemAPI.Query<RefRW<LocalTransform>, RefRW<MovementSpeedComponent>, RefRW<HasTarget>, RefRW<CombatState>, RefRO<DefenseComponent>, RefRW<CommandData>>()

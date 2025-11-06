@@ -11,7 +11,7 @@ public partial class DeathSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>();
     }
 
     protected override void OnUpdate()

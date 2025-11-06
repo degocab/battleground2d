@@ -19,8 +19,8 @@ public partial class PlayerAttackSystem : SystemBase
     EntitySpawner entitySpawner;
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
-        _quadrantSystem = World.GetExistingSystem<QuadrantSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>();
+        _quadrantSystem = World.GetExistingSystemManaged<QuadrantSystem>();
         _playerQuery = GetEntityQuery(
             ComponentType.ReadWrite<AttackComponent>(),
             ComponentType.ReadOnly<LocalTransform>(),
@@ -37,13 +37,13 @@ public partial class PlayerAttackSystem : SystemBase
             return;
 
         // Wait for CollisionQuadrantSystem to complete its update
-        //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
+        //var quadrantSystem = World.GetExistingSystemManaged<CollisionQuadrantSystem>();
         //quadrantSystem.Update();
-        //var quadrantSystem = World.GetExistingSystem<CollisionQuadrantSystem>();
+        //var quadrantSystem = World.GetExistingSystemManaged<CollisionQuadrantSystem>();
         //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.Dependency);
         //_quadrantSystem.Update();
         float currentTime = (float)SystemAPI.Time.ElapsedTime;
-        var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
+        var transformFromEntity = GetComponentLookup<LocalTransform>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
         // Use the quadrant system's dependency to ensure data is ready
         //Dependency = JobHandle.CombineDependencies(Dependency, quadrantSystem.World.);
@@ -82,7 +82,7 @@ public partial class PlayerAttackSystem : SystemBase
     {
         public float CurrentTime;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TransformFromEntity;
+        [ReadOnly] public ComponentLookup<LocalTransform> TransformFromEntity;
         public bool drawDebugLines;
 
         public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
@@ -203,7 +203,7 @@ public partial class PlayerAttackSystem : SystemBase
                     Entity targetEntity = targetData.Entity;
 
                     // Skip if already hit this frame or invalid
-                    if (alreadyHit.Contains(targetEntity) || targetEntity == attacker || !TranslationFromEntity.HasComponent(targetEntity))
+                    if (alreadyHit.Contains(targetEntity) || targetEntity == attacker || !TransformFromEntity.HasComponent(targetEntity))
                         continue;
 
                     // Skip same unit types

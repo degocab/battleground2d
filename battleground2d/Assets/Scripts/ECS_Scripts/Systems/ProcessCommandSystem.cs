@@ -24,7 +24,7 @@ public class ProcessCommandSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         base.OnCreate();
 
         _formationGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
@@ -35,7 +35,7 @@ public class ProcessCommandSystem : SystemBase
     {
         if (fms == null)
         {
-            fms = World.GetExistingSystem<FormationManagerSystem>();
+            fms = World.GetExistingSystemManaged<FormationManagerSystem>();
         }
         //get commander 
         // Check if we have a commander
@@ -333,8 +333,8 @@ ComponentType.Exclude<CommanderComponent>());
         int unitCount = 0;
 
         // You'd need access to the formation manager system's _groupToUnits
-        var fms = World.GetExistingSystem<FormationManagerSystem>();
-        var translations = GetComponentDataFromEntity<Translation>(true);
+        var fms = World.GetExistingSystemManaged<FormationManagerSystem>();
+        var transforms = GetComponentLookup<LocalTransform>(true);
 
         if (fms._groupToUnitsMap.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
         {

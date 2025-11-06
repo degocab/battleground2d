@@ -42,7 +42,7 @@ public class QuadrantSystem : SystemBase
     protected override void OnCreate()
     {
 
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         _query = GetEntityQuery(
 ComponentType.ReadOnly<LocalTransform>(),
 ComponentType.ReadOnly<QuadrantEntity>(),

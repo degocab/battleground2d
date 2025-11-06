@@ -43,7 +43,7 @@ public partial class FindTargetSystem : SystemBase
             ComponentType.ReadOnly<LocalTransform>()
         );
 
-        _endSimulationECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _endSimulationECBSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         RequireForUpdate(_findTargetQuery);
     }
 

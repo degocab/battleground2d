@@ -13,7 +13,7 @@ public class FormationCollisionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         _formationGroupsQuery = GetEntityQuery(typeof(FormationGroupComponent));
     }
 

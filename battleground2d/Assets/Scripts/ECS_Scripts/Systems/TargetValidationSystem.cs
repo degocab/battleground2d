@@ -11,7 +11,7 @@ using Unity.Transforms;
 
         protected override void OnCreate()
         {
-            _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
@@ -20,7 +20,7 @@ using Unity.Transforms;
                 return;
 
             var ecb = _ecbSystem.CreateCommandBuffer();
-            var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
+            var transformFromEntity = GetComponentLookup<LocalTransform>(true);
 
             foreach (var (hasTarget, entity) in SystemAPI.Query<RefRW<HasTarget>>().WithAll<HasTarget>().WithEntityAccess())
             {

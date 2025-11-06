@@ -17,7 +17,7 @@ public class UpdateTargetPositionSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var targetTransformLookup = GetComponentDataFromEntity<LocalTransform>(true);
+        var targetTransformLookup = GetComponentLookup<LocalTransform>(true);
 
         var job = new UpdateTargetPositionJob
         {
@@ -32,7 +32,7 @@ public class UpdateTargetPositionSystem : SystemBase
     [BurstCompile]
     private struct UpdateTargetPositionJob : IJobChunk
     {
-        [ReadOnly] public ComponentDataFromEntity<LocalTransform> TargetTransformLookup;
+        [ReadOnly] public ComponentLookup<LocalTransform> TargetTransformLookup;
         public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 

@@ -12,7 +12,7 @@ public partial class FormationCombatSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetExistingSystemManaged<EndSimulationEntityCommandBufferSystem>();
     }
 
     protected override void OnUpdate()

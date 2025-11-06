@@ -25,7 +25,7 @@ public partial class CollisionDetectionSystem : SystemBase
         _entityQuery = GetEntityQuery(typeof(LocalTransform), typeof(ECS_CircleCollider2DAuthoring), typeof(CollidableTag), ComponentType.ReadWrite<CollisionEvent2D>() 
             //,ComponentType.Exclude<DeadTagComponent>()
             );
-        ecbSystem = World.GetOrCreateSystem<EntityCommandBufferSystem>();
+        ecbSystem = World.GetOrCreateSystemManaged<EntityCommandBufferSystem>();
 
         // 9 offsets for current + neighbors (including diagonals)
         quadrantOffsets = new NativeArray<int2>(9, Allocator.Persistent);

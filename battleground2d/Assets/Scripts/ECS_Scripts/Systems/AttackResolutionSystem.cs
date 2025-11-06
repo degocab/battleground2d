@@ -15,19 +15,19 @@ public partial class AttackResolutionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         _attackEventQuery = GetEntityQuery(ComponentType.ReadWrite<AttackEventComponent>());
     }
 
     protected override void OnUpdate()
     {
         float currentTime = (float)SystemAPI.Time.ElapsedTime;
-        var transformFromEntity = GetComponentDataFromEntity<LocalTransform>(true);
+        var transformFromEntity = GetComponentLookup<LocalTransform>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
-        var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
-        var attackComponentFromEntity = GetComponentDataFromEntity<AttackComponent>(true);
-        var combatStateDataFromEntity = GetComponentDataFromEntity<CombatState>(true);
+        var defenseFromEntity = GetComponentLookup<DefenseComponent>(true);
+        var animationFromEntity = GetComponentLookup<AnimationComponent>(true);
+        var attackComponentFromEntity = GetComponentLookup<AttackComponent>(true);
+        var combatStateDataFromEntity = GetComponentLookup<CombatState>(true);
 
         Dependency = Entities
             .WithName("AttackResolutionJob")
@@ -117,8 +117,8 @@ public partial class AttackResolutionSystem : SystemBase
 
     private static bool ShouldAttackLand(float range, EntitySpawner.Direction attackerFacing, AttackEventComponent attackEvent, float3 attackerPos,
                                 float3 defenderPos, float currentTime,
-                                ComponentDataFromEntity<DefenseComponent> defenseFromEntity,
-                                ComponentDataFromEntity<AnimationComponent> animationFromEntity)
+                                ComponentLookup<DefenseComponent> defenseFromEntity,
+                                ComponentLookup<AnimationComponent> animationFromEntity)
     {
         //// 1. Check if within strike timing window
         //float timeSinceAttack = currentTime - attackEvent.AttackTime;
@@ -183,14 +183,14 @@ public partial class DefenseSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
     }
 
     protected override void OnUpdate()
     {
-        var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
-        var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
-        var hasTargetFromEntity = GetComponentDataFromEntity<HasTarget>(true);
+        var defenseFromEntity = GetComponentLookup<DefenseComponent>(true);
+        var animationFromEntity = GetComponentLookup<AnimationComponent>(true);
+        var hasTargetFromEntity = GetComponentLookup<HasTarget>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
 

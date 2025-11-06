@@ -43,7 +43,7 @@ public partial class FormationManagerSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetExistingSystemManaged<EndSimulationEntityCommandBufferSystem>();
         _unitQuery = GetEntityQuery(
             ComponentType.ReadWrite<FormationComponent>(),
             ComponentType.Exclude<DeadTagComponent>()
@@ -68,7 +68,7 @@ public partial class FormationManagerSystem : SystemBase
 
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob);
         var formationComponents = _unitQuery.ToComponentDataArray<FormationComponent>(Allocator.TempJob);
-        var transforms = GetComponentDataFromEntity<LocalTransform>(true);
+        var transforms = GetComponentLookup<LocalTransform>(true);
 
         var groupCount = _unitGroupQuery.CalculateEntityCount();
 

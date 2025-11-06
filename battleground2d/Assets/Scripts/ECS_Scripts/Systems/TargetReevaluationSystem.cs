@@ -21,7 +21,7 @@ public partial class TargetReevaluationSystem : SystemBase
             ComponentType.Exclude<CommanderComponent>()
         );
 
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        _ecbSystem = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         RequireForUpdate(_reevaluationQuery);
     }
 
