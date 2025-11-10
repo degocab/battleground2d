@@ -181,6 +181,11 @@ public partial class CombatSystem : SystemBase
                         break;
                 }
 
+
+                //store previous state so we can dictate what happens on state changes from previous
+
+                combatState.PreviousState = combatState.CurrentState;
+
                 // Write back modified components
                 combatStates[i] = combatState;
                 attacks[i] = attack;
@@ -230,7 +235,8 @@ public partial class CombatSystem : SystemBase
                     SourceEntity = entity,
                     AttackTime = CurrentTime,
                     AttackDuration = 0.2f
-                    , AttackerDirection = animation.Direction
+                    ,
+                    AttackerDirection = animation.Direction
                 });
             }
             else if (!inRange)
@@ -353,7 +359,7 @@ public partial class CombatSystem : SystemBase
             float baseDefendChance = animation.UnitType == EntitySpawner.UnitType.Default ? .1f : 1f;
 
             // Generate random value and check against defend chance
-            float randomValue = Random.NextFloat(0f,1f);
+            float randomValue = Random.NextFloat(0f, 1f);
             bool shouldDefend = randomValue < baseDefendChance;
 
             return shouldDefend;

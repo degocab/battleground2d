@@ -2,6 +2,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 [UpdateAfter(typeof(FormationCollisionSystem))]
 [UpdateBefore(typeof(CombatSystem))]
@@ -24,7 +25,7 @@ public partial class FormationCombatSystem : SystemBase
             .ForEach((Entity entity,
                      ref HasTarget hasTarget,
                      ref CombatState combatState,
-                     in FormationComponent formation,
+                     ref FormationComponent formation,
                      in Translation translation,
                      in AnimationComponent animationComponent) =>
             {
@@ -36,11 +37,11 @@ public partial class FormationCombatSystem : SystemBase
                 {
                     case FormationStatus.Hold:
                     default:
-                        HandleHoldFormation(ref hasTarget, ref combatState, formation, translation);
+                        HandleHoldFormation(ref hasTarget, ref combatState, ref formation, translation);
                         break;
 
                     case FormationStatus.Engaged:
-                        HandleEngagedFormation(ref hasTarget, ref combatState, formation, translation);
+                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation);
                         break;
 
                     case FormationStatus.Broken:
@@ -56,39 +57,81 @@ public partial class FormationCombatSystem : SystemBase
     }
 
     private static void HandleHoldFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                   FormationComponent formation, Translation translation)
+                                   ref FormationComponent formation, Translation translation)
     {
         // Tight formation - very little movement allowed
         float maxEngageDistance = 0.5f;
 
         float2 formationPos = formation.FormationPosition;
         float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
-
+        if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
+        {
+            //check target position from current before moving
+            float distanceFromCurrentTranslation = math.distance(translation.Value.xy, hasTarget.TargetPosition);
+            if (distanceFromCurrentTranslation > maxEngageDistance)
+            {
+                // Too far - return to formation
+                //hasTarget.Type = HasTarget.TargetType.Position;
+                //hasTarget.TargetPosition = formationPos;
+                //combatState.CurrentState = CombatState.State.Idle;
+                return;
+            }
+        }
         if (distanceFromFormation > maxEngageDistance)
         {
+            Debug.Log("HasTarget.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
+
             // Too far - return to formation immediately
             hasTarget.Type = HasTarget.TargetType.Position;
             hasTarget.TargetPosition = formationPos;
             combatState.CurrentState = CombatState.State.Idle;
         }
         // If they have an enemy target AND are close enough, let them attack!
+        else
+        {
+            //formation.FormationPosition = hasTarget.TargetPosition;
+            //hasTarget.Type = HasTarget.TargetType.Position;
+            //combatState.CurrentState = CombatState.State.Attacking;
+        }
     }
 
     private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                      FormationComponent formation, Translation translation)
+                                      ref FormationComponent formation, Translation translation)
     {
         // Loose formation - more freedom to engage
         float maxEngageDistance = 10f;
 
         float2 formationPos = formation.FormationPosition;
+        //if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
+        //{
+        //    //check target position from current before moving
+        //    float distanceFromCurrentTranslation = math.distance(translation.Value.xy, hasTarget.TargetPosition);
+        //    if (distanceFromCurrentTranslation > maxEngageDistance)
+        //    {
+        //        //// Too far - return to formation
+        //        //hasTarget.Type = HasTarget.TargetType.Position;
+        //        //hasTarget.TargetPosition = formationPos;
+        //        //combatState.CurrentState = CombatState.State.Idle;
+        //        return;
+        //    }
+        //}
+
         float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
 
         if (distanceFromFormation > maxEngageDistance)
         {
+            Debug.Log("HasTarget.TargetPosition updated by HandleEngagedFormation in FormationCombatSystem");
+
             // Too far - return to formation
             hasTarget.Type = HasTarget.TargetType.Position;
             hasTarget.TargetPosition = formationPos;
             combatState.CurrentState = CombatState.State.Idle;
+        }
+        else
+        {
+            //formation.FormationPosition = hasTarget.TargetPosition;
+            //hasTarget.Type = HasTarget.TargetType.Position;
+            //combatState.CurrentState = CombatState.State.Attacking;
         }
         // Otherwise, let them keep their current target (enemy) and attack freely!
     }

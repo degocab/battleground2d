@@ -4,6 +4,7 @@ using Unity.Transforms;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;
+using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TargetReevaluationSystem))]
@@ -80,6 +81,8 @@ public partial class FindTargetSystem : SystemBase
                     //    TargetPosition = ClosestTargets[flatIndex].Position ,
                     //    Type = HasTarget.TargetType.Entity
                     //});
+                    Debug.Log("HasTarget.TargetPosition updated by AddTargetComponentJob in FindTargetSystem");
+
                     var target = new HasTarget
                     {
                         TargetEntity = ClosestTargets[flatIndex].Entity,
@@ -208,11 +211,13 @@ public partial class FindTargetSystem : SystemBase
             {
                 do
                 {
+
+                    bool sameUnitType = animation.UnitType == data.AnimationComponent.UnitType;
+                    if (sameUnitType) continue;
+
                     float distanceSq = math.distancesq(unitPosition, data.Position);
                     if (distanceSq >= closestDistanceSq) continue;
 
-                    bool isEnemy = animation.UnitType != data.AnimationComponent.UnitType;
-                    if (!isEnemy) continue;
 
                     closestTarget = data.Entity;
                     closestDistanceSq = distanceSq;

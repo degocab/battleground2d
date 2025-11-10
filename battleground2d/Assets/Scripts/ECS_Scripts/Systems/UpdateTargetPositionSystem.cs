@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(FindTargetSystem))]
@@ -48,6 +49,8 @@ public class UpdateTargetPositionSystem : SystemBase
             //    if (hasTarget.Type == HasTarget.TargetType.Entity &&
             //        TargetTranslationLookup.HasComponent(hasTarget.TargetEntity))
             //    {
+            //        Debug.Log("HasTarget.TargetPosition updated by UpdateTargetPositionJob");
+
             //        var targetTranslation = TargetTranslationLookup[hasTarget.TargetEntity];
             //        hasTarget.TargetPosition = targetTranslation.Value.xy;
 

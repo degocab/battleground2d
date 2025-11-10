@@ -324,24 +324,30 @@ public partial class CollisionDetectionSystem : SystemBase
                     do
                     {
                         Entity entityB = otherData.entity;
-                        if (entityA == entityB)
-                            continue;
-
-                        float2 posB = otherData.position;
-                        float radiusB = otherData.radius;
-
-                        float distSq = math.distancesq(posA, posB);
-                        float combinedRadius = radiusA + radiusB;
-
-                        if (distSq <= combinedRadius * combinedRadius)
+                        if (entityA.Index < entityB.Index)
                         {
-                            CollisionEvents.Add(entityA, /*entityB*/otherData);
-                            CollisionEvents.Add(entityB, /*entityA*/
-                                new CollisionQuadrantData { CollisionSourceTranslation = translations[i],
-                                                            CollisionSourceCollider = colliders[i],
-                                                            CollisionSourceBody = bodies[i]
-                                });
+                            if (entityA == entityB)
+                                continue;
+
+                            float2 posB = otherData.position;
+                            float radiusB = otherData.radius;
+
+                            float distSq = math.distancesq(posA, posB);
+                            float combinedRadius = radiusA + radiusB;
+
+                            if (distSq <= combinedRadius * combinedRadius)
+                            {
+                                CollisionEvents.Add(entityA, /*entityB*/otherData);
+                                CollisionEvents.Add(entityB, /*entityA*/
+                                    new CollisionQuadrantData
+                                    {
+                                        CollisionSourceTranslation = translations[i],
+                                        CollisionSourceCollider = colliders[i],
+                                        CollisionSourceBody = bodies[i]
+                                    });
+                            }
                         }
+
                     }
                     while (collisionQuadrantMap.TryGetNextValue(out otherData, ref it));
                 }

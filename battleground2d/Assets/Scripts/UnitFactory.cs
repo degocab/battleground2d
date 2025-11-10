@@ -131,6 +131,12 @@ public class UnitFactory
         SetAnimationComponent(unit, unitType, unitDirection);
         SetUnitIdentity(unit, unitType, rank);
 
+        if (unitType == UnitType.Default)
+        {
+            entityManager.AddComponentData(unit, new AllyTag { });
+
+        }
+
         return unit;
     }
 
@@ -147,7 +153,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new AttackComponent
         {
             Damage = 10f,
-            Range = .275f,//.2875f,
+            Range = .4f,//.275f,//.2875f,
             isAttacking = false,
             //isDefending = false,
             AttackRate = 2f, // have to match for initial 
@@ -225,6 +231,10 @@ public class UnitFactory
 
     private int GetRank(int index) => 1; // Simple rank assignment for now
     private UnitType GetUnitType(int unitType) => unitType == 1 ? UnitType.Default : UnitType.Enemy;
+}
+
+public struct AllyTag:IComponentData
+{
 }
 
 // Separate class for archetype management

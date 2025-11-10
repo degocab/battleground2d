@@ -14,5 +14,5 @@ public struct CombatState : IComponentData
     public float SupportTimer;
     public float SupportTimer2;
 
-    public State PreviousState { get; internal set; }
+    public State PreviousState;
 }

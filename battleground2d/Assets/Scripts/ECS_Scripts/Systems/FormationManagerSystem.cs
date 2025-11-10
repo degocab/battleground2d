@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
@@ -59,6 +60,7 @@ public partial class FormationManagerSystem : SystemBase
 
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob); // Retrieve all unit entities.
         var translations = GetComponentDataFromEntity<Translation>(true); // Retrieve Translation components for position data.
+        var unitFormations = GetComponentDataFromEntity<FormationComponent>(false); // Retrieve Translation components for position data.
         var groupCount = _unitGroupQuery.CalculateEntityCount(); // Count the number of formation groups.
 
         // Initialize or clear the native maps used for group-to-unit mapping and formation group data.
@@ -75,7 +77,7 @@ public partial class FormationManagerSystem : SystemBase
         UpdateFormationComponents(groupToUnitCountMap);
 
         // Update the bounds of each formation group based on unit positions.
-        UpdateFormationGroupBounds(groupToUnitCountMap, translations);
+        UpdateFormationGroupBounds(groupToUnitCountMap, translations, unitFormations);
 
         // Schedule a job to remove or add colliders for groups based on their status.
         var removeGroupCollidersJobHandle = RemoveGroupColliders(ecb);
@@ -108,6 +110,7 @@ public partial class FormationManagerSystem : SystemBase
         var formationGroupWriter = _formationGroupMap.AsParallelWriter();
         // Populate the formation group map with all entities that have a FormationGroupComponent.
         Entities
+            .WithNone<DeadTagComponent>()
             .WithAll<FormationGroupComponent>()
             .ForEach((Entity entity, ref FormationGroupComponent formationGroupComponent) =>
             {
@@ -120,6 +123,7 @@ public partial class FormationManagerSystem : SystemBase
         var groupToUnitsWriter = _groupToUnitsMap.AsParallelWriter();
         // Map each unit to its formation group if it has one.
         Entities
+            .WithNone<DeadTagComponent>()
             .WithAll<FormationComponent>()
             .ForEach((Entity entity, ref FormationComponent formationComponent) =>
             {
@@ -135,52 +139,107 @@ public partial class FormationManagerSystem : SystemBase
         var formationGroupMapTemp = _formationGroupMap;
         // Update the formation position of each unit based on its group and slot index.
         Entities
+            .WithNone<DeadTagComponent>()
             .WithAll<FormationComponent>()
             .WithReadOnly(groupToUnitCountMap)
             .WithReadOnly(formationGroupMapTemp)
             .ForEach((Entity entity, ref FormationComponent formationComponent) =>
             {
-                if (groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var groupValueCount) &&
-                    formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationGroup))
+
+
+                if (formationComponent.FormationType == FormationType.Phalanx)
                 {
-                    formationComponent.FormationPosition = CalculatePhalanxPosition(
-                        formationComponent.SlotIndex,
-                        groupValueCount,
-                        formationGroup.UnitsPerRow,
-                        formationGroup.UnitSpacing,
-                        formationGroup.AnchorPosition
-                    );
+                    formationComponent.FormationWeight = 3.0f;
+                }
+                else
+                {
+                    formationComponent.FormationWeight = 1.0f;
+                }
+
+                if (formationComponent.Status == FormationStatus.Hold) //TODO: remove this? just seeing how this reacts
+                {
+                    if (groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var groupValueCount) &&
+                formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationGroup))
+                    {
+
+                        formationComponent.FormationPosition = CalculatePhalanxPosition(
+                            formationComponent.SlotIndex,
+                            groupValueCount,
+                            formationGroup.UnitsPerRow,
+                            formationGroup.UnitSpacing,
+                            formationGroup.AnchorPosition
+                        );
+                    } 
                 }
             }).WithBurst().ScheduleParallel(Dependency).Complete();
     }
 
-    private void UpdateFormationGroupBounds(NativeHashMap<Entity, int> groupToUnitCountMap, ComponentDataFromEntity<Translation> translations)
+    private void UpdateFormationGroupBounds(NativeHashMap<Entity, int> groupToUnitCountMap, ComponentDataFromEntity<Translation> translations, ComponentDataFromEntity<FormationComponent> unitFormations)
     {
         // Update the bounds of each formation group based on the positions of its units.
         Entities
+            .WithNone<DeadTagComponent>()
             .WithAll<FormationGroupComponent>()
             .WithReadOnly(groupToUnitCountMap)
             .WithReadOnly(_groupToUnitsMap)
             .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroupComponent) =>
             {
+
+
                 if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
                 {
                     var unitEntitiesList = GetValuesForKey(_groupToUnitsMap, groupEntity, Allocator.TempJob);
+                    if (formationGroupComponent.PriorGroupCount != unitEntitiesList.Length)
+                    {
+                        //re index slots
+                        formationGroupComponent.ReIndexSlots = true;
+                        formationGroupComponent.PriorGroupCount = unitEntitiesList.Length;
+                        ////foreach (var unitEntity in unitEntitiesList)
+                        //for (int i = 0; i < unitEntitiesList.Length; i++)
+                        //{
+                        //    var unitEntity = unitEntitiesList[i];
+                        //    if (unitFormations.HasComponent(unitEntity))
+                        //    {
+                        //        var unitFormation = unitFormations[unitEntity];
+                        //        unitFormation.SlotIndex = i;
+                        //        unitFormations[unitEntity] = unitFormation;
+                        //    }
+                        //}
+                    }
+
                     formationGroupComponent.CurrentUnitAveragePosition = CalculateAveragePositionForGroup(unitEntitiesList, translations);
 
-                    var bounds = CalculateFormationBounds(groupValueCount, formationGroupComponent.UnitsPerRow,
+                    var bounds = CalculateFormationBounds(unitEntitiesList, translations, formationGroupComponent.UnitsPerRow,
                         formationGroupComponent.UnitSpacing, formationGroupComponent.CurrentUnitAveragePosition);
 
                     formationGroupComponent.BoundsMin = bounds.Min;
                     formationGroupComponent.BoundsMax = bounds.Max;
                 }
             }).WithoutBurst().Run();
+
+
+        var groupEntities = _unitGroupQuery.ToEntityArray(Allocator.TempJob);
+
+        var reindexJob = new ReindexFormationsPerGroupJob
+        {
+            GroupEntities = groupEntities,
+            GroupToUnits = _groupToUnitsMap, // your cached map
+            Formations = GetComponentDataFromEntity<FormationComponent>(false),
+            Groups = GetComponentDataFromEntity<FormationGroupComponent>(false),
+            DeadTags = GetComponentDataFromEntity<DeadTagComponent>(true)
+        };
+
+        Dependency = reindexJob.Schedule(groupEntities.Length, 1, Dependency);
+        Dependency.Complete();
+
+        groupEntities.Dispose();
+
     }
 
     private JobHandle RemoveGroupColliders(EntityCommandBuffer.ParallelWriter ecb)
     {
         // Remove or add colliders for units based on their collider status.
-        var jobHandle = Entities
+        var jobHandle = Entities.WithNone<DeadTagComponent>()
             .WithAll<FormationComponent, CollidableTag>()
             .WithBurst()
             .ForEach((Entity entity, int entityInQueryIndex, ref FormationComponent formation) =>
@@ -224,20 +283,29 @@ public partial class FormationManagerSystem : SystemBase
         return validUnitCount > 0 ? sum / validUnitCount : float2.zero;
     }
 
-    private static FormationBounds CalculateFormationBounds(int unitCount, int unitsPerRow, float spacing, float2 anchor)
+    private static FormationBounds CalculateFormationBounds(NativeList<Entity> unitEntities, ComponentDataFromEntity<Translation> translations, int unitsPerRow, float spacing, float2 anchor)
     {
-        // Calculate the bounds of a formation based on the number of units, rows, and spacing.
-        if (unitCount == 0 || unitsPerRow <= 0)
+        // Calculate the bounds of a formation based on the positions of its units.
+        if (unitEntities.Length == 0 || unitsPerRow <= 0)
             return new FormationBounds { Min = anchor, Max = anchor };
 
-        int totalRows = (unitCount + unitsPerRow - 1) / unitsPerRow;
-        float formationWidth = (math.min(unitsPerRow, unitCount) - 1) * spacing;
-        float formationHeight = (totalRows - 1) * spacing;
+        float2 min = new float2(float.MaxValue, float.MaxValue);
+        float2 max = new float2(float.MinValue, float.MinValue);
 
-        float2 min = new float2(anchor.x - formationWidth * 0.5f, anchor.y - formationHeight * 0.5f);
-        float2 max = new float2(anchor.x + formationWidth * 0.5f, anchor.y + formationHeight * 0.5f);
+        foreach (var unitEntity in unitEntities)
+        {
+            if (translations.HasComponent(unitEntity))
+            {
+                var translation = translations[unitEntity];
+                float2 position = new float2(translation.Value.x, translation.Value.y);
 
-        float unitRadius = 0.125f; // Add padding for unit radius.
+                min = math.min(min, position);
+                max = math.max(max, position);
+            }
+        }
+
+        // Add padding for unit radius.
+        float unitRadius = 0.125f;
         min -= new float2(unitRadius, unitRadius);
         max += new float2(unitRadius, unitRadius);
 
@@ -247,11 +315,11 @@ public partial class FormationManagerSystem : SystemBase
     [BurstCompile]
     public static float2 CalculatePhalanxPosition(int unitIndex, int totalUnits, int unitsPerRow, float spacing, float2 anchor)
     {
-        // Calculate the position of a unit in a phalanx formation.
+        // Calculate the position of a unit in a phalanx formation.  
         if (unitsPerRow <= 0)
             unitsPerRow = 16;
         int row = unitIndex / unitsPerRow;
-        int col = unitIndex - row * unitsPerRow;
+        int col = unitIndex % unitsPerRow;
 
         int rowCount = (totalUnits + unitsPerRow - 1) / unitsPerRow;
         int columnsThisRow = math.min(unitsPerRow, totalUnits - row * unitsPerRow);
@@ -260,7 +328,13 @@ public partial class FormationManagerSystem : SystemBase
         float offsetX = col * spacing - formationWidth * 0.5f;
 
         float formationHeight = (rowCount - 1) * spacing;
-        float offsetY = row * -spacing + formationHeight * 0.5f;
+        float offsetY = -row * spacing + formationHeight * 0.5f;
+
+        // Ensure rows with fewer columns do not drift by clamping offsets.  
+        if (columnsThisRow < unitsPerRow)
+        {
+            offsetX = math.clamp(offsetX, -formationWidth * 0.5f, formationWidth * 0.5f);
+        }
 
         return anchor + new float2(offsetX, offsetY);
     }
@@ -268,6 +342,11 @@ public partial class FormationManagerSystem : SystemBase
     public static NativeHashMap<Entity, int> GetCountsPerKey(NativeMultiHashMap<Entity, Entity> groupToUnits, Allocator allocator)
     {
         // Count the number of units in each group.
+        if (groupToUnits.Count() == 0)
+        {
+            Debug.Log($"No units found for GetCountsPerKey({groupToUnits}, {allocator})");
+        }
+
         var counts = new NativeHashMap<Entity, int>(groupToUnits.Count(), allocator);
 
         foreach (var kv in groupToUnits)
@@ -299,5 +378,81 @@ public partial class FormationManagerSystem : SystemBase
         public float2 Min; // Minimum corner of the formation bounds.
         public float2 Max; // Maximum corner of the formation bounds.
     }
+    public struct SlotEntry
+    {
+        public int OldSlot;
+        public Entity Entity;
+    }
+
+
+    [BurstCompile]
+    public struct ReindexFormationsPerGroupJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Entity> GroupEntities;
+        [ReadOnly] public NativeMultiHashMap<Entity, Entity> GroupToUnits;
+
+        [NativeDisableParallelForRestriction]
+        public ComponentDataFromEntity<FormationComponent> Formations;
+        [NativeDisableParallelForRestriction]
+        public ComponentDataFromEntity<FormationGroupComponent> Groups;
+
+        [ReadOnly] public ComponentDataFromEntity<DeadTagComponent> DeadTags;
+
+        public void Execute(int index)
+        {
+            var groupEntity = GroupEntities[index];
+            var group = Groups[groupEntity];
+            if (!group.ReIndexSlots)
+                return;
+
+            var aliveUnits = new NativeList<SlotEntry>(Allocator.Temp);
+
+            if (GroupToUnits.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
+            {
+                do
+                {
+                    if (DeadTags.HasComponent(unitEntity) || !Formations.HasComponent(unitEntity))
+                        continue;
+
+                    var formation = Formations[unitEntity];
+                    aliveUnits.Add(new SlotEntry { OldSlot = formation.SlotIndex, Entity = unitEntity });
+                }
+                while (GroupToUnits.TryGetNextValue(out unitEntity, ref iterator));
+            }
+
+            if (aliveUnits.Length == 0)
+            {
+                aliveUnits.Dispose();
+                return;
+            }
+
+            aliveUnits.Sort(new SlotComparer());
+
+            for (int i = 0; i < aliveUnits.Length; i++)
+            {
+                var formation = Formations[aliveUnits[i].Entity];
+                formation.SlotIndex = i;
+                Formations[aliveUnits[i].Entity] = formation;
+            }
+
+            aliveUnits.Dispose();
+        }
+
+        private struct SlotEntry
+        {
+            public int OldSlot;
+            public Entity Entity;
+        }
+
+        private struct SlotComparer : IComparer<SlotEntry>
+        {
+            public int Compare(SlotEntry a, SlotEntry b)
+            {
+                return a.OldSlot.CompareTo(b.OldSlot);
+            }
+        }
+    }
+
+
 }
 

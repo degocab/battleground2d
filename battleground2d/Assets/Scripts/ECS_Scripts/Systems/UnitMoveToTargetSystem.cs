@@ -2,6 +2,7 @@
 using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.Burst;
+using UnityEngine;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(MovementSystem))]
@@ -53,7 +54,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 //}
 
 
-                float reachThreshold = 0.275f;
+                float reachThreshold = .4f;
                 float2 targetPos = float2.zero;
                 bool targetIsValid = false;
       
@@ -65,6 +66,8 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     {
                         // Now we can safely get the target's position
                         //targetPos = translationFromEntity[hasTarget.TargetEntity].Value.xy;
+                        Debug.Log("HasTarget.TargetPosition updated by UnitMoveToTargetJob");
+
                         targetPos = hasTarget.TargetPosition;
                         targetIsValid = true;
                     }
@@ -108,7 +111,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                                 commandData.Command = CommandType.Attack;
                             }
                             commandData.TargetEntity = hasTarget.TargetEntity;
-                            commandData.TargetPosition = targetPos;
+                            //commandData.TargetPosition = targetPos;
                         }
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
                     }

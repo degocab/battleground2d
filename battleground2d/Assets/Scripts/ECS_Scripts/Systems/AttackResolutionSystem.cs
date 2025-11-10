@@ -216,6 +216,7 @@ public partial class DefenseSystem : SystemBase
 
         if (!hasTargetComponent)
         {
+            Debug.Log("HasTarget.TargetPosition updated by DefenseResolutionJob");
             ecb.AddComponent(entityInQueryIndex, entity, new HasTarget
             {
                 Type = HasTarget.TargetType.Entity,

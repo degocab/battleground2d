@@ -20,7 +20,8 @@ public struct FormationComponent : IComponentData
     public Entity? FormationGroupEntity;
     public bool UnitCollision;
     public bool WasJustAssignedToGroup; // NEW: Track fresh assignments
-    internal FormationColliderStatus PreviousColliderStatus;
+    public FormationColliderStatus PreviousColliderStatus;
+    public float FormationWeight;
 }
 
 /// <summary>
@@ -66,4 +67,6 @@ public struct FormationGroupComponent : IComponentData
     public Entity FormationGroupEntity;
 
     public float2 CurrentUnitAveragePosition;
+    public int PriorGroupCount;
+    public bool ReIndexSlots;
 }

@@ -119,12 +119,18 @@ ComponentType.Exclude<CommanderComponent>());
                     command.Command = CommandType.Defend;
                     return; //AI needs to handle its own
                 }
+                float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
 
                 switch (command.Command)
                 {
                     case CommandType.Idle:
                         break;
                     case CommandType.FindTarget:
+                        if (distance > 5f)
+                        {
+                            //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
+                        }
+                        formationGroup.FormationGroupStatus = FormationStatus.Engaged;
                         break;
                     case CommandType.MoveTo:
                         break;
@@ -133,17 +139,21 @@ ComponentType.Exclude<CommanderComponent>());
                     case CommandType.Charge:
                         break;
                     case CommandType.Attack:
+
+                        if (distance > 5f)
+                        {
+                            //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
+                        }
                         break;
                     case CommandType.Defend:
+                        formationGroup.FormationGroupStatus = FormationStatus.Hold;
                         //if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
                         //{
                         //formationGroup.AnchorPosition = currentAveragePos;
-                        float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
-
                         // Only update if we've moved significantly from current anchor
                         if (distance > 5f)
                         {
-                            formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
+                            //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
                         }
                         //}
                         break;
@@ -276,6 +286,7 @@ ComponentType.Exclude<CommanderComponent>());
                 case CommandType.Defend:
                     // TODO: Implement defend logic
                     formation.Status = FormationStatus.Hold;
+                    ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
                     break;
             }
         }
@@ -288,6 +299,7 @@ ComponentType.Exclude<CommanderComponent>());
             float2 dir = GetDirectionVector(direction);
             float endlessDistance = 1000f;
             float2 targetPos = entityPos + (dir * endlessDistance);
+            Debug.Log("HasTarget.TargetPosition updated by HandleMovementCommand in ProcessCommandSystem");
 
             ecb.AddComponent(chunkIndex, entity, new HasTarget
             {
@@ -345,6 +357,8 @@ ComponentType.Exclude<CommanderComponent>());
             {
                 // Direct attack on entity
                 combatState.CurrentState = CombatState.State.Attacking;
+                Debug.Log("HasTarget.TargetPosition updated by HandleAttackCommand in ProcessCommandSystem");
+
                 ecb.AddComponent(chunkIndex, entity, new HasTarget
                 {
                     Type = HasTarget.TargetType.Entity,

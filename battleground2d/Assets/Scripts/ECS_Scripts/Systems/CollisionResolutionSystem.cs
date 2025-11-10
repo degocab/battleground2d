@@ -2,7 +2,7 @@
 using Unity.Transforms;
 using Unity.Mathematics;
 
-[UpdateInGroup(typeof(Unity.Entities.SimulationSystemGroup))]
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(PhysicsSystem))]
 [UpdateAfter(typeof(CollisionDetectionSystem))]
 public class CollisionResolutionSystem : SystemBase
@@ -11,70 +11,67 @@ public class CollisionResolutionSystem : SystemBase
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
-        EntityManager entityManager = EntityManager;
+
+        var formationData = GetComponentDataFromEntity<FormationComponent>(true);
 
         Entities
             .WithName("CollisionResolutionSystem")
             .WithNone<DeadTagComponent>()
-            .WithBurst() // Optional: add after testing
-            .ForEach((ref Translation translation, ref ECS_Velocity2D velocity, ref ECS_PhysicsBody2DAuthoring body, ref ECS_CircleCollider2DAuthoring collider, ref DynamicBuffer<CollisionEvent2D> collisions) =>
+            .WithAll<CollidableTag>()
+            .WithReadOnly(formationData)
+            .WithBurst()
+            .ForEach((ref Translation translation,
+                      ref ECS_Velocity2D velocity,
+                      ref ECS_PhysicsBody2DAuthoring body,
+                      ref ECS_CircleCollider2DAuthoring collider,
+                      ref DynamicBuffer<CollisionEvent2D> collisions) =>
             {
                 if (body.isStatic || collisions.Length == 0)
-                {
-                    //velocity.Value = velocity.PrevValue;
                     return;
-                }
 
                 float2 position = translation.Value.xy;
-                float totalPushX = 0f;
-                float totalPushY = 0f;
+                float2 totalPush = float2.zero;
 
                 for (int i = 0; i < collisions.Length; i++)
                 {
                     var collision = collisions[i];
-                    //if (!entityManager.HasComponent<Translation>(collision.OtherEntity) ||
-                    //    !entityManager.HasComponent<ECS_CircleCollider2DAuthoring>(collision.OtherEntity) ||
-                    //    !entityManager.HasComponent<ECS_PhysicsBody2DAuthoring>(collision.OtherEntity))
-                    //    continue;
-
-                    float2 otherPos = collision.OtherTranslation.Value.xy;
-                    float otherRadius = collision.OtherCollider.Radius;
                     var otherBody = collision.OtherBody;
+                    var otherCollider = collision.OtherCollider;
+                    float2 otherPos = collision.OtherTranslation.Value.xy;
 
                     float2 delta = position - otherPos;
                     float dist = math.length(delta);
-                    float minDist = collider.Radius + otherRadius;
+                    if (dist == 0f) continue;
 
-                    // Prevent divide by zero
-                    if (dist == 0f)
-                    {
-                        delta = new float2(0.1375f, 0f); // Arbitrary push direction
-                        dist = 0.001f;
-                    }
-
-                    float2 direction = delta / dist;
+                    float minDist = collider.Radius + otherCollider.Radius;
                     float penetration = minDist - dist;
+                    if (penetration <= 0f)
+                        continue;
 
-                    if (penetration > 0f)
-                    {
-                        // Distribute movement (half if both are dynamic)
-                        float2 push = direction * penetration;
+                    float2 dir = delta / dist;
 
-                        if (!otherBody.isStatic)
-                            push *= 0.1375f;
+                    // Get weights
+                    float myWeight = 1f;
+                    float otherWeight = 1f;
+                    if (formationData.HasComponent(collision.OtherEntity))
+                        otherWeight = formationData[collision.OtherEntity].FormationWeight;
 
-                        totalPushX += push.x;
-                        totalPushY += push.y;
-                    }
+                    // heavier units move less
+                    float myMoveFraction = otherWeight / (myWeight + otherWeight);
+                    float otherMoveFraction = myWeight / (myWeight + otherWeight);
+
+                    // final push
+                    float2 push = dir * (penetration * myMoveFraction);
+                    totalPush += push;
                 }
 
-                // Apply final push
-                translation.Value.xy += new float2(totalPushX, totalPushY);
-
-                // Keep Z = 0 (2D only)
+                // Apply smooth correction
+                float stiffness = 0.2f; // tweak for stability
+                translation.Value.xy += totalPush * stiffness;
                 translation.Value.z = 0f;
-                //velocity.Value.xy += new float2(totalPushX, totalPushY);
 
-            }).Run(); // Run on main thread for now to access EntityManager
+                // Damp velocity to avoid jitter
+                velocity.Value *= 0.95f;
+            }).ScheduleParallel();
     }
 }

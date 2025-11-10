@@ -53,6 +53,8 @@ public class FormationCollisionSystem : SystemBase
             {
                 DrawAABB(groupComponents[i].BoundsMin, groupComponents[i].BoundsMax, Color.green);
             }
+
+            DrawAnchorPoint(groupComponents[i].AnchorPosition, Color.green, .25f);
         }
 
         Entities
@@ -128,7 +130,7 @@ public class FormationCollisionSystem : SystemBase
             for (int j = index + 1; j < GroupEntities.Length; j++)
             {
                 var groupB = GroupComponents[j];
-                Debug.Log($"Collision check[j:{isColliding}]");
+                //Debug.Log($"Collision check[j:{isColliding}]");
 
                 if (AABBOverlap(groupA.BoundsMin, groupA.BoundsMax, groupB.BoundsMin, groupB.BoundsMax))
                 {
@@ -163,6 +165,17 @@ public class FormationCollisionSystem : SystemBase
     public static bool AABBOverlap(float2 minA, float2 maxA, float2 minB, float2 maxB)
     {
         return !(maxA.x < minB.x || minA.x > maxB.x || maxA.y < minB.y || minA.y > maxB.y);
+    }
+    public static void DrawAnchorPoint(float2 position, Color color, float size = 0.5f)
+    {
+        Vector3 center = new Vector3(position.x, position.y, 0);
+        Vector3 left = center + new Vector3(-size, 0, 0);
+        Vector3 right = center + new Vector3(size, 0, 0);
+        Vector3 top = center + new Vector3(0, size, 0);
+        Vector3 bottom = center + new Vector3(0, -size, 0);
+
+        Debug.DrawLine(left, right, color);
+        Debug.DrawLine(top, bottom, color);
     }
 }
 public struct FormationCollisionTag : IBufferElementData
