@@ -45,4 +45,19 @@ public static class CombatUtils
             }
         }
     }
+    public static float2 GetDirectionVector(EntitySpawner.Direction direction)
+    {
+        switch (direction)
+        {
+            case EntitySpawner.Direction.Up:
+                return new float2(0, 1);
+            case EntitySpawner.Direction.Down:
+                return new float2(0, -1);
+            case EntitySpawner.Direction.Left:
+                return new float2(-1, 0);
+            case EntitySpawner.Direction.Right:
+            default:
+                return new float2(1, 0);
+        }
+    }
 }

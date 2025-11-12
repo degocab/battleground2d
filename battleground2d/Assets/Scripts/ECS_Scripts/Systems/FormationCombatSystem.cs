@@ -25,11 +25,11 @@ public partial class FormationCombatSystem : SystemBase
             .ForEach((Entity entity,
                      ref HasTarget hasTarget,
                      ref CombatState combatState,
-                     ref FormationComponent formation,
-                     in Translation translation,
-                     in AnimationComponent animationComponent) =>
+                     ref FormationComponent formation
+                     ,ref AnimationComponent animationComponent
+                     , in Translation translation
+                     ) =>
             {
-
                 var unitFormatonStatus = formation.Status;
                 if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
                     unitFormatonStatus = FormationStatus.Broken;
@@ -37,6 +37,7 @@ public partial class FormationCombatSystem : SystemBase
                 {
                     case FormationStatus.Hold:
                     default:
+                        animationComponent.Direction = formation.Direction;
                         HandleHoldFormation(ref hasTarget, ref combatState, ref formation, translation);
                         break;
 
@@ -45,7 +46,7 @@ public partial class FormationCombatSystem : SystemBase
                         break;
 
                     case FormationStatus.Broken:
-                        // Let normal combat system handle it
+                        // Let normal combat system handle it  
                         break;
 
                     case FormationStatus.Returning:

@@ -560,9 +560,13 @@ MonoBehaviour:
       3: Formation Foundation\r\n```\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[x]
       Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem
       \r\n[x] Implement Hold Position behavior\r\n```\r\n\r\n### Week 4: Advanced
-      Formations\r\n```\r\n[ ] Implement Advance/Attack Move/Charge commands\r\n[x]
-      Add Formation collision (groups avoid other groups)\r\n[ ] Dynamic rank promotion
-      (middle\u2192front when gaps appear)\r\n```"
+      Formations\r\n```\r\n[] DECOUPLE UNIT COMMANDS \n\t[ ] formations need to have
+      all the info \n\t[ ] find target should not trigger for each unit until the
+      formations have clashed\n[ ] Implement Advance/Attack Move/Charge commands\r\n\t[
+      ] add radial commands for moving with direction and range\n\t[ ] add charge
+      to only work when formation has a target!\n[x] Add Formation collision (groups
+      avoid other groups)\r\n[ ] Dynamic rank promotion (middle\u2192front when gaps
+      appear)\r\n```"
     state: 2
     show: 1
     deleteQuestion: 0

@@ -320,16 +320,16 @@ public class PlayerControlSystem : SystemBase
         CommandData comm = new CommandData();
         switch (number)
         {
-            case 0: // Move
+            case 0: // Move -  1
                 comm = CommandFactory.CreateChargeCommand();
                 break;
 
-            case 1: // Find target
+            case 1: // Find target - 2
                 comm = CommandFactory.CreateMarchCommand();
                 break;
 
-            case 2: // Attack position
-                comm = CommandFactory.CreateAttackCommand(moveToPosition);
+            case 2: // MarchForward - 3
+                comm = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange,  10f, EntitySpawner.Direction.Right);
                 break;
 
             case 3: // Defend
@@ -344,7 +344,7 @@ public class PlayerControlSystem : SystemBase
                 comm = CommandFactory.CreateCommand(CommandType.Idle);
                 break;
 
-            case 6: // Custom command 1
+            case 6: // FindTarget command
                 comm = CommandFactory.CreateFindTargetCommand();
                 break;
 

@@ -7,4 +7,7 @@ public struct CommandData : IComponentData
     public float2 TargetPosition; // Optional (used for MoveTo, etc.)
     public Entity TargetEntity;   // Optional (used for Attack, etc.)
     public CommandType previousCommand;
+    public float MoveRange;
+    public EntitySpawner.Direction FormationDirectionToMove;
+    public bool InitialCommand;
 }

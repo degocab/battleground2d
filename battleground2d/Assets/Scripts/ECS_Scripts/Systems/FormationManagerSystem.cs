@@ -169,6 +169,7 @@ public partial class FormationManagerSystem : SystemBase
                             formationGroup.UnitSpacing,
                             formationGroup.AnchorPosition
                         );
+                        formationComponent.Direction = formationGroup.FormationFacingDirection;
                     } 
                 }
             }).WithBurst().ScheduleParallel(Dependency).Complete();

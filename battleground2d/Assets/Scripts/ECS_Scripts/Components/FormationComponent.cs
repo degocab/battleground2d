@@ -22,6 +22,7 @@ public struct FormationComponent : IComponentData
     public bool WasJustAssignedToGroup; // NEW: Track fresh assignments
     public FormationColliderStatus PreviousColliderStatus;
     public float FormationWeight;
+    public Direction Direction;
 }
 
 /// <summary>
@@ -69,4 +70,7 @@ public struct FormationGroupComponent : IComponentData
     public float2 CurrentUnitAveragePosition;
     public int PriorGroupCount;
     public bool ReIndexSlots;
+
+    public EntitySpawner.Direction FormationFacingDirection;
+    public bool InitialCommand;
 }

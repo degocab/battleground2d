@@ -138,6 +138,15 @@ ComponentType.Exclude<CommanderComponent>());
                         break;
                     case CommandType.Charge:
                         break;
+                    case CommandType.MoveDirectionalRange:
+                        if (command.InitialCommand)//only set this once at start of command!
+                        {
+                            var currentFormationPos = formationGroup.AnchorPosition;
+                            var directionVector = CombatUtils.GetDirectionVector(command.FormationDirectionToMove) * command.MoveRange;
+                            formationGroup.AnchorPosition = currentFormationPos + (directionVector * .25f);//.25 to convert to meters! 
+                            command.InitialCommand = false;
+                        }
+                        break;
                     case CommandType.Attack:
 
                         if (distance > 5f)
@@ -158,7 +167,7 @@ ComponentType.Exclude<CommanderComponent>());
                         //}
                         break;
                     default:
-                        break;  
+                        break;
                 }
 
                 if (command.Command == CommandType.MoveTo)
@@ -278,6 +287,12 @@ ComponentType.Exclude<CommanderComponent>());
                     formation.Status = FormationStatus.Hold;
                     HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb, ref formation);
                     break;
+                    
+
+                case CommandType.MoveDirectionalRange:
+                    formation.Status = FormationStatus.Hold;
+                    MarchInDirectionWithRange(command.Command, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb, 10f);
+                    break;
 
                 case CommandType.Attack:
                     HandleAttackCommand(ref command, ref combatState, entity, chunkIndex, ecb);
@@ -290,13 +305,30 @@ ComponentType.Exclude<CommanderComponent>());
                     break;
             }
         }
+        private void MarchInDirectionWithRange(CommandType commandType, ref CombatState combatState,
+                                         ref MovementSpeedComponent movementSpeed, Entity entity,
+                                         float2 entityPos, EntitySpawner.Direction direction,
+                                         int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, float rangeToMarch)
+        {
+            float2 currentTargetLocation = entityPos;
+            // => direction right: float2(1,0);
+            // * range(10) = float2(1,0) * 10 = float2(10, 0);
+            float2 newTargetLocation = CombatUtils.GetDirectionVector(direction) * rangeToMarch;
+            float2 targetPos = currentTargetLocation + newTargetLocation;
+            ecb.AddComponent(chunkIndex, entity, new HasTarget
+            {
+                Type = HasTarget.TargetType.Position,
+                //TargetPosition = targetPos,
+                //TargetEntity = Entity.Null
+            });
+        }
 
         private void HandleMovementCommand(CommandType commandType, ref CombatState combatState,
                                          ref MovementSpeedComponent movementSpeed, Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
-            float2 dir = GetDirectionVector(direction);
+            float2 dir = CombatUtils.GetDirectionVector(direction);
             float endlessDistance = 1000f;
             float2 targetPos = entityPos + (dir * endlessDistance);
             Debug.Log("HasTarget.TargetPosition updated by HandleMovementCommand in ProcessCommandSystem");
@@ -370,21 +402,7 @@ ComponentType.Exclude<CommanderComponent>());
 
             command.Command = CommandType.Idle;
         }
-        private float2 GetDirectionVector(EntitySpawner.Direction direction)
-        {
-            switch (direction)
-            {
-                case EntitySpawner.Direction.Up:
-                    return new float2(0, 1);
-                case EntitySpawner.Direction.Down:
-                    return new float2(0, -1);
-                case EntitySpawner.Direction.Left:
-                    return new float2(-1, 0);
-                case EntitySpawner.Direction.Right:
-                default:
-                    return new float2(1, 0);
-            }
-        }
+
     }
     private float2 CalculateAveragePositionForGroup(Entity groupEntity)
     {
@@ -422,4 +440,6 @@ public enum CommandType : byte
     Charge, //charge in facing direction until reaching enemies
     Attack,
     Defend
+    , Follow
+    , MoveDirectionalRange
 }

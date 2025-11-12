@@ -94,4 +94,15 @@ public static class CommandFactory
             TargetPosition = targetPosition
         };
     }
+    // Generic method for any command type
+    public static CommandData CreateMoveDirectionalRangeCommand(CommandType commandType, float range, EntitySpawner.Direction direction)
+    {
+        return new CommandData
+        {
+            Command = commandType,
+            MoveRange = range,
+            FormationDirectionToMove = direction,
+            InitialCommand = true
+        };
+    }
 }
