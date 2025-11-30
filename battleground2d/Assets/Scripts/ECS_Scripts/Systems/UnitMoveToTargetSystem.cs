@@ -33,9 +33,12 @@ public partial class UnitMoveToTargetSystem : SystemBase
             .WithName("UnitMoveToTargetJob")
             .WithAll<HasTarget>()
             .WithNone<PlayerInputComponent>()
+            .WithNone<RestrictMovementTag>()
             // *** ANOTHER KEY CHANGE: You must explicitly declare your read-only dependency ***
             //.WithReadOnly(translationFromEntity) // This is crucial for safety!
-            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget, ref CombatState combatState, ref DefenseComponent defenseComponent, ref CommandData commandData) =>
+            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref HasTarget hasTarget, ref CombatState combatState, ref DefenseComponent defenseComponent
+            //, ref CommandData commandData
+            ) =>
             {
                 // RESPECT COMBAT STATE - don't move if defending
                 if (combatState.CurrentState == CombatState.State.Attacking ||
@@ -108,9 +111,9 @@ public partial class UnitMoveToTargetSystem : SystemBase
                                 combatState.CurrentState == CombatState.State.SeekingTarget)
                             {
                                 combatState.CurrentState = CombatState.State.Attacking;
-                                commandData.Command = CommandType.Attack;
+                                //commandData.Command = CommandType.Attack;
                             }
-                            commandData.TargetEntity = hasTarget.TargetEntity;
+                            //commandData.TargetEntity = hasTarget.TargetEntity;
                             //commandData.TargetPosition = targetPos;
                         }
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
@@ -123,7 +126,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     // Target is invalid (entity was destroyed). Cancel the command.
                     ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                     movementSpeed.velocity = float3.zero;
-                    commandData.Command = CommandType.FindTarget;
+                    //commandData.Command = CommandType.FindTarget;
                 }
 
             }).ScheduleParallel();
@@ -131,3 +134,5 @@ public partial class UnitMoveToTargetSystem : SystemBase
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
 }
+
+public struct RestrictMovementTag : IComponentData { }

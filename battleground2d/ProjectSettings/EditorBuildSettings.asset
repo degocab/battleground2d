@@ -5,13 +5,13 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
-    path: Assets/RTSToolkit/Scenes/OpenLobby.unity
-    guid: 25ad667697e8e480b85023b192d09844
-  - enabled: 1
-    path: Assets/RTSToolkit/Scenes/Main.unity
-    guid: 470d142bbd3d540199cbfedeb2db739c
-  - enabled: 1
-    path: Assets/RTSToolkit/Scenes/GameOver.unity
-    guid: 65233046c8116497f884bf13363f15dd
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
   m_configObjects: {}

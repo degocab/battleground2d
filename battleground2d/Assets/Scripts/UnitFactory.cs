@@ -53,6 +53,7 @@ public class UnitFactory
                 formationGroup.UnitsPerRow = 20;
                 break;
         }
+        entityManager.AddComponentData(groupEntity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Target});
         entityManager.AddComponentData(groupEntity, formationGroup);
         entityManager.AddComponentData(groupEntity, initialCommand);
         for (int i = 0; i < positions.Count; i++)

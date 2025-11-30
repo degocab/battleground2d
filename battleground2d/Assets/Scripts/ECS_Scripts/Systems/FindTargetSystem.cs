@@ -11,24 +11,61 @@ using UnityEngine;
 [UpdateAfter(typeof(TargetValidationSystem))]
 public partial class FindTargetSystem : SystemBase
 {
+    // Constants
+    private const int UpdateInterval = 2;
+
+    // Fields
     private EntityQuery _findTargetQuery;
     private EntityQuery _targetQuery;
     private EndSimulationEntityCommandBufferSystem _endSimulationECBSystem;
     private int _updateCounter;
-    private const int UpdateInterval = 2;
 
     // Double buffer for closest targets
     private NativeArray<EntityWithPosition> _closestTargetsBuffer1;
     private NativeArray<EntityWithPosition> _closestTargetsBuffer2;
     private bool _useBuffer1 = true;
 
+    // Structs
     private struct EntityWithPosition
     {
         public Entity Entity;
         public float2 Position;
     }
 
+    // System Lifecycle
     protected override void OnCreate()
+    {
+        InitializeQueries();
+        _endSimulationECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        RequireForUpdate(_findTargetQuery);
+    }
+
+    protected override void OnDestroy()
+    {
+        DisposeBuffers();
+        base.OnDestroy();
+    }
+
+    protected override void OnUpdate()
+    {
+        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
+            return;
+
+        _updateCounter++;
+        if (_updateCounter % UpdateInterval != 0)
+            return;
+
+        if (_targetQuery.CalculateEntityCount() == 0)
+        {
+            ClearCommands();
+            return;
+        }
+
+        FindTargets();
+    }
+
+    // Initialization Methods
+    private void InitializeQueries()
     {
         _findTargetQuery = GetEntityQuery(
             ComponentType.ReadOnly<Unit>(),
@@ -43,31 +80,28 @@ public partial class FindTargetSystem : SystemBase
             ComponentType.ReadOnly<TargetComponent>(),
             ComponentType.ReadOnly<Translation>()
         );
-
-        _endSimulationECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        RequireForUpdate(_findTargetQuery);
     }
 
-    protected override void OnDestroy()
+    private void DisposeBuffers()
     {
-        // Clean up both buffers
         if (_closestTargetsBuffer1.IsCreated) _closestTargetsBuffer1.Dispose();
         if (_closestTargetsBuffer2.IsCreated) _closestTargetsBuffer2.Dispose();
-        base.OnDestroy();
     }
 
+    // Jobs
     [BurstCompile]
     private struct AddTargetComponentJob : IJobChunk
     {
         [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle; // Check if exists
+        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
             bool chunkHasTarget = chunk.Has<HasTarget>(HasTargetTypeHandle);
+
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = chunkEntities[i];
@@ -75,14 +109,6 @@ public partial class FindTargetSystem : SystemBase
 
                 if (ClosestTargets[flatIndex].Entity != Entity.Null)
                 {
-                    //ECB.SetComponent(chunkIndex, entity, new HasTarget
-                    //{
-                    //    TargetEntity = ClosestTargets[flatIndex].Entity,
-                    //    TargetPosition = ClosestTargets[flatIndex].Position ,
-                    //    Type = HasTarget.TargetType.Entity
-                    //});
-                    Debug.Log("HasTarget.TargetPosition updated by AddTargetComponentJob in FindTargetSystem");
-
                     var target = new HasTarget
                     {
                         TargetEntity = ClosestTargets[flatIndex].Entity,
@@ -103,36 +129,23 @@ public partial class FindTargetSystem : SystemBase
         }
     }
 
-
     [BurstCompile]
     private struct ClearCommandsJob : IJobChunk
     {
-        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        public ComponentTypeHandle<FindTargetCommandTag> FindTargetCommandTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var commandDataArray = chunk.GetNativeArray(FindTargetCommandTypeHandle);
             var entityArray = chunk.GetNativeArray(EntityTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 var entity = entityArray[i];
-                var command = commandDataArray[i];
-
-                if (command.Command == CommandType.FindTarget ||
-                    command.Command == CommandType.Attack ||
-                    command.Command == CommandType.MoveTo)
-                {
-                    command.Command = CommandType.Idle;
-                    command.TargetEntity = Entity.Null;
-                    command.TargetPosition = float2.zero;
-                    commandDataArray[i] = command;
-
-                    ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
-                    ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
-                }
+                ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
+                ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
             }
         }
     }
@@ -147,11 +160,10 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public ComponentTypeHandle<QuadrantEntity> QuadrantEntityTypeHandle;
         [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle; //ignore dead units
+        [ReadOnly] public ComponentTypeHandle<DeadTagComponent> DeadTagTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
-            // Check if chunk has DeadTagComponent - if so, skip this chunk entirely
             if (chunk.Has<DeadTagComponent>(DeadTagTypeHandle))
                 return;
 
@@ -172,26 +184,7 @@ public partial class FindTargetSystem : SystemBase
 
                 int hashKey = QuadrantSystem.GetPositionHashMapKey(unitPosition);
 
-                // Check surrounding quadrants
-                CheckQuadrant(hashKey, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey + 1, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey - 1, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-
-                // Check corners
-                CheckQuadrant(hashKey + 1 + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey - 1 + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey + 1 - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
-                    ref closestTarget, ref closestDistanceSq, ref closestPosition);
-                CheckQuadrant(hashKey - 1 - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation,
+                CheckSurroundingQuadrants(hashKey, unitPosition, quadrantEntity, animation,
                     ref closestTarget, ref closestDistanceSq, ref closestPosition);
 
                 ClosestTargets[firstEntityIndex + i] = new EntityWithPosition
@@ -202,22 +195,29 @@ public partial class FindTargetSystem : SystemBase
             }
         }
 
+        private void CheckSurroundingQuadrants(int hashKey, float2 unitPosition, QuadrantEntity quadrantEntity,
+            AnimationComponent animation, ref Entity closestTarget, ref float closestDistanceSq, ref float2 closestPosition)
+        {
+            if (closestDistanceSq < 4.0f) return;
+
+            CheckQuadrant(hashKey, unitPosition, quadrantEntity, animation, ref closestTarget, ref closestDistanceSq, ref closestPosition);
+            CheckQuadrant(hashKey + 1, unitPosition, quadrantEntity, animation, ref closestTarget, ref closestDistanceSq, ref closestPosition);
+            CheckQuadrant(hashKey - 1, unitPosition, quadrantEntity, animation, ref closestTarget, ref closestDistanceSq, ref closestPosition);
+            CheckQuadrant(hashKey + QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation, ref closestTarget, ref closestDistanceSq, ref closestPosition);
+            CheckQuadrant(hashKey - QuadrantSystem.QuadrantYMultiplier, unitPosition, quadrantEntity, animation, ref closestTarget, ref closestDistanceSq, ref closestPosition);
+        }
+
         private void CheckQuadrant(int hashKey, float2 unitPosition, QuadrantEntity quadrantEntity,
             AnimationComponent animation, ref Entity closestTarget, ref float closestDistanceSq, ref float2 closestPosition)
         {
-            if (closestDistanceSq < 4.0f) return; // Early exit if already very close
-
             if (QuadrantHashMap.TryGetFirstValue(hashKey, out QuadrantData data, out var iterator))
             {
                 do
                 {
-
-                    bool sameUnitType = animation.UnitType == data.AnimationComponent.UnitType;
-                    if (sameUnitType) continue;
+                    if (animation.UnitType == data.AnimationComponent.UnitType) continue;
 
                     float distanceSq = math.distancesq(unitPosition, data.Position);
                     if (distanceSq >= closestDistanceSq) continue;
-
 
                     closestTarget = data.Entity;
                     closestDistanceSq = distanceSq;
@@ -228,30 +228,12 @@ public partial class FindTargetSystem : SystemBase
         }
     }
 
-    protected override void OnUpdate()
-    {
-        if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
-            return;
-
-        _updateCounter++;
-        if (_updateCounter % UpdateInterval != 0)
-            return;
-
-        // Check if there are any targets
-        if (_targetQuery.CalculateEntityCount() == 0)
-        {
-            ClearCommands();
-            return;
-        }
-
-        FindTargets();
-    }
-
+    // Helper Methods
     private void ClearCommands()
     {
         var clearJob = new ClearCommandsJob
         {
-            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            FindTargetCommandTypeHandle = GetComponentTypeHandle<FindTargetCommandTag>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter()
         };
@@ -264,17 +246,13 @@ public partial class FindTargetSystem : SystemBase
     private void FindTargets()
     {
         int entityCount = _findTargetQuery.CalculateEntityCount();
-
-        // Get the current buffer to write to
         NativeArray<EntityWithPosition> writeBuffer = _useBuffer1 ? _closestTargetsBuffer1 : _closestTargetsBuffer2;
 
-        // Resize or create buffer if needed
         if (!writeBuffer.IsCreated || writeBuffer.Length != entityCount)
         {
             if (writeBuffer.IsCreated) writeBuffer.Dispose();
             writeBuffer = new NativeArray<EntityWithPosition>(entityCount, Allocator.Persistent);
 
-            // Update the appropriate buffer reference
             if (_useBuffer1)
                 _closestTargetsBuffer1 = writeBuffer;
             else
@@ -290,7 +268,6 @@ public partial class FindTargetSystem : SystemBase
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             EntityTypeHandle = GetEntityTypeHandle(),
             DeadTagTypeHandle = GetComponentTypeHandle<DeadTagComponent>(true),
-            
         };
 
         var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);
@@ -306,11 +283,8 @@ public partial class FindTargetSystem : SystemBase
         var addHandle = addComponentJob.ScheduleParallel(_findTargetQuery, findHandle);
         _endSimulationECBSystem.AddJobHandleForProducer(addHandle);
 
-        // Switch buffers for next frame
         _useBuffer1 = !_useBuffer1;
-
         Dependency = addHandle;
-        //CompleteDependency();
     }
 }
 

@@ -96,10 +96,12 @@ public class FormationCollisionSystem : SystemBase
                 {
                     //Debug.Log("Adding collidable tag");
                     ecb.AddComponent<CollidableTag>(entity);
+                    ecb.AddComponent<CommandData>(entity);
                 }
                 else
                 {
                     ecb.RemoveComponent<CollidableTag>(entity);
+                    ecb.RemoveComponent<CommandData>(entity);
                 }
 
                 formation.PreviousColliderStatus = formation.ColliderStatus;

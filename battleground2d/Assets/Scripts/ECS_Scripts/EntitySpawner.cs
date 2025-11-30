@@ -28,7 +28,7 @@ public class EntitySpawner : MonoBehaviour
 
     public EntitySpawner instance;
     public Mesh quadMesh;      // Assign your quad mesh here
-    public UnityEngine.Material walkingSpriteSheetMaterial;  // Drag your prefab with MeshRenderer in Unity editor
+    public UnityEngine.Material walkingSpriteSheetMaterial;
 
     public bool DrawDebugLines = false;
 

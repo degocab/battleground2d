@@ -7,4 +7,6 @@ public struct QuadrantData
     public float2 Position;
     public QuadrantEntity QuadrantEntity;
     public AnimationComponent AnimationComponent;
+
+    public EntitySpawner.UnitType UnitType;
 }

@@ -179,9 +179,7 @@ ComponentType.Exclude<CommanderComponent>());
                 formationGroup.CurrentCommand = command.Command;
             }).WithoutBurst().Run();
 
-
-
-
+        
         var job = new AssignCommandJob
         {
             //Time = UnityEngine.Time.deltaTime,
@@ -367,7 +365,6 @@ ComponentType.Exclude<CommanderComponent>());
                 //TargetPosition = targetPos,
                 //TargetEntity = Entity.Null
             });
-            formation.AnchorPosition = command.TargetPosition;
 
             command.Command = CommandType.Idle;
         }

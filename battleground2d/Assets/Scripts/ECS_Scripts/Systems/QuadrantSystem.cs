@@ -46,7 +46,8 @@ public class QuadrantSystem : SystemBase
         _query = GetEntityQuery(
 ComponentType.ReadOnly<Translation>(),
 ComponentType.ReadOnly<QuadrantEntity>(),
-ComponentType.ReadOnly<AnimationComponent>()
+ComponentType.ReadOnly<AnimationComponent>(),
+ComponentType.Exclude<FormationGroupComponent>()
 
 //,ComponentType.ReadOnly<CommandData>()
 //,ComponentType.Exclude<CommanderComponent>()

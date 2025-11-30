@@ -4,7 +4,6 @@ using static EntitySpawner;
 
 public struct FormationComponent : IComponentData
 {
-    public Entity FormationLeader;
     public int FormationID;
     public int SlotIndex;
     public float2 LocalOffset; // Position relative to leader
@@ -12,14 +11,7 @@ public struct FormationComponent : IComponentData
     public FormationType FormationType;
     public FormationStatus Status;
     public FormationColliderStatus ColliderStatus; 
-    public Entity PreviousTarget; // Store previous target for returning
-    public float2 PreviousPosition; // Store previous position for returning
-    public float2 AnchorPosition;
-    public int UnitsPerRow;
-    public float UnitSpacing;
     public Entity? FormationGroupEntity;
-    public bool UnitCollision;
-    public bool WasJustAssignedToGroup; // NEW: Track fresh assignments
     public FormationColliderStatus PreviousColliderStatus;
     public float FormationWeight;
     public Direction Direction;
@@ -72,5 +64,6 @@ public struct FormationGroupComponent : IComponentData
     public bool ReIndexSlots;
 
     public EntitySpawner.Direction FormationFacingDirection;
+    public EntitySpawner.UnitType FormationUnitType;
     public bool InitialCommand;
 }

@@ -147,27 +147,27 @@ public class PlayerControlSystem : SystemBase
                 var commandCopy = newCommand;
 
                 // SINGLE job that does both operations safely
-                var commandJobHandle = Entities
-                    .WithName("ProcessCommandInput")
-                    .WithAll<Unit>()
-                    .WithNone<CommanderComponent>()
-                    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData, in AnimationComponent animationComponent) =>
-                    {
-                        if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
-                        {
-                            return;
-                        }
-                        // First remove HasTarget component
-                        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                //var commandJobHandle = Entities
+                //    .WithName("ProcessCommandInput")
+                //    .WithAll<Unit>()
+                //    .WithNone<CommanderComponent>()
+                //    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData, in AnimationComponent animationComponent) =>
+                //    {
+                //        if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                //        {
+                //            return;
+                //        }
+                //        // First remove HasTarget component
+                //        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
 
-                        // Then update command data
-                        commandData = commandCopy;
+                //        // Then update command data
+                //        commandData = commandCopy;
 
-                    }).ScheduleParallel(Dependency);
+                //    }).ScheduleParallel(Dependency);
 
 
-                Debug.Log($"Assigned command: {newCommand.Command} to all units");
-                Dependency = commandJobHandle;
+                //Debug.Log($"Assigned command: {newCommand.Command} to all units");
+                //Dependency = commandJobHandle;
 
 
 
