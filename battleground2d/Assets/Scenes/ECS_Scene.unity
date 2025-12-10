@@ -556,190 +556,104 @@ MonoBehaviour:
     state: 3
     show: 0
     deleteQuestion: 0
-  - s: "## PHASE 2: FORMATIONS & TACTICS (After combat is solid)\r\n\r\n### Week
-      3: Formation Foundation\r\n```\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[x]
-      Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem
-      \r\n[x] Implement Hold Position behavior\r\n```\r\n\r\n### Week 4: Advanced
-      Formations\r\n```\r\n[] DECOUPLE UNIT COMMANDS \n\t[ ] formations need to have
-      all the info \n\t[ ] find target should not trigger for each unit until the
-      formations have clashed\n[ ] Implement Advance/Attack Move/Charge commands\r\n\t[
-      ] add radial commands for moving with direction and range\n\t[ ] add charge
-      to only work when formation has a target!\n[x] Add Formation collision (groups
-      avoid other groups)\r\n[ ] Dynamic rank promotion (middle\u2192front when gaps
-      appear)\r\n```"
+  - s: "## PHASE 2 \u2014 FORMATIONS & TACTICS (MVP ONLY)\r\n\r\n### Week 3 \u2014
+      Formation Foundation (DONE)\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[x]
+      Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem\r\n[x]
+      Implement Hold Position behavior\r\n\r\n### Week 4 \u2014 Formation MVP (Simple
+      + Stable)\r\n[x] DECOUPLE UNIT COMMANDS\r\n    [x] Formations hold all necessary
+      info\r\n    [x] FindTarget no longer runs on every unit before clash\r\n\r\n[~]
+      Implement basic Advance / Attack Move commands\r\n    [~] Straight-line advance\r\n   
+      [~] Basic attack-move logic\r\n    \u2192 Good enough for now; refine later
+      in polish phase.\r\n\r\n[ ] Basic Charge command\r\n    [ ] Only works when
+      formation has a valid target\r\n    [ ] No stamina/morale bonuses yet\r\n   
+      \u2192 Move to later \u201CAdvanced Combat Feel\u201D phase.\r\n\r\n[x] Add
+      Formation collision (groups avoid/flow around each other)\r\n\r\n[~] Formation
+      Stability Pass\r\n    [~] Fix hard bugs (stuck units, NaN velocity, cannot
+      exit combat)\r\n    [~] Ensure formations can:\r\n        - move into combat\r\n       
+      - fight normally\r\n        - (basic) break off / reposition\r\n    \u2192
+      Treat remaining weirdness as \u201Cknown jank\u201D and log it for later.\n"
+    state: 3
+    show: 0
+    deleteQuestion: 0
+  - s: "## PHASE 3 \u2014 BATTLE LOOP & GLOBAL FRONTLINE (CORE GAMEPLAY)\n\nThe war
+      must evolve everywhere, even offscreen.\n\nWeek 5 \u2014 Sector / Frontline
+      Simulation\n[ ] Add \"Sector\" or \"FrontlineSlice\" system\n    [ ] Use GridSystem
+      to divide the battlefield into logical sectors\n\n[ ] SectorSimulationSystem\n   
+      [ ] Each sector tracks:\n        - unit counts per side\n        - morale /
+      intensity\n        - control state (push / pull / neutral)\n    [ ] Sectors
+      influence neighbors (front bends, collapses, breakthroughs)\n    [ ] Simulation
+      runs even if no player is present\n\n[ ] Formation-to-Sector Integration\n   
+      [ ] Formations register into closest sector\n    [ ] Sector state influences
+      formation decisions (hold/push/fall back)\n\nWeek 6 \u2014 Complete One Battle
+      Loop\n[ ] Define battle flow: Setup \u2192 Running \u2192 Victory/Defeat\n[
+      ] Player can move/pan across the entire battlefield without dead zones\n[ ]
+      Visual transitions between sectors look continuous\n[ ] Add basic HUD for frontline
+      pressure / sector status\n[ ] Verify:\n    - AFK in one area \u2192 rest of
+      battle still evolves\n    - Running down the line shows continuous organic
+      combat"
     state: 2
     show: 1
     deleteQuestion: 0
-  - s: '## PHASE 3: UNIT VARIETY & AI
-
-
-
-      ### Week 5: Unit Types & AI
-
-      ```
-
-      [
-      ] Add unit type enum (infantry, cavalry, archer, etc.)
-
-      [ ] Start AI
-      commander (mimic player functions)
-
-      [ ] Add archer unit type (ranged
-      combat)
-
-      ```'
-    state: 0
-    show: 1
-    deleteQuestion: 0
-  - s: '## PHASE 4: PERFORMANCE & POLISH
-
-
-
-      ### Week 6: Optimization
-
-      ```
-
-      [
-      ] Separate combat systems (single responsibility)
-
-      [ ] Optimize combat
-      system
-
-      [ ] Group-based physics
-
-      [ ] Research corpse persistence
-      (bodies in background)
-
-      ```'
+  - s: "##PHASE 4 \u2014 CO-OP & MESSAGING (REALISTIC TEAMPLAY)\n\nTwo players on
+      different sides of the battlefield seeing the same war evolve.\n\n##Week 7
+      \u2014 Co-op Foundation\n[ ] Add support for 2-player input / control\n[ ]
+      Both players share the same SectorSimulationSystem\n[ ] Each player can issue
+      formation commands independently\n[ ] Sector/formation updates from one player
+      affect the entire battle\n\n##Week 8 \u2014 Messenger System\n[ ] MessageEntity
+      definition\n    [ ] Source player\n    [ ] Destination player\n    [ ] Payload
+      (help, retreat, attack order, etc.)\n    [ ] Current sector\n\n[ ] AI Messenger
+      Units\n    [ ] Spawn messenger when a player sends a message\n    [ ] Messenger
+      physically travels sector-to-sector\n    [ ] Can die in combat, be delayed,
+      or arrive successfully\n    [ ] Deliver UI notification on arrival\n\n[ ] Player-as-Messenger
+      (automatic)\n    [ ] If player runs across the battlefield:\n        - They
+      simply traverse sectors\n        - They see the evolving frontline as it truly
+      is"
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: "## PHASE 5: ADVANCED FEATURES\r\n###Week 7: Combat Feel & Polish\r\n```\r\n[x]
-      Add simple AI for defense stance(enemies that actually defend)\r\n[ ] Smooth
-      out combat animations (attack/block/death)\r\n[ ] fix direction when attacking\\n\\t[
-      ] fix area of attack for player\r\n[ ]test out moving player attack logic to
-      ai\r\n[ ] Add Unit Crit chance system\r\n[ ] Create defendwhilemoving animation
-      & logic\r\n[ ] fix units frozen while attacking (blocking movement during attack
-      animation)\r\n```\n### Week 8+: Cinematic & Advanced\r\n```\n[\r ] Cavalry
-      charge physics\r\n[ ] Arrow physics\r\n[ ] Background design\r\n[\r ] Captain/commander
-      crit system (90% one-shot)\n[ ] walking backwards animation/states"
+  - s: "##PHASE 5 \u2014 UNIT VARIETY & AI COMMANDER\n\n##Week 9 \u2014 Unit Types
+      + Basic AI\n[ ] Add unit type enum (infantry, cavalry, archer, etc.)\n\n[ ]
+      AI Commander\n    [ ] Gives formation-level decisions:\n        - reinforce
+      weak sectors\n        - initiate push\n        - retreat collapsing sectors\n       
+      - shift reserves\n    [ ] Mimics player actions but strategically\n\n[ ] Add
+      Archer Units\n    [ ] Basic projectile logic\n    [ ] Integrate with combat
+      + sector simulation"
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'AI
-
-      [] start working on AI commander to mimic player functions
-
-      []
-      unit commands
-
-      [] design unit strucutre, captain, unit, etc.
-
-'
+  - s: "##PHASE 6 \u2014 PERFORMANCE & SCALING (GPU COLLISIONS HERE)\n\nThis is the
+      right time for compute shaders, not earlier.\n\n##Week 10 \u2014 Optimization
+      Pass\n[ ] Separate combat systems (better single-responsibility)\n[ ] Optimize
+      targeting, movement, and collision queries\n[ ] Introduce group-based physics
+      where possible\n[ ] Corpse persistence system (decals, pooled bodies)\n\n##Week
+      11 \u2014 GPU Collision Physics (Compute Shader Integration)\n\nYour big system
+      from the document goes here.\n\n[ ] Create UnitData struct (32-byte aligned)\n[
+      ] Implement UnitPhysics.compute (initial brute-force kernel)\n[ ] Implement
+      GPUCollisionSystem.cs\n[ ] Integrate with CPU Quadrant System:\n    - Use UnitQuadrantTag
+      to select units for GPU physics\n[ ] Replace per-unit CPU collision resolution
+      with GPU outputs\n[ ] Ensure RenderSystem reads post-GPU Translation values\n\n##Week
+      12 \u2014 GPU Broad-Phase + Full GPU Loop (Scales to 250k+)\n[ ] Implement
+      GPU Grid Broad Phase\n    - Per-cell assignment kernel\n    - Neighbor lookups\n   
+      - Atomics-based compaction\n\n[ ] Implement Collision-Pair Compaction\n   
+      - Build list of real pairs\n    - Second kernel resolves only true contacts\n\n[
+      ] Remove CPU readback bottleneck\n    - Keep positions/velocities on GPU\n   
+      - CPU only consumes high-level events\n\n[ ] Add pressure-wave / organic motion
+      behaviors on GPU"
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'Unit Types
-
-      [] Add another enum type for setting materials for different
-      unit types: infantry, calv, archer, etc.
-
-      [] Add archer unit type'
+  - s: "##PHASE 7 \u2014 COMBAT FEEL & POLISH\n\n##Week 13 \u2014 Combat Feel\n[
+      ] Smooth attack/block/death animations\n[ ] Fix attack direction & hitboxes\n[
+      ] Unit crit chance\n[ ] Defend-while-moving animation/state\n[ ] Fix units
+      freezing during attack\n"
     state: 0
     show: 0
     deleteQuestion: 0
-  - s: 'Background
-
-      [] work on design for background sprites, procedural or
-      something'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'Create new defend while moving
-
-      [] Sprite animation
-
-      [] Game
-      logic to move while holding defend'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'Figure out how to keep bodies in background.
-
-      [] research way to save
-      all spirte mat of last frame to a larger object not used in systems
-
-
-
-'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Add Unit Crit chance\nCaptains/commanders will have 90% chance to one shot
-      any enemy\n\t- to help mimic cinematic combat\n\t- to show superior skill\n\t-
-      will need to figure out how that works against each other\nUnits will have
-      low crit one chance, but should allow many units to die fast when crits are
-      applied"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'Smooth out animations
-
-      [] smooth out walk animation
-
-      [] smooth
-      out run animation
-
-      [] smooth out attack animation'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Phase 1: Foundation\r\n\r\n[] Add FormationComponent\r\n\r\n   
-      IsInFormation: bool\r\n\r\n    FormationPosition: float2 (relative position)\r\n\r\n   
-      FormationRank: int (0=front, 1=middle, 2=back)\r\n\r\n    HoldPosition: bool\r\n\r\n[]
-      Add FormationGroupComponent\r\n\r\n    GroupID: int\r\n\r\n    FormationType:
-      enum (Phalanx, Square, etc.)\r\n\r\n    AnchorEntity: Entity (commander/center
-      point)"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Phase 3: Command Behaviors\r\n\r\n[] Hold Position\r\n\r\n   
-      Units never leave formation positions\r\n\r\n    Front: attack enemies in range\r\n\r\n   
-      Middle/back: only if breached (enemy within 1u)\r\n\r\n[] Advance\r\n\r\n   
-      Formation moves as unit to destination\r\n\r\n    Front: attack any enemies
-      encountered\r\n\r\n    Middle/back: advance + replace fallen front units\r\n\r\n[]
-      Attack Move\r\n\r\n    Formation moves as unit\r\n\r\n    Front: only engage
-      if attacked first\r\n\r\n    Middle/back: advance + replace fallen\r\n\r\n[]
-      Charge\r\n\r\n    Formation breaks completely\r\n\r\n    All units find closest
-      targets individually\r\n\r\n    Aggressive pursuit behavior"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Phase 2: Formation Combat System\r\n\r\n[] Create FormationCombatSystem
-      (runs after target selection)\r\n\r\n    Override individual target finding
-      for formation units\r\n\r\n    Front rank: normal combat if enemy in range\r\n\r\n   
-      Middle/back: only engage if enemy within 1 unit (\"breached\")\r\n\r\n[] Create
-      FormationMovementSystem\r\n\r\n    Move entire formation as unit when advancing\r\n\r\n   
-      Maintain relative positions during movement\r\n\r\n    Handle unit replacement
-      when front-line falls"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Phase 4: Advanced Features\r\n\r\n[] Fall Back behavior (retreat
-      while maintaining formation)\r\n[] Formation collision (groups avoid other
-      groups)\r\n[] Dynamic rank promotion (middle\u2192front when gaps appear)"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Formations Logic\nHold     = Defend position, react only\nAdvance  = Move
-      + attack anything  \nAttackMv = Move + attack if provoked\nCharge   = Break
-      formation, all-out attack"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "Physics v2\n[] group based physics before unit \n[] damage phyiscs\n[] add
-      logic for block, need collision first\n[] arrow phyiscs\n[] calvary charge
-      phyiscs"
+  - s: "##PHASE 8 \u2014 ADVANCED FEATURES & CINEMATIC MOMENTS\n[ ] Cavalry charge
+      impact physics\n[ ] Arrow physics refinements\n[ ] Environmental / background
+      design\n[ ] Dynamic rank promotion (fill gaps in line)\n[ ] Advanced radial
+      commands for formations\n[ ] Commander / captain crit systems\n[ ] Backwards-walking
+      animations"
     state: 0
     show: 0
     deleteQuestion: 0
@@ -753,14 +667,7 @@ MonoBehaviour:
       [] optimize combat system
 
       [x] optimize movement system'
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'System Cleanup v1
-
-      [] Separate systems, systems should only have one
-      purpose'
-    state: 0
+    state: 3
     show: 0
     deleteQuestion: 0
   - s: "Gameplay V1\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
@@ -775,7 +682,7 @@ MonoBehaviour:
       Group system\n\t- add system to organize units into groups and have group collision
       first/group target find/command assigning\n\t- keep groups in tight formation
       based on formation?\n[] Add simple AI for defense stance"
-    state: 0
+    state: 3
     show: 0
     deleteQuestion: 0
   - s: 'Merge test physics system into existing codebase

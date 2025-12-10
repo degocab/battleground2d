@@ -73,11 +73,14 @@ public partial class FormationManagerSystem : SystemBase
         // Calculate the number of units in each group.
         var groupToUnitCountMap = GetCountsPerKey(_groupToUnitsMap, Allocator.TempJob);
 
+        // Update the bounds of each formation group based on unit positions.
+        UpdateFormationGroupBounds(groupToUnitCountMap, translations, unitFormations);
+
         // Update the positions of units in their formations.
         UpdateFormationComponents(groupToUnitCountMap);
 
-        // Update the bounds of each formation group based on unit positions.
-        UpdateFormationGroupBounds(groupToUnitCountMap, translations, unitFormations);
+        //// Update the bounds of each formation group based on unit positions.
+        //UpdateFormationGroupBounds(groupToUnitCountMap, translations, unitFormations);
 
         // Schedule a job to remove or add colliders for groups based on their status.
         var removeGroupCollidersJobHandle = RemoveGroupColliders(ecb);
@@ -137,46 +140,135 @@ public partial class FormationManagerSystem : SystemBase
     private void UpdateFormationComponents(NativeHashMap<Entity, int> groupToUnitCountMap)
     {
         var formationGroupMapTemp = _formationGroupMap;
-        // Update the formation position of each unit based on its group and slot index.
+
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        var parallelEcb = ecb.AsParallelWriter();
+
         Entities
             .WithNone<DeadTagComponent>()
             .WithAll<FormationComponent>()
             .WithReadOnly(groupToUnitCountMap)
             .WithReadOnly(formationGroupMapTemp)
-            .ForEach((Entity entity, ref FormationComponent formationComponent) =>
+            .ForEach((Entity entity, int entityInQueryIndex,
+                      ref FormationComponent formationComponent,
+                      ref CommandData command,
+                      ref HasTarget hasTarget) =>
             {
+                // Formation "weight" / mass depending on type
+                formationComponent.FormationWeight =
+                    (formationComponent.FormationType == FormationType.Phalanx)
+                        ? 3.0f
+                        : 1.0f;
 
+                if (!formationComponent.FormationGroupEntity.HasValue)
+                    return;
 
-                if (formationComponent.FormationType == FormationType.Phalanx)
+                // Look up this unit's formation group
+                if (!formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationGroup))
+                    return;
+
+                // Always propagate the group's current command down to the unit
+                command.Command = formationGroup.CurrentCommand;
+
+                // Optional: number of units in this group for slot layout
+                groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var groupValueCount);
+
+                switch (formationComponent.Status)
                 {
-                    formationComponent.FormationWeight = 3.0f;
-                }
-                else
-                {
-                    formationComponent.FormationWeight = 1.0f;
-                }
+                    case FormationStatus.Hold:
+                        {
+                            // In Hold: recompute slot positions tightly around the anchor
+                            if (groupValueCount > 0)
+                            {
+                                formationComponent.FormationPosition = CalculatePhalanxPosition(
+                                formationComponent.SlotIndex,
+                                groupValueCount,
+                                formationGroup.UnitsPerRow,
+                                formationGroup.UnitSpacing,
+                                formationGroup.AnchorPosition
+                            );
+                                formationComponent.Direction = formationGroup.FormationFacingDirection;
+                            }
 
-                if (formationComponent.Status == FormationStatus.Hold) //TODO: remove this? just seeing how this reacts
-                {
-                    if (groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var groupValueCount) &&
-                formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationGroup))
-                    {
+                            // We *don't* force HasTarget here unless you want the unit
+                            // to explicitly walk back into its slot when idle.
+                            // If you do, keep it very gentle and only when no entity target:
+                            if (hasTarget.TargetEntity == Entity.Null &&
+                            hasTarget.Type == HasTarget.TargetType.Position)
+                            {
+                                hasTarget.TargetPosition = formationComponent.FormationPosition;
+                            }
 
-                        formationComponent.FormationPosition = CalculatePhalanxPosition(
-                            formationComponent.SlotIndex,
-                            groupValueCount,
-                            formationGroup.UnitsPerRow,
-                            formationGroup.UnitSpacing,
-                            formationGroup.AnchorPosition
-                        );
-                        formationComponent.Direction = formationGroup.FormationFacingDirection;
-                    } 
+                            // Don't touch HasTarget.TargetEntity – let Combat/Target systems assign it.
+                            break;
+                        }
+
+                    case FormationStatus.Engaged:
+                        {
+                            // Engaged: combat systems are in charge of HasTarget and CombatState.
+                            // Do NOT overwrite HasTarget here, or you'll fight the CombatSystem.
+                            //
+                            // You can still update Direction if you want the formation to "face" something:
+                            // formationComponent.Direction = formationGroup.FormationFacingDirection;
+
+                            // If you ever want to debug distance-to-anchor, you can do it here,
+                            // but with no writes to HasTarget or CombatState.
+                            break;
+                        }
+
+                    case FormationStatus.Disengaging:
+                        {
+                            // Disengaging: formation/retreat logic owns movement.
+                            // Force units to move toward the group's anchor/retreat point.
+
+                            // Optionally recompute FormationPosition using the *new* AnchorPosition,
+                            // so everyone reforms into a proper block at the retreat location.
+                            if (groupValueCount > 0)
+                            {
+                                formationComponent.FormationPosition = CalculatePhalanxPosition(
+                                formationComponent.SlotIndex,
+                                groupValueCount,
+                                formationGroup.UnitsPerRow,
+                                formationGroup.UnitSpacing,
+                                formationGroup.AnchorPosition
+                            );
+                                formationComponent.Direction = formationGroup.FormationFacingDirection;
+                            }
+
+                            hasTarget.Type = HasTarget.TargetType.Position;
+                            hasTarget.TargetEntity = Entity.Null;
+                            hasTarget.TargetPosition = formationComponent.FormationPosition;
+
+                            // While disengaging we never want FindTarget to re-fire
+                            // and reacquire melee targets.
+                            if (HasComponent<FindTargetCommandTag>(entity))
+                            {
+                                parallelEcb.RemoveComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+                            }
+
+                            break;
+                        }
+
+                    default:
+                        {
+                            // Other statuses (Moving, Routing, etc.) can be treated like a very loose Hold,
+                            // or left untouched depending on how you extend FormationStatus.
+
+                            // For now, we do nothing special here to avoid surprising interactions.
+                            break;
+                        }
                 }
             }).WithBurst().ScheduleParallel(Dependency).Complete();
+
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
+
 
     private void UpdateFormationGroupBounds(NativeHashMap<Entity, int> groupToUnitCountMap, ComponentDataFromEntity<Translation> translations, ComponentDataFromEntity<FormationComponent> unitFormations)
     {
+
+
         // Update the bounds of each formation group based on the positions of its units.
         Entities
             .WithNone<DeadTagComponent>()
@@ -217,6 +309,8 @@ public partial class FormationManagerSystem : SystemBase
                     formationGroupComponent.BoundsMax = bounds.Max;
                 }
             }).WithoutBurst().Run();
+
+
 
 
         var groupEntities = _unitGroupQuery.ToEntityArray(Allocator.TempJob);

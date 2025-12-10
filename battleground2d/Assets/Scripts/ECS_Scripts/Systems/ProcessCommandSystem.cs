@@ -29,6 +29,12 @@ public class ProcessCommandSystem : JobComponentSystem
     [NativeDisableParallelForRestriction]
     private NativeHashMap<Entity, float2> _groupAveragePositions;
 
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        _groupToUnitsMap.Dispose();
+    }
+
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
@@ -130,7 +136,7 @@ ComponentType.Exclude<CommanderComponent>());
                         {
                             //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
                         }
-                        formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                        //formationGroup.FormationGroupStatus = FormationStatus.Engaged;
                         break;
                     case CommandType.MoveTo:
                         break;
@@ -282,24 +288,38 @@ ComponentType.Exclude<CommanderComponent>());
                     break;
 
                 case CommandType.MoveTo:
-                    formation.Status = FormationStatus.Hold;
+                    if (formation.Status == FormationStatus.Engaged)
+                    {
+                        formation.Status = FormationStatus.Disengaging;
+                    }
+                    else
+                    {
+                        formation.Status = FormationStatus.Hold; // moving into a new hold position
+                    }
                     HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb, ref formation);
                     break;
                     
 
                 case CommandType.MoveDirectionalRange:
-                    formation.Status = FormationStatus.Hold;
+                    if (formation.Status == FormationStatus.Engaged)
+                    {
+                        formation.Status = FormationStatus.Disengaging;
+                    }
+                    else
+                    {
+                        formation.Status = FormationStatus.Hold; // moving into a new hold position
+                    }
                     MarchInDirectionWithRange(command.Command, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb, 10f);
                     break;
 
                 case CommandType.Attack:
-                    HandleAttackCommand(ref command, ref combatState, entity, chunkIndex, ecb);
+                    HandleAttackCommand(ref command, ref combatState, entity, chunkIndex, ecb, ref formation);
                     break;
 
                 case CommandType.Defend:
                     // TODO: Implement defend logic
                     formation.Status = FormationStatus.Hold;
-                    ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
+                    //ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
                     break;
             }
         }
@@ -370,7 +390,7 @@ ComponentType.Exclude<CommanderComponent>());
         }
 
         private void HandleAttackCommand(ref CommandData command, ref CombatState combatState,
-                                       Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
+                                       Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation)
         {
 
             //recheck if unit is not taking dmg/blocking
@@ -387,7 +407,7 @@ ComponentType.Exclude<CommanderComponent>());
                 // Direct attack on entity
                 combatState.CurrentState = CombatState.State.Attacking;
                 Debug.Log("HasTarget.TargetPosition updated by HandleAttackCommand in ProcessCommandSystem");
-
+                formation.Status = FormationStatus.Engaged;
                 ecb.AddComponent(chunkIndex, entity, new HasTarget
                 {
                     Type = HasTarget.TargetType.Entity,
@@ -400,31 +420,6 @@ ComponentType.Exclude<CommanderComponent>());
             command.Command = CommandType.Idle;
         }
 
-    }
-    private float2 CalculateAveragePositionForGroup(Entity groupEntity)
-    {
-        float2 sum = float2.zero;
-        int unitCount = 0;
-
-        // You'd need access to the formation manager system's _groupToUnits
-        var fms = World.GetExistingSystem<FormationManagerSystem>();
-        var translations = GetComponentDataFromEntity<Translation>(true);
-
-        if (_groupToUnitsMap.TryGetFirstValue(groupEntity, out var unitEntity, out var iterator))
-        {
-            do
-            {
-                if (translations.HasComponent(unitEntity))
-                {
-                    var pos = translations[unitEntity].Value;
-                    sum += new float2(pos.x, pos.y);
-                    unitCount++;
-                }
-            }
-            while (_groupToUnitsMap.TryGetNextValue(out unitEntity, ref iterator));
-        }
-
-        return unitCount > 0 ? sum / unitCount : float2.zero;
     }
 }
 

@@ -72,8 +72,8 @@ public partial class FindTargetSystem : SystemBase
             ComponentType.ReadOnly<AnimationComponent>(),
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadWrite<FindTargetCommandTag>(),
-            ComponentType.Exclude<CommanderComponent>(),
-            ComponentType.Exclude<HasTarget>()
+            ComponentType.Exclude<CommanderComponent>()
+            //, ComponentType.Exclude<HasTarget>()
         );
 
         _targetQuery = GetEntityQuery(

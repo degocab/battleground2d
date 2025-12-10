@@ -31,7 +31,7 @@ public enum FormationStatus
     Hold,       // Maintain position in formation
     Engaged,    // In formation but actively fighting
     Broken,     // Formation broken, individual combat
-    Returning   // Returning to formation position
+    Disengaging   // Returning to formation position
 }
 
 public enum FormationType
@@ -66,4 +66,5 @@ public struct FormationGroupComponent : IComponentData
     public EntitySpawner.Direction FormationFacingDirection;
     public EntitySpawner.UnitType FormationUnitType;
     public bool InitialCommand;
+    public bool AnchorLocked;
 }

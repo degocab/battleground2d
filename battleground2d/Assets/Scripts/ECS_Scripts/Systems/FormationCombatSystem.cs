@@ -162,7 +162,8 @@ public partial class FormationCombatSystem : SystemBase
                         // Let normal combat system handle it  
                         break;
 
-                    case FormationStatus.Returning:
+                    case FormationStatus.Disengaging:
+                        HandleDisengagingFormation(ref hasTarget, in combatState, ref formation, in translation);
                         break;
                 }
             }).ScheduleParallel();
@@ -216,44 +217,75 @@ public partial class FormationCombatSystem : SystemBase
     }
 
     private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                      ref FormationComponent formation, Translation translation)
+                                               ref FormationComponent formation, Translation translation)
     {
-        // Loose formation - more freedom to engage
-        float maxEngageDistance = 10f;
-
-        float2 formationPos = formation.FormationPosition;
-        //if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
+        // Once engaged, stop moving the formation anchor
+        // Optionally, set anchor to clash point if not already set
+        //if (combatState.CurrentState == CombatState.State.Attacking)
         //{
-        //    //check target position from current before moving
-        //    float distanceFromCurrentTranslation = math.distance(translation.Value.xy, hasTarget.TargetPosition);
-        //    if (distanceFromCurrentTranslation > maxEngageDistance)
-        //    {
-        //        //// Too far - return to formation
-        //        //hasTarget.Type = HasTarget.TargetType.Position;
-        //        //hasTarget.TargetPosition = formationPos;
-        //        //combatState.CurrentState = CombatState.State.Idle;
-        //        return;
-        //    }
+        //    // Formation is engaged, anchor should be at clash point
+        //    // Optionally, only do this once per engagement
+        //    // formation.FormationPosition = translation.Value.xy; // Set to current position at clash
+
+        //    // Units now fight independently, so skip movement logic
+        //    return;
         //}
 
-        float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
+        //// If not yet engaged, use loose formation logic
+        //float maxEngageDistance = 10f;
+        //float2 formationPos = formation.FormationPosition;
+        //float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
 
-        if (distanceFromFormation > maxEngageDistance)
-        {
-            Debug.Log("HasTarget.TargetPosition updated by HandleEngagedFormation in FormationCombatSystem");
+        //if (distanceFromFormation > maxEngageDistance)
+        //{
+        //    // Move back to formation if too far
+        //    hasTarget.Type = HasTarget.TargetType.Position;
+        //    hasTarget.TargetPosition = formationPos;
+        //    combatState.CurrentState = CombatState.State.Idle;
+        //}
+        // Otherwise, let them keep their current target and attack freely
+    }
+    private static void HandleDisengagingFormation(
+    ref HasTarget hasTarget,
+    in CombatState combatState,
+    ref FormationComponent formation,
+    in Translation translation)
+    {
+        float2 currentPos = translation.Value.xy;
+        float2 formationPos = formation.FormationPosition;
 
-            // Too far - return to formation
-            hasTarget.Type = HasTarget.TargetType.Position;
-            hasTarget.TargetPosition = formationPos;
-            combatState.CurrentState = CombatState.State.Idle;
-        }
-        else
+        // How close counts as "we've regrouped"
+        const float reformedRadius = 1.0f;
+
+        // 1) Force movement toward anchor / retreat point
+        hasTarget.Type = HasTarget.TargetType.Position;
+        hasTarget.TargetEntity = Entity.Null;
+        hasTarget.TargetPosition = formationPos;
+
+        // 2) Do NOT touch combatState here.
+        //    CombatSystem will see TargetEntity == Null and, via
+        //    HandleAttackingState / HandleSeekingState, naturally
+        //    transition to Idle when appropriate.
+
+        float distanceToAnchor = math.distance(currentPos, formationPos);
+
+        // 3) Only consider the disengage "complete" when:
+        //    - we're near the anchor AND
+        //    - combat is no longer in an active fighting state.
+        bool combatIsActive =
+            combatState.CurrentState == CombatState.State.Attacking ||
+            combatState.CurrentState == CombatState.State.SeekingTarget ||
+            combatState.CurrentState == CombatState.State.Defending ||
+            combatState.CurrentState == CombatState.State.Blocking;
+
+        if (distanceToAnchor <= reformedRadius && !combatIsActive)
         {
-            //formation.FormationPosition = hasTarget.TargetPosition;
-            //hasTarget.Type = HasTarget.TargetType.Position;
-            //combatState.CurrentState = CombatState.State.Attacking;
+            // We’re back in position and not actively fighting anymore:
+            // let formation go back to Hold behavior.
+            formation.Status = FormationStatus.Hold;
+            // Hold logic will handle keeping them in slot, and CombatSystem will keep
+            // doing its thing based on HasTarget/valid enemies.
         }
-        // Otherwise, let them keep their current target (enemy) and attack freely!
     }
 
 

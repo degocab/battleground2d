@@ -59,38 +59,38 @@ public partial class UnitMoveToTargetSystem : SystemBase
 
                 float reachThreshold = .4f;
                 float2 targetPos = float2.zero;
-                bool targetIsValid = false;
-      
-                if (hasTarget.Type == HasTarget.TargetType.Entity)
-                {
-                    // Check if the target entity exists and has a Translation component
-                    //if (translationFromEntity.HasComponent(hasTarget.TargetEntity))
-                    if (hasTarget.TargetEntity != Entity.Null)
-                    {
-                        // Now we can safely get the target's position
-                        //targetPos = translationFromEntity[hasTarget.TargetEntity].Value.xy;
-                        Debug.Log("HasTarget.TargetPosition updated by UnitMoveToTargetJob");
+                //bool targetIsValid = false;
 
-                        targetPos = hasTarget.TargetPosition;
-                        targetIsValid = true;
-                    }
-                    else
-                    {
-                        targetIsValid = false;
-                    }
-                }
-                else // TargetType.Position
-                {
-                    targetPos = hasTarget.TargetPosition;
-                    targetIsValid = true;
-                    reachThreshold = 0.01f;// should reach position in formation
-                }
+                //if (hasTarget.Type == HasTarget.TargetType.Entity)
+                //{
+                //    // Check if the target entity exists and has a Translation component
+                //    //if (translationFromEntity.HasComponent(hasTarget.TargetEntity))
+                //    if (hasTarget.TargetEntity != Entity.Null)
+                //    {
+                //        // Now we can safely get the target's position
+                //        //targetPos = translationFromEntity[hasTarget.TargetEntity].Value.xy;
+                //        Debug.Log("HasTarget.TargetPosition updated by UnitMoveToTargetJob");
 
-                if (targetIsValid)
-                {
-                    float2 direction = math.normalize(targetPos - translation.Value.xy);
-                    //direction.z = 0;
-                    movementSpeed.velocity.xy = direction;
+                //        targetPos = hasTarget.TargetPosition;
+                //        targetIsValid = true;
+                //    }
+                //    else
+                //    {
+                //        targetIsValid = false;
+                //    }
+                //}
+                //else // TargetType.Position
+                //{
+                targetPos = hasTarget.TargetPosition;
+                //    targetIsValid = true;
+                reachThreshold = 0.01f;// should reach position in formation
+                //}
+
+                //if (targetIsValid)
+                //{
+                float2 direction = math.normalize(targetPos - translation.Value.xy);
+                //direction.z = 0;
+                movementSpeed.velocity.xy = direction;
 
                    
 
@@ -119,15 +119,15 @@ public partial class UnitMoveToTargetSystem : SystemBase
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
                     }
                     
-                }
-                else
-                {
-                    combatState.CurrentState = CombatState.State.Idle;
-                    // Target is invalid (entity was destroyed). Cancel the command.
-                    ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
-                    movementSpeed.velocity = float3.zero;
-                    //commandData.Command = CommandType.FindTarget;
-                }
+                //}
+                //else
+                //{
+                //    combatState.CurrentState = CombatState.State.Idle;
+                //    // Target is invalid (entity was destroyed). Cancel the command.
+                //    ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                //    movementSpeed.velocity = float3.zero;
+                //    //commandData.Command = CommandType.FindTarget;
+                //}
 
             }).ScheduleParallel();
 

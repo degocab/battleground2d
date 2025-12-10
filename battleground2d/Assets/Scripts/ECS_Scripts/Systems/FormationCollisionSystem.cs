@@ -1,6 +1,7 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -27,13 +28,15 @@ public class FormationCollisionSystem : SystemBase
 
         // Track which groups are colliding
         var groupCollisions = new NativeArray<bool>(groupEntities.Length, Allocator.TempJob);
+        var newAnchorPositions = new NativeArray<float2>(groupEntities.Length, Allocator.TempJob);
 
         // 2. BROAD-PHASE: Group vs Group AABB checks
         var collisionJob = new GroupCollisionJob
         {
             GroupEntities = groupEntities,
             GroupComponents = groupComponents,
-            GroupCollisions = groupCollisions
+            GroupCollisions = groupCollisions,
+            NewAnchorPositions = newAnchorPositions
         };
         var collisionHandle = collisionJob.Schedule(groupEntities.Length, 64, Dependency);
         collisionHandle.Complete();
@@ -56,19 +59,23 @@ public class FormationCollisionSystem : SystemBase
 
             DrawAnchorPoint(groupComponents[i].AnchorPosition, Color.green, .25f);
         }
+        var groupCommandMap = new NativeHashMap<Entity, CommandData>(groupEntities.Length, Allocator.Temp);
 
         Entities
             .WithReadOnly(groupCollisionMap)
-            .ForEach((Entity entity, ref FormationGroupComponent formationGroup) => {
+            .ForEach((Entity entity, ref FormationGroupComponent formationGroup, ref CommandData command) => {
                 if (!groupCollisionMap.TryGetValue(entity, out var formationGroupIsColliding)) return;
                 bool isColliding = formationGroupIsColliding;
                 formationGroup.isColliding = isColliding;
+                groupCommandMap.TryAdd(entity, command);
+
             }).Run();
 
         // 3. PROPAGATE TO UNITS
         Entities
             .WithReadOnly(groupCollisionMap)
-            .ForEach((Entity entity, ref FormationComponent formation) =>
+            .WithReadOnly(groupCommandMap)
+            .ForEach((Entity entity, ref FormationComponent formation, ref CommandData command) =>
             {
                 if (!formation.FormationGroupEntity.HasValue) return;
 
@@ -96,18 +103,55 @@ public class FormationCollisionSystem : SystemBase
                 {
                     //Debug.Log("Adding collidable tag");
                     ecb.AddComponent<CollidableTag>(entity);
-                    ecb.AddComponent<CommandData>(entity);
+                    //ecb.AddComponent<CommandData>(entity);
+                    formation.Status = FormationStatus.Engaged;
+                    var grpCommadn = groupCommandMap.TryGetValue(formation.FormationGroupEntity.Value, out var grpCommand);
+                    command = grpCommand;
                 }
                 else
                 {
                     ecb.RemoveComponent<CollidableTag>(entity);
-                    ecb.RemoveComponent<CommandData>(entity);
+                    //ecb.RemoveComponent<CommandData>(entity);
+                    formation.Status = FormationStatus.Hold;
+
                 }
 
                 formation.PreviousColliderStatus = formation.ColliderStatus;
                 formation.ColliderStatus = newColliderStatus;
 
             }).Run();
+
+
+        // 4. After collision, update anchor positions for colliding groups
+        Entities
+            .WithReadOnly(groupCollisionMap)
+            .ForEach((Entity entity, ref FormationGroupComponent formationGroup) => {
+                int idx = -1;
+                for (int i = 0; i < groupEntities.Length; i++)
+                {
+                    if (groupEntities[i] == entity)
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx >= 0 && groupCollisions[idx])
+                {
+                    if (!formationGroup.AnchorLocked)
+                    {
+                        formationGroup.AnchorPosition = newAnchorPositions[idx];
+                        formationGroup.AnchorLocked = true;
+                    }
+                }
+                else
+                {
+                    // If not colliding, unlock anchor so it can be updated again on next collision
+                    formationGroup.AnchorLocked = false;
+                }
+            }).Run();
+
+        // Cleanup
+        newAnchorPositions.Dispose();
 
         // Cleanup
         groupEntities.Dispose();
@@ -122,6 +166,7 @@ public class FormationCollisionSystem : SystemBase
         [ReadOnly] public NativeArray<Entity> GroupEntities;
         [ReadOnly] public NativeArray<FormationGroupComponent> GroupComponents;
         public NativeArray<bool> GroupCollisions;
+        public NativeArray<float2> NewAnchorPositions;
 
         public void Execute(int index)
         {
@@ -140,6 +185,39 @@ public class FormationCollisionSystem : SystemBase
                     isColliding = true;
                     GroupCollisions[j] = true; // Mark the other group as colliding too
                                                // Don't break - continue to find all collisions
+
+                    // Calculate radii for both formations
+                    float2 halfSizeA = (groupA.BoundsMax - groupA.BoundsMin) * 0.5f;
+                    float radiusA = math.min(halfSizeA.x, halfSizeA.y);
+
+                    float2 halfSizeB = (groupB.BoundsMax - groupB.BoundsMin) * 0.5f;
+                    float radiusB = math.min(halfSizeB.x, halfSizeB.y);
+
+                    // Direction from A to B
+                    float2 toB = groupB.AnchorPosition - groupA.AnchorPosition;
+                    float lenSq = math.lengthsq(toB);
+
+                    float2 engagementPointA;
+                    float2 engagementPointB;
+
+                    if (lenSq > 0.001f)
+                    {
+                        float2 direction = math.normalize(toB);
+                        float totalSeparation = radiusA + radiusB;
+
+                        // Set anchor so edges touch
+                        engagementPointA = groupB.AnchorPosition - direction * radiusB;
+                        engagementPointB = groupA.AnchorPosition + direction * radiusA;
+                    }
+                    else
+                    {
+                        // If anchors are at the same position, just offset along X
+                        engagementPointA = groupA.AnchorPosition - new float2(radiusA, 0);
+                        engagementPointB = groupB.AnchorPosition + new float2(radiusB, 0);
+                    }
+
+                    NewAnchorPositions[index] = engagementPointA;
+                    NewAnchorPositions[j] = engagementPointB;
                 }
             }
             // If we found any collisions, mark this group as colliding
