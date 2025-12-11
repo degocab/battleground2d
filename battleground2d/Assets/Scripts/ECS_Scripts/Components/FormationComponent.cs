@@ -27,7 +27,7 @@ public enum FormationColliderStatus
 }
 public enum FormationStatus
 {
-    None,       // No formation behavior
+    //None,       // No formation behavior
     Hold,       // Maintain position in formation
     Engaged,    // In formation but actively fighting
     Broken,     // Formation broken, individual combat

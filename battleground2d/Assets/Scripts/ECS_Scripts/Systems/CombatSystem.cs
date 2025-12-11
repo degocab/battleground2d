@@ -2,6 +2,7 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
@@ -64,6 +65,18 @@ public partial class CombatSystem : SystemBase
                 if (healthComponent.timeRemaining > 0)
                     healthComponent.timeRemaining -= deltaTime;
             }).ScheduleParallel();
+
+        //update defending units
+        Entities
+            .WithName("UpdateAnyDefendingUnits")
+            .ForEach((ref Entity entity, ref CombatState combatState, in CommandData command) => 
+            {
+                if (command.Command == CommandType.Defend)
+                {
+                    combatState.CurrentState = CombatState.State.Defending;
+                }
+            }).Run();
+
 
         // Get the ComponentDataFromEntity for translations
         ComponentDataFromEntity<Translation> translationFromEntity = GetComponentDataFromEntity<Translation>(true);

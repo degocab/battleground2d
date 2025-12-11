@@ -175,6 +175,7 @@ public class PlayerControlSystem : SystemBase
                 Entities
                      .WithName("UpdateOrdersForGroups")
                      .WithAll<FormationGroupComponent>()
+                     .WithAll<AllyTag>()
                      .WithNone<CommanderComponent, Unit>()
                      .ForEach((Entity entity, int entityInQueryIndex,
                      ref FormationGroupComponent formationGroup, ref CommandData commandData) =>
@@ -332,19 +333,19 @@ public class PlayerControlSystem : SystemBase
                 comm = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange,  10f, EntitySpawner.Direction.Right);
                 break;
 
-            case 3: // Defend
+            case 3: // Defend - 4
                 comm = CommandFactory.CreateCommand(CommandType.Defend);
                 break;
 
-            case 4: // Long move
+            case 4: // Long move - 5
                 comm = CommandFactory.CreateMoveCommand(moveToPosition);
                 break;
 
-            case 5: // Stop
+            case 5: // Stop - 6
                 comm = CommandFactory.CreateCommand(CommandType.Idle);
                 break;
 
-            case 6: // FindTarget command
+            case 6: // FindTarget command - 7
                 comm = CommandFactory.CreateFindTargetCommand();
                 break;
 

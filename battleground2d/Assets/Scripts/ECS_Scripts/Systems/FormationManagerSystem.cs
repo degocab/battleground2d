@@ -43,7 +43,9 @@ public partial class FormationManagerSystem : SystemBase
         _unitGroupQuery = GetEntityQuery(typeof(FormationGroupComponent));
 
         // Initialize the hash map for group average positions.
-        _groupAveragePositions = new NativeHashMap<Entity, float2>(64, Allocator.Persistent);
+        _groupAveragePositions = new NativeHashMap<Entity, float2>(256, Allocator.Persistent);
+        _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(256, Allocator.Persistent);
+        _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(256, Allocator.Persistent);
     }
 
     protected override void OnDestroy()
@@ -51,6 +53,10 @@ public partial class FormationManagerSystem : SystemBase
         // Dispose of the hash map for group average positions if it was created.
         if (_groupAveragePositions.IsCreated)
             _groupAveragePositions.Dispose();
+        if (_formationGroupMap.IsCreated)
+            _formationGroupMap.Dispose();
+        if (_groupToUnitsMap.IsCreated)
+            _groupToUnitsMap.Dispose();
         base.OnDestroy();
     }
 
@@ -62,7 +68,8 @@ public partial class FormationManagerSystem : SystemBase
         var translations = GetComponentDataFromEntity<Translation>(true); // Retrieve Translation components for position data.
         var unitFormations = GetComponentDataFromEntity<FormationComponent>(false); // Retrieve Translation components for position data.
         var groupCount = _unitGroupQuery.CalculateEntityCount(); // Count the number of formation groups.
-
+        _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
+        _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(groupCount * 2, Allocator.Persistent);
         // Initialize or clear the native maps used for group-to-unit mapping and formation group data.
         InitializeOrClearNativeMaps(unitEntities.Length, groupCount);
 
@@ -91,6 +98,9 @@ public partial class FormationManagerSystem : SystemBase
 
         // Dispose of temporary data used during the update.
         DisposeTemporaryData(unitEntities);
+        groupToUnitCountMap.Dispose();
+        _groupToUnitsMap.Dispose();
+        _formationGroupMap.Dispose();
     }
 
     private void InitializeOrClearNativeMaps(int unitCount, int groupCount)
@@ -307,6 +317,7 @@ public partial class FormationManagerSystem : SystemBase
 
                     formationGroupComponent.BoundsMin = bounds.Min;
                     formationGroupComponent.BoundsMax = bounds.Max;
+                    unitEntitiesList.Dispose();
                 }
             }).WithoutBurst().Run();
 

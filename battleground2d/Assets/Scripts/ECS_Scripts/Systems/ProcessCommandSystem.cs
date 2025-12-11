@@ -100,18 +100,23 @@ ComponentType.ReadWrite<MovementSpeedComponent>(),
 ComponentType.Exclude<CommanderComponent>());
 
         var ecb = _ecbSystem.CreateCommandBuffer();
-        ////get command position and update anchor position for formations
-        //List<FormationGroupComponent> formationGroups = new List<FormationGroupComponent>();
-        //EntityManager.GetAllUniqueSharedComponentData(formationGroups);
-        //var formationEntities = _formationGroupQuery.ToEntityArray(Allocator.TempJob);
 
-        //var groupLookup = new NativeHashMap<int, Entity>(formationGroups.Count, Allocator.TempJob);
-        //for (int i = 0; i < formationGroups.Count; i++)
-        //{
-        //    groupLookup.TryAdd(formationGroups[i].FormationID, formationEntities[i]);
-        //}
+    //    Entities
+    //.WithName("ProcessCommandsENEMYAI")
+    //.WithAll<CommandData, FormationGroupComponent>()
+    //.ForEach((int entityInQueryIndex, Entity entity,
+    //         ref CommandData command,
+    //         ref FormationGroupComponent formationGroup) =>
+    //{
+    //    //Simple enemy AI command
+    //    if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy && command.InitialCommand == true)
+    //    {
+    //        command = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 10f, EntitySpawner.Direction.Right);
+    //        formationGroup.CurrentCommand = command.Command;
 
-        // this can prob move to formation manager, because we run that after Processing Commands
+    //    }
+
+    //}).WithoutBurst().Run();
         Entities
             .WithName("ProcessCommands")
             .WithAll<CommandData, FormationGroupComponent>()
@@ -119,12 +124,7 @@ ComponentType.Exclude<CommanderComponent>());
                      ref CommandData command,
                      ref FormationGroupComponent formationGroup) =>
             {
-                //Simple enemy AI command
-                if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy)
-                {
-                    command.Command = CommandType.Defend;
-                    return; //AI needs to handle its own
-                }
+
                 float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
 
                 switch (command.Command)
@@ -204,6 +204,7 @@ ComponentType.Exclude<CommanderComponent>());
 
         var handle = job.ScheduleParallel(_query, inputDeps);
         _ecbSystem.AddJobHandleForProducer(handle);
+        unitEntities.Dispose();
         return handle;
     }
 
@@ -319,7 +320,7 @@ ComponentType.Exclude<CommanderComponent>());
                 case CommandType.Defend:
                     // TODO: Implement defend logic
                     formation.Status = FormationStatus.Hold;
-                    //ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
+                    ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
                     break;
             }
         }

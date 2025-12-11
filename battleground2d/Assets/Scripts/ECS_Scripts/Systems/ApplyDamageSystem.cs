@@ -32,7 +32,8 @@ public partial class ApplyDamageSystem : SystemBase
             ref AttackCooldownComponent cooldown,
                      ref HealthComponent health,
                      ref CombatState combatState,
-                     ref DynamicBuffer<AttackEventBuffer> attacks) =>
+                     ref DynamicBuffer<AttackEventBuffer> attacks
+                     ,ref CommandData command/*TESTING!*/) =>
             {
                 //health.Health -= damage.Value;
 
@@ -71,9 +72,12 @@ public partial class ApplyDamageSystem : SystemBase
                 }
 
                 //TODO: set to true if this doesnt trigger animation?
-                //attackComponent.isTakingDamage = true;
                 combatState.CurrentState = CombatState.State.TakingDamage;
-
+                if ((command.Command == CommandType.Idle 
+                || command.Command == CommandType.Defend))
+                {
+                    command.Command = CommandType.FindTarget;
+                }
                 cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 
 

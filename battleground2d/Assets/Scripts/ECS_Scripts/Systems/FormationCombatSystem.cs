@@ -20,16 +20,13 @@ public partial class FormationCombatSystem : SystemBase
     public static NativeMultiHashMap<int, QuadrantData> FormationQuadrantMultiHashMap;
     private EntityQuery _query;
 
-
-
-
-
     // Structs
     private struct EntityWithPosition
     {
         public Entity Entity;
         public float2 Position;
         public float FormationRadius;
+        public float DistanceSq;
     }
 
     // Fields
@@ -41,11 +38,6 @@ public partial class FormationCombatSystem : SystemBase
     private NativeArray<EntityWithPosition> _closestTargetsBuffer1;
     private NativeArray<EntityWithPosition> _closestTargetsBuffer2;
     private bool _useBuffer1 = true;
-
-
-
-
-
 
     protected override void OnCreate()
     {
@@ -60,7 +52,15 @@ public partial class FormationCombatSystem : SystemBase
     }
     protected override void OnDestroy()
     {
-        FormationQuadrantMultiHashMap.Dispose();
+        if (FormationQuadrantMultiHashMap.IsCreated)
+            FormationQuadrantMultiHashMap.Dispose();
+
+        if (_closestTargetsBuffer1.IsCreated)
+            _closestTargetsBuffer1.Dispose();
+
+        if (_closestTargetsBuffer2.IsCreated)
+            _closestTargetsBuffer2.Dispose();
+
         base.OnDestroy();
     }
 
@@ -97,13 +97,29 @@ public partial class FormationCombatSystem : SystemBase
 
         if (!writeBuffer.IsCreated || writeBuffer.Length != entityCount)
         {
-            if (writeBuffer.IsCreated) writeBuffer.Dispose();
-            writeBuffer = new NativeArray<EntityWithPosition>(entityCount, Allocator.Persistent);
-
+            // If the field already has a created array, dispose it before reallocating
             if (_useBuffer1)
-                _closestTargetsBuffer1 = writeBuffer;
+            {
+                if (_closestTargetsBuffer1.IsCreated)
+                    _closestTargetsBuffer1.Dispose();
+
+                _closestTargetsBuffer1 = new NativeArray<EntityWithPosition>(
+                    entityCount,
+                    Allocator.Persistent
+                );
+                writeBuffer = _closestTargetsBuffer1;
+            }
             else
-                _closestTargetsBuffer2 = writeBuffer;
+            {
+                if (_closestTargetsBuffer2.IsCreated)
+                    _closestTargetsBuffer2.Dispose();
+
+                _closestTargetsBuffer2 = new NativeArray<EntityWithPosition>(
+                    entityCount,
+                    Allocator.Persistent
+                );
+                writeBuffer = _closestTargetsBuffer2;
+            }
         }
         var findJob = new FindTargetsJob
         {
@@ -116,11 +132,15 @@ public partial class FormationCombatSystem : SystemBase
         var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);
         Dependency.Complete();
         var ecbWriter = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
+        Debug.Log($"writeBuffer: { (writeBuffer != null ? writeBuffer.Length : 0)}");
+
         var addComponentJob = new AddTargetComponentJob
         {
             ClosestTargets = writeBuffer,
             EntityTypeHandle = GetEntityTypeHandle(),
+            CommandTypeHandle = GetComponentTypeHandle<CommandData>(false),
             ECB = ecbWriter,
+            EngagementRadius = 5f,
             FormationGroupTypeHandle = GetComponentTypeHandle<FormationGroupComponent>(false)
         };
 
@@ -144,8 +164,8 @@ public partial class FormationCombatSystem : SystemBase
                      ) =>
             {
                 var unitFormatonStatus = formation.Status;
-                if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
-                    unitFormatonStatus = FormationStatus.Broken;
+                //if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                //    unitFormatonStatus = FormationStatus.Hold;
                 switch (unitFormatonStatus)
                 {
                     case FormationStatus.Hold:
@@ -219,31 +239,6 @@ public partial class FormationCombatSystem : SystemBase
     private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
                                                ref FormationComponent formation, Translation translation)
     {
-        // Once engaged, stop moving the formation anchor
-        // Optionally, set anchor to clash point if not already set
-        //if (combatState.CurrentState == CombatState.State.Attacking)
-        //{
-        //    // Formation is engaged, anchor should be at clash point
-        //    // Optionally, only do this once per engagement
-        //    // formation.FormationPosition = translation.Value.xy; // Set to current position at clash
-
-        //    // Units now fight independently, so skip movement logic
-        //    return;
-        //}
-
-        //// If not yet engaged, use loose formation logic
-        //float maxEngageDistance = 10f;
-        //float2 formationPos = formation.FormationPosition;
-        //float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
-
-        //if (distanceFromFormation > maxEngageDistance)
-        //{
-        //    // Move back to formation if too far
-        //    hasTarget.Type = HasTarget.TargetType.Position;
-        //    hasTarget.TargetPosition = formationPos;
-        //    combatState.CurrentState = CombatState.State.Idle;
-        //}
-        // Otherwise, let them keep their current target and attack freely
     }
     private static void HandleDisengagingFormation(
     ref HasTarget hasTarget,
@@ -324,7 +319,7 @@ public partial class FormationCombatSystem : SystemBase
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     private struct FindTargetsJob : IJobChunk
     {
         [ReadOnly] public NativeMultiHashMap<int, QuadrantData> FormationQuadrantMultiHashMap;
@@ -341,7 +336,7 @@ public partial class FormationCombatSystem : SystemBase
             var formationGroups = chunk.GetNativeArray(FormationGroupTypeHandle);
             var quadrantEntities = chunk.GetNativeArray(QuadrantEntityTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-
+            var bestDistSq = float.MaxValue;
             for (int i = 0; i < chunk.Count; i++)
             {
                 var quadrantEntity = quadrantEntities[i];
@@ -351,13 +346,13 @@ public partial class FormationCombatSystem : SystemBase
                 float2 closestPosition = float2.zero;
                 float closestDistanceSq = float.MaxValue;
                 var formationGroup = formationGroups[i];
-                if (formationGroup.CurrentCommand != CommandType.FindTarget)
-                    continue;
+                //if (formationGroup.CurrentCommand != CommandType.FindTarget)
+                //    continue;
                 float2 unitPosition = formationGroup.AnchorPosition;
 
                 int hashKey = GetPositionHashMapKey(unitPosition);
 
-                CheckSurroundingQuadrants(hashKey, unitPosition, entity, 
+                CheckSurroundingQuadrants(hashKey, unitPosition, entity,
                     ref closestTarget, ref closestDistanceSq, ref closestPosition, formationGroup);
 
                 float2 halfSize = (formationGroup.BoundsMax - formationGroup.BoundsMin) * 0.5f;
@@ -367,7 +362,10 @@ public partial class FormationCombatSystem : SystemBase
                 {
                     Entity = closestTarget,
                     Position = closestPosition,
-                    FormationRadius = radius
+                    FormationRadius = radius,
+                    DistanceSq = closestTarget == Entity.Null
+                                ? float.MaxValue
+                                : closestDistanceSq
                 };
             }
         }
@@ -406,57 +404,98 @@ public partial class FormationCombatSystem : SystemBase
         }
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     private struct AddTargetComponentJob : IJobChunk
     {
         [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
+
+        public ComponentTypeHandle<CommandData> CommandTypeHandle;
+        public ComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
 
-        public ComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
+        // Pass in a *radius* from the system, e.g. 5f, not squared
+        public float EngagementRadius;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
             var formationGroupComponents = chunk.GetNativeArray(FormationGroupTypeHandle);
+            var commandDataComponents = chunk.GetNativeArray(CommandTypeHandle);
+
+            float engagementRadiusSq = EngagementRadius * EngagementRadius;
 
             for (int i = 0; i < chunk.Count; i++)
             {
                 Entity entity = chunkEntities[i];
                 int flatIndex = firstEntityIndex + i;
+
                 var formationGroup = formationGroupComponents[i];
-                if (ClosestTargets[flatIndex].Entity != Entity.Null)
+                var commandData = commandDataComponents[i];
+
+                // IMPORTANT: use flatIndex, not i
+                var closest = ClosestTargets[flatIndex];
+
+                // No known enemy for this formation
+                if (closest.Entity == Entity.Null)
+                    continue;
+
+                // --- march / advance → contact → FindTarget ---
+                bool isAdvancing =
+                    formationGroup.CurrentCommand == CommandType.March ||
+                    formationGroup.CurrentCommand == CommandType.MoveDirectionalRange;
+
+                if (isAdvancing && closest.DistanceSq <= engagementRadiusSq)
+                {
+                    // We have "contact" with an enemy formation – switch to engagement mode
+                    formationGroup.CurrentCommand = CommandType.FindTarget;
+                    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+
+                    // Make sure the per-unit command data matches
+                    commandData.Command = CommandType.FindTarget;
+
+                    // WRITE BACK both components
+                    formationGroupComponents[i] = formationGroup;
+                    commandDataComponents[i] = commandData;
+                }
+
+                // --- Optional: adjust anchor so formation edges meet when engaged ---
+                // Only do this when we’re actually engaging / finding target
+                if (formationGroup.CurrentCommand == CommandType.FindTarget ||
+                    formationGroup.FormationGroupStatus == FormationStatus.Engaged)
                 {
                     var currentPos = formationGroup.AnchorPosition;
+
+                    // Our approximate radius
                     float2 halfSize = (formationGroup.BoundsMax - formationGroup.BoundsMin) * 0.5f;
-                    var radius = math.min(halfSize.x, halfSize.y);
+                    float radius = math.min(halfSize.x, halfSize.y);
 
-                    // Calculate direction from current position to target
-                    float2 toTarget = ClosestTargets[flatIndex].Position - currentPos;
+                    // Direction to enemy center
+                    float2 toTarget = closest.Position - currentPos;
 
-                    // Normalize the direction (check for zero first)
                     if (math.lengthsq(toTarget) > 0.001f)
                     {
-                        float2 direction = math.normalize(toTarget);
+                        float2 dir = math.normalize(toTarget);
 
-                        // Set anchor position so our formation edge meets their formation edge
-                        // Our radius + their radius gives the total distance between centers
-                        float totalSeparation = radius + ClosestTargets[flatIndex].FormationRadius;
+                        float totalSeparation = radius + closest.FormationRadius;
 
                         // Position our formation so edges touch
-                        formationGroup.AnchorPosition = ClosestTargets[flatIndex].Position - direction * totalSeparation;
+                        formationGroup.AnchorPosition = closest.Position - dir * totalSeparation;
                     }
                     else
                     {
-                        // If we're already at the target position, just offset slightly
-                        formationGroup.AnchorPosition = ClosestTargets[flatIndex].Position - new float2(radius + ClosestTargets[flatIndex].FormationRadius, 0);
+                        // If already basically on the same center, nudge sideways so edges touch
+                        float totalSeparation = radius + closest.FormationRadius;
+                        formationGroup.AnchorPosition = closest.Position - new float2(totalSeparation, 0f);
                     }
 
+                    // WRITE BACK anchor change
                     formationGroupComponents[i] = formationGroup;
                 }
             }
         }
     }
+
     // ADDED: Method to debug draw quadrant boundaries
     private void DebugDrawQuadrants()
     {

@@ -54,6 +54,10 @@ public class UnitFactory
                 break;
         }
         entityManager.AddComponentData(groupEntity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Target});
+        if (unitType == UnitType.Default)
+        {
+            entityManager.AddComponentData(groupEntity, new AllyTag { }); 
+        }
         entityManager.AddComponentData(groupEntity, formationGroup);
         entityManager.AddComponentData(groupEntity, initialCommand);
         for (int i = 0; i < positions.Count; i++)
