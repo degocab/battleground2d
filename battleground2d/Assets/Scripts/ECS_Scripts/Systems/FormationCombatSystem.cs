@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.UIElements;
+using static Unity.Burst.Intrinsics.X86.Avx;
 
 [UpdateAfter(typeof(FormationCollisionSystem))]
 [UpdateBefore(typeof(CombatSystem))]
@@ -139,7 +140,7 @@ public partial class FormationCombatSystem : SystemBase
             ClosestTargets = writeBuffer,
             EntityTypeHandle = GetEntityTypeHandle(),
             CommandTypeHandle = GetComponentTypeHandle<CommandData>(false),
-            ECB = ecbWriter,
+            //ECB = ecbWriter,
             EngagementRadius = 5f,
             FormationGroupTypeHandle = GetComponentTypeHandle<FormationGroupComponent>(false)
         };
@@ -161,6 +162,7 @@ public partial class FormationCombatSystem : SystemBase
                      ref FormationComponent formation
                      , ref AnimationComponent animationComponent
                      , in Translation translation
+                     , in CommandData command
                      ) =>
             {
                 var unitFormatonStatus = formation.Status;
@@ -175,7 +177,7 @@ public partial class FormationCombatSystem : SystemBase
                         break;
 
                     case FormationStatus.Engaged:
-                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation);
+                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation, command);
                         break;
 
                     case FormationStatus.Broken:
@@ -237,9 +239,26 @@ public partial class FormationCombatSystem : SystemBase
     }
 
     private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                               ref FormationComponent formation, Translation translation)
+                                               ref FormationComponent formation, Translation translation, CommandData command)
     {
+        if (command.Command == CommandType.Defend)
+        {
+            float maxEngageDistance = 0.5f;
+
+            float2 formationPos = formation.FormationPosition;
+            float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
+            if (distanceFromFormation > maxEngageDistance)
+            {
+                //Debug.Log("HasTarget.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
+
+                // Too far - return to formation immediately
+                hasTarget.Type = HasTarget.TargetType.Position;
+                hasTarget.TargetPosition = formationPos;
+                combatState.CurrentState = CombatState.State.Idle;
+            }
+        }
     }
+
     private static void HandleDisengagingFormation(
     ref HasTarget hasTarget,
     in CombatState combatState,
@@ -412,89 +431,49 @@ public partial class FormationCombatSystem : SystemBase
 
         public ComponentTypeHandle<CommandData> CommandTypeHandle;
         public ComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
-        public EntityCommandBuffer.ParallelWriter ECB;
 
-        // Pass in a *radius* from the system, e.g. 5f, not squared
-        public float EngagementRadius;
+        public float EngagementRadius; // radius, not squared
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
-            var formationGroupComponents = chunk.GetNativeArray(FormationGroupTypeHandle);
-            var commandDataComponents = chunk.GetNativeArray(CommandTypeHandle);
+            var formationGroups = chunk.GetNativeArray(FormationGroupTypeHandle);
+            var commands = chunk.GetNativeArray(CommandTypeHandle);
 
             float engagementRadiusSq = EngagementRadius * EngagementRadius;
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                Entity entity = chunkEntities[i];
                 int flatIndex = firstEntityIndex + i;
 
-                var formationGroup = formationGroupComponents[i];
-                var commandData = commandDataComponents[i];
-
-                // IMPORTANT: use flatIndex, not i
+                var group = formationGroups[i];
+                var cmd = commands[i];
                 var closest = ClosestTargets[flatIndex];
 
-                // No known enemy for this formation
                 if (closest.Entity == Entity.Null)
                     continue;
 
-                // --- march / advance → contact → FindTarget ---
                 bool isAdvancing =
-                    formationGroup.CurrentCommand == CommandType.March ||
-                    formationGroup.CurrentCommand == CommandType.MoveDirectionalRange;
+                    group.CurrentCommand == CommandType.March ||
+                    group.CurrentCommand == CommandType.MoveDirectionalRange;
 
+                // transition to engaged ONCE when we first make contact
                 if (isAdvancing && closest.DistanceSq <= engagementRadiusSq)
                 {
-                    // We have "contact" with an enemy formation – switch to engagement mode
-                    formationGroup.CurrentCommand = CommandType.FindTarget;
-                    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                    group.CurrentCommand = CommandType.FindTarget;
+                    group.FormationGroupStatus = FormationStatus.Engaged;
 
-                    // Make sure the per-unit command data matches
-                    commandData.Command = CommandType.FindTarget;
+                    cmd.Command = CommandType.FindTarget;
 
-                    // WRITE BACK both components
-                    formationGroupComponents[i] = formationGroup;
-                    commandDataComponents[i] = commandData;
+                    formationGroups[i] = group;
+                    commands[i] = cmd;
                 }
 
-                // --- Optional: adjust anchor so formation edges meet when engaged ---
-                // Only do this when we’re actually engaging / finding target
-                if (formationGroup.CurrentCommand == CommandType.FindTarget ||
-                    formationGroup.FormationGroupStatus == FormationStatus.Engaged)
-                {
-                    var currentPos = formationGroup.AnchorPosition;
-
-                    // Our approximate radius
-                    float2 halfSize = (formationGroup.BoundsMax - formationGroup.BoundsMin) * 0.5f;
-                    float radius = math.min(halfSize.x, halfSize.y);
-
-                    // Direction to enemy center
-                    float2 toTarget = closest.Position - currentPos;
-
-                    if (math.lengthsq(toTarget) > 0.001f)
-                    {
-                        float2 dir = math.normalize(toTarget);
-
-                        float totalSeparation = radius + closest.FormationRadius;
-
-                        // Position our formation so edges touch
-                        formationGroup.AnchorPosition = closest.Position - dir * totalSeparation;
-                    }
-                    else
-                    {
-                        // If already basically on the same center, nudge sideways so edges touch
-                        float totalSeparation = radius + closest.FormationRadius;
-                        formationGroup.AnchorPosition = closest.Position - new float2(totalSeparation, 0f);
-                    }
-
-                    // WRITE BACK anchor change
-                    formationGroupComponents[i] = formationGroup;
-                }
+                // No anchor updates here. Slot follow happens elsewhere via CurrentUnitAveragePosition.
             }
         }
     }
+
 
     // ADDED: Method to debug draw quadrant boundaries
     private void DebugDrawQuadrants()

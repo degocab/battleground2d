@@ -126,7 +126,10 @@ ComponentType.Exclude<CommanderComponent>());
             {
 
                 float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
-
+                if (formationGroup.FormationGroupStatus == FormationStatus.Engaged && command.Command == CommandType.Idle)
+                {
+                    command.Command = CommandType.Defend;
+                }
                 switch (command.Command)
                 {
                     case CommandType.Idle:
@@ -319,8 +322,14 @@ ComponentType.Exclude<CommanderComponent>());
 
                 case CommandType.Defend:
                     // TODO: Implement defend logic
-                    formation.Status = FormationStatus.Hold;
-                    ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation!
+                    if (formation.Status == FormationStatus.Engaged)
+                    {
+                        ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation! 
+                    }
+                    else
+                    {
+                        formation.Status = FormationStatus.Hold;
+                    }
                     break;
             }
         }

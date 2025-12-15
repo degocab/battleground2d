@@ -15,4 +15,8 @@ public struct CombatState : IComponentData
     public float SupportTimer2;
 
     public State PreviousState;
+
+    public float DefendCooldownTimer;
+
+    public bool WantsToDefend;
 }

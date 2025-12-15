@@ -14,6 +14,12 @@ using static UnityEngine.EventSystems.EventTrigger;
 [UpdateBefore(typeof(ProcessCommandSystem))]
 public class PlayerControlSystem : SystemBase
 {
+
+    private string lastCommandText = "";
+    private float lastCommandTime = 0f;
+    private const float COMMAND_DISPLAY_DURATION = 1.5f;
+
+
     public Transform cameraMain;
     public static EntitySpawner entitySpawner;
     private Vector3 cameraVelocity = Vector3.zero;
@@ -142,7 +148,9 @@ public class PlayerControlSystem : SystemBase
             {
                 int commandType = key - (int)KeyCode.Alpha1;
                 var newCommand = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
-
+                // DEBUG UI
+                lastCommandText = $"Command: {newCommand.Command.ToString()}";
+                lastCommandTime = (float)Time.ElapsedTime;
                 // Use a local variable to capture the command for the job
                 var commandCopy = newCommand;
 
@@ -315,6 +323,21 @@ public class PlayerControlSystem : SystemBase
     {
         return defenseComponent.BlockDuration > 0f;
     }
+    void OnGUI()
+    {
+        if (Time.ElapsedTime - lastCommandTime > COMMAND_DISPLAY_DURATION)
+            return;
+
+        GUIStyle style = new GUIStyle(GUI.skin.label);
+        style.fontSize = 24;
+        style.normal.textColor = Color.white;
+
+        GUI.Label(
+            new Rect(20, 20, 600, 40),
+            lastCommandText,
+            style
+        );
+    }
 
     private CommandData CreateCommandFromNumber(int number, float3 commanderPosition, float2 moveToPosition)
     {
@@ -364,7 +387,9 @@ public class PlayerControlSystem : SystemBase
 
 
         }
-        Debug.Log("Command#" + comm);
+        Debug.Log("Command#" + comm.Command.ToString());
+        CommandDebugUI.Text = $"Command: {comm.Command.ToString()}";
+        CommandDebugUI.TimeRemaining = 1.5f;
 
         return comm;
     }

@@ -15,63 +15,130 @@ public class CollisionResolutionSystem : SystemBase
         var formationData = GetComponentDataFromEntity<FormationComponent>(true);
 
         Entities
-            .WithName("CollisionResolutionSystem")
-            .WithNone<DeadTagComponent>()
-            .WithAll<CollidableTag>()
-            .WithReadOnly(formationData)
-            .WithBurst()
-            .ForEach((ref Translation translation,
-                      ref ECS_Velocity2D velocity,
-                      ref ECS_PhysicsBody2DAuthoring body,
-                      ref ECS_CircleCollider2DAuthoring collider,
-                      ref DynamicBuffer<CollisionEvent2D> collisions) =>
-            {
-                if (body.isStatic || collisions.Length == 0)
-                    return;
+          .WithName("CollisionResolutionSystem")
+          .WithNone<DeadTagComponent>()
+          .WithAll<CollidableTag>()
+          .WithReadOnly(formationData)
+          .WithBurst()
+          .ForEach((Entity entity,
+                    ref Translation translation,
+                    ref ECS_Velocity2D velocity,
+                    in ECS_PhysicsBody2DAuthoring body,
+                    in ECS_CircleCollider2DAuthoring collider,
+                    in DynamicBuffer<CollisionEvent2D> collisions,
+                    in CommandData command) =>
+          {
+              if (body.isStatic || collisions.Length == 0)
+                  return;
 
-                float2 position = translation.Value.xy;
-                float2 totalPush = float2.zero;
+              // --- Identify weight + anchored state (phalanx defending) ---
+              float myWeight = 1f;
+              bool isAnchored = false;
 
-                for (int i = 0; i < collisions.Length; i++)
-                {
-                    var collision = collisions[i];
-                    var otherBody = collision.OtherBody;
-                    var otherCollider = collision.OtherCollider;
-                    float2 otherPos = collision.OtherTranslation.Value.xy;
+              if (formationData.HasComponent(entity))
+              {
+                  var myFormation = formationData[entity];
+                  myWeight = myFormation.FormationWeight;
 
-                    float2 delta = position - otherPos;
-                    float dist = math.length(delta);
-                    if (dist == 0f) continue;
+                  isAnchored =
+                      myFormation.FormationType == FormationType.Phalanx &&
+                      command.Command == CommandType.Defend;
+              }
 
-                    float minDist = collider.Radius + otherCollider.Radius;
-                    float penetration = minDist - dist;
-                    if (penetration <= 0f)
-                        continue;
+              float2 startPos = translation.Value.xy;
+              float2 pos = startPos;
 
-                    float2 dir = delta / dist;
+              // --- Tunables ---
+              const int iterations = 2;
+              float stiffness = 0.35f;
+              float slop = 0.005f;
+              float maxPenPerPair = 0.06f;
 
-                    // Get weights
-                    float myWeight = 1f;
-                    float otherWeight = 1f;
-                    if (formationData.HasComponent(collision.OtherEntity))
-                        otherWeight = formationData[collision.OtherEntity].FormationWeight;
+              // These are the key "wall" knobs:
+              float maxStepPerIter = isAnchored ? 0.03f : 0.10f;      // anchored moves far less each iteration
+              float frictionStrength = isAnchored ? 0.35f : 0.15f;    // anchored resists sideways sliding
 
-                    // heavier units move less
-                    float myMoveFraction = otherWeight / (myWeight + otherWeight);
-                    float otherMoveFraction = myWeight / (myWeight + otherWeight);
+              // Per-frame clamp for anchored units (prevents slow creep)
+              float maxAnchoredStep = 0.01f;
 
-                    // final push
-                    float2 push = dir * (penetration * myMoveFraction);
-                    totalPush += push;
-                }
+              for (int it = 0; it < iterations; it++)
+              {
+                  float2 totalPush = float2.zero;
+                  float2 frictionDeltaV = float2.zero;
+                  int frictionCount = 0;
 
-                // Apply smooth correction
-                float stiffness = 0.2f; // tweak for stability
-                translation.Value.xy += totalPush * stiffness;
-                translation.Value.z = 0f;
+                  for (int i = 0; i < collisions.Length; i++)
+                  {
+                      var c = collisions[i];
 
-                // Damp velocity to avoid jitter
-                velocity.Value *= 0.95f;
-            }).ScheduleParallel();
+                      float2 otherPos = c.OtherTranslation.Value.xy;
+                      float2 delta = pos - otherPos;
+                      float dist = math.length(delta);
+                      if (dist <= 1e-5f) continue;
+
+                      float minDist = collider.Radius + c.OtherCollider.Radius;
+                      float penetration = minDist - dist;
+                      if (penetration <= slop) continue;
+
+                      penetration -= slop;
+
+                      float2 n = delta / dist;
+
+                      // --- Other weight ---
+                      float otherWeight = 1f;
+                      if (formationData.HasComponent(c.OtherEntity))
+                          otherWeight = formationData[c.OtherEntity].FormationWeight;
+
+                      if (c.OtherBody.isStatic)
+                          otherWeight = 999999f;
+
+                      // --- Nonlinear weighting (stronger effect) ---
+                      float effMy = myWeight * myWeight;
+                      float effOther = otherWeight * otherWeight;
+
+                      float denom = effMy + effOther;
+                      if (denom <= 1e-6f) continue;
+
+                      float myMoveFraction = effOther / denom;
+
+                      // clamp per-contact push so one deep overlap doesn't explode
+                      float pen = math.min(penetration, maxPenPerPair);
+                      totalPush += n * (pen * myMoveFraction);
+
+                      // Tangential friction to reduce orbiting/sliding
+                      float2 t = new float2(-n.y, n.x);
+                      float vT = math.dot(velocity.Value, t);
+                      frictionDeltaV += (-t * vT) * frictionStrength;
+                      frictionCount++;
+                  }
+
+                  // clamp total correction this iteration
+                  float len = math.length(totalPush);
+                  if (len > maxStepPerIter)
+                      totalPush = (totalPush / len) * maxStepPerIter;
+
+                  pos += totalPush * stiffness;
+
+                  if (frictionCount > 0)
+                      velocity.Value += frictionDeltaV / frictionCount;
+              }
+
+              // Final per-frame anchor clamp (prevents gradual shove)
+              if (isAnchored)
+              {
+                  float2 d = pos - startPos;
+                  float dist = math.length(d);
+                  if (dist > maxAnchoredStep)
+                      pos = startPos + (d / dist) * maxAnchoredStep;
+              }
+
+              translation.Value.xy = pos;
+              translation.Value.z = 0f;
+
+              // mild damping only
+              velocity.Value *= 0.985f;
+          }).ScheduleParallel();
+
+
     }
 }

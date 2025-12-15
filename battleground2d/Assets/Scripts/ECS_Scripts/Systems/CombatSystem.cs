@@ -69,11 +69,16 @@ public partial class CombatSystem : SystemBase
         //update defending units
         Entities
             .WithName("UpdateAnyDefendingUnits")
+            .WithNone<DeadTagComponent>()
             .ForEach((ref Entity entity, ref CombatState combatState, in CommandData command) => 
             {
                 if (command.Command == CommandType.Defend)
                 {
-                    combatState.CurrentState = CombatState.State.Defending;
+                    combatState.WantsToDefend = true; // <-- add this bool to CombatState
+                }
+                else
+                {
+                    combatState.WantsToDefend = false;
                 }
             }).Run();
 
@@ -167,7 +172,7 @@ public partial class CombatSystem : SystemBase
                         break;
 
                     case CombatState.State.Defending:
-                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget, ref movementSpeed);
+                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget, ref movementSpeed, DeltaTime);
                         break;
 
                     case CombatState.State.Blocking:
@@ -213,10 +218,6 @@ public partial class CombatSystem : SystemBase
                                         Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense, ref MovementSpeedComponent movementSpeed)
         {
             combatState.StateTimer += DeltaTime;
-
-            //if (defense.IsBlocking)  // You'll need to pass defense as a parameter
-            if (combatState.CurrentState == CombatState.State.Defending)  // You'll need to pass defense as a parameter
-                return; // Stay in attacking state but don't process attack logic while blocking
 
             // Check if target is still valid
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
@@ -321,8 +322,14 @@ public partial class CombatSystem : SystemBase
             }
         }
 
-        private void HandleDefendingState(ref CombatState combatState, ref AttackComponent attack,
-                                        ref AnimationComponent animation, Translation translation, HasTarget hasTarget, ref MovementSpeedComponent movementSpeed)
+        private void HandleDefendingState(
+            ref CombatState combatState,
+            ref AttackComponent attack,
+            ref AnimationComponent animation,
+            Translation translation,
+            HasTarget hasTarget,
+            ref MovementSpeedComponent movementSpeed,
+            float deltaTime)
         {
             if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
             {
@@ -335,21 +342,35 @@ public partial class CombatSystem : SystemBase
 
             if (!inRange)
             {
-                // Target moved out of range - seek it
                 TransitionToSeeking(ref combatState, ref animation);
+                return;
             }
-            else if (attack.AttackRateRemaining <= 0f)
+
+            // Start defend timer ONCE when we enter Defending
+            if (combatState.PreviousState != CombatState.State.Defending)
             {
-                // Attack cooldown finished - go back to attacking
+                combatState.DefendCooldownTimer = 1f; // how long you want to “turtle up”
+            }
+
+            // Tick it down
+            combatState.DefendCooldownTimer = math.max(0f, combatState.DefendCooldownTimer - deltaTime);
+
+            // When defend window is over AND attack cooldown is done -> attack again
+            bool readyToAttack = (attack.AttackRateRemaining <= 0f) && (combatState.DefendCooldownTimer <= 0f);
+
+            if (readyToAttack)
+            {
                 combatState.CurrentState = CombatState.State.Attacking;
-                animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                combatState.StateTimer = 0f;
+                // animation.AnimationType = EntitySpawner.AnimationType.Idle; // optional
             }
             else
             {
-                // Continue defending while on cooldown
                 combatState.CurrentState = CombatState.State.Defending;
+                // animation.AnimationType = EntitySpawner.AnimationType.Defend; // if you have it
             }
         }
+
 
         private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, HasTarget hasTarget)
         {

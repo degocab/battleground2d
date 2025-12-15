@@ -341,6 +341,9 @@ public partial class CollisionDetectionSystem : SystemBase
                                 CollisionEvents.Add(entityB, /*entityA*/
                                     new CollisionQuadrantData
                                     {
+                                        entity = entityA,
+                                        position = posA,
+                                        radius = radiusA,
                                         CollisionSourceTranslation = translations[i],
                                         CollisionSourceCollider = colliders[i],
                                         CollisionSourceBody = bodies[i]

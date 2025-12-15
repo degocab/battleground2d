@@ -67,9 +67,22 @@ public partial class FormationManagerSystem : SystemBase
         var unitEntities = _unitQuery.ToEntityArray(Allocator.TempJob); // Retrieve all unit entities.
         var translations = GetComponentDataFromEntity<Translation>(true); // Retrieve Translation components for position data.
         var unitFormations = GetComponentDataFromEntity<FormationComponent>(false); // Retrieve Translation components for position data.
-        var groupCount = _unitGroupQuery.CalculateEntityCount(); // Count the number of formation groups.
-        _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
-        _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(groupCount * 2, Allocator.Persistent);
+
+
+        int groupCount = _unitGroupQuery.CalculateEntityCount(); // Count the number of formation groups.
+        if (_groupToUnitsMap.Capacity < unitEntities.Length * 2)
+        {
+            _groupToUnitsMap.Dispose();
+            _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(unitEntities.Length * 2, Allocator.Persistent);
+        }
+        else _groupToUnitsMap.Clear();
+
+        if (_formationGroupMap.Capacity < groupCount * 2)
+        {
+            _formationGroupMap.Dispose();
+            _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(groupCount * 2, Allocator.Persistent);
+        }
+        else _formationGroupMap.Clear();
         // Initialize or clear the native maps used for group-to-unit mapping and formation group data.
         InitializeOrClearNativeMaps(unitEntities.Length, groupCount);
 
@@ -99,8 +112,8 @@ public partial class FormationManagerSystem : SystemBase
         // Dispose of temporary data used during the update.
         DisposeTemporaryData(unitEntities);
         groupToUnitCountMap.Dispose();
-        _groupToUnitsMap.Dispose();
-        _formationGroupMap.Dispose();
+        //_groupToUnitsMap.Dispose();
+        //_formationGroupMap.Dispose();
     }
 
     private void InitializeOrClearNativeMaps(int unitCount, int groupCount)
@@ -181,21 +194,21 @@ public partial class FormationManagerSystem : SystemBase
                 command.Command = formationGroup.CurrentCommand;
 
                 // Optional: number of units in this group for slot layout
-                groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var groupValueCount);
-
+                groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var unitCountInGroup);
+                int rowCount = (unitCountInGroup + formationGroup.UnitsPerRow - 1) / formationGroup.UnitsPerRow;
                 switch (formationComponent.Status)
                 {
                     case FormationStatus.Hold:
                         {
                             // In Hold: recompute slot positions tightly around the anchor
-                            if (groupValueCount > 0)
+                            if (unitCountInGroup > 0)
                             {
                                 formationComponent.FormationPosition = CalculatePhalanxPosition(
                                 formationComponent.SlotIndex,
-                                groupValueCount,
                                 formationGroup.UnitsPerRow,
                                 formationGroup.UnitSpacing,
-                                formationGroup.AnchorPosition
+                                formationGroup.AnchorPosition,
+                                rowCount
                             );
                                 formationComponent.Direction = formationGroup.FormationFacingDirection;
                             }
@@ -217,12 +230,33 @@ public partial class FormationManagerSystem : SystemBase
                         {
                             // Engaged: combat systems are in charge of HasTarget and CombatState.
                             // Do NOT overwrite HasTarget here, or you'll fight the CombatSystem.
-                            //
-                            // You can still update Direction if you want the formation to "face" something:
-                            // formationComponent.Direction = formationGroup.FormationFacingDirection;
+                            if (unitCountInGroup > 0)
+                            {
+                                // During engagement, slot around the measured center (not commanded anchor)
+                                float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
 
-                            // If you ever want to debug distance-to-anchor, you can do it here,
-                            // but with no writes to HasTarget or CombatState.
+                                formationComponent.FormationPosition = CalculatePhalanxPosition(
+                                    formationComponent.SlotIndex,
+                                    formationGroup.UnitsPerRow,
+                                    formationGroup.UnitSpacing,
+                                    slotAnchor,
+                                    rowCount
+                                );
+
+                                formationComponent.Direction = formationGroup.FormationFacingDirection;
+                            }
+                            if (formationGroup.FormationGroupStatus != FormationStatus.Engaged)
+                            {
+                                // if the formation group is not engaged, switch the group to engaged
+                                formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+
+                                parallelEcb.SetComponent(
+                                    entityInQueryIndex,
+                                    formationComponent.FormationGroupEntity.Value,
+                                    formationGroup
+                                );
+                            }
+
                             break;
                         }
 
@@ -233,14 +267,14 @@ public partial class FormationManagerSystem : SystemBase
 
                             // Optionally recompute FormationPosition using the *new* AnchorPosition,
                             // so everyone reforms into a proper block at the retreat location.
-                            if (groupValueCount > 0)
+                            if (unitCountInGroup > 0)
                             {
                                 formationComponent.FormationPosition = CalculatePhalanxPosition(
                                 formationComponent.SlotIndex,
-                                groupValueCount,
                                 formationGroup.UnitsPerRow,
                                 formationGroup.UnitSpacing,
-                                formationGroup.AnchorPosition
+                                formationGroup.AnchorPosition,
+                                rowCount
                             );
                                 formationComponent.Direction = formationGroup.FormationFacingDirection;
                             }
@@ -310,7 +344,19 @@ public partial class FormationManagerSystem : SystemBase
                         //}
                     }
 
-                    formationGroupComponent.CurrentUnitAveragePosition = CalculateAveragePositionForGroup(unitEntitiesList, translations);
+                    float2 avg;
+                    if (formationGroupComponent.FormationGroupStatus == FormationStatus.Engaged)
+                    {
+                        // stable average around anchor (or average of FormationPosition)
+                        avg = formationGroupComponent.AnchorPosition;
+                    }
+                    else
+                    {
+                        avg = CalculateAveragePositionForGroup(unitEntitiesList, translations);
+                    }
+                    formationGroupComponent.CurrentUnitAveragePosition = math.lerp(
+                        formationGroupComponent.CurrentUnitAveragePosition, avg, 0.1f);
+
 
                     var bounds = CalculateFormationBounds(unitEntitiesList, translations, formationGroupComponent.UnitsPerRow,
                         formationGroupComponent.UnitSpacing, formationGroupComponent.CurrentUnitAveragePosition);
@@ -419,32 +465,19 @@ public partial class FormationManagerSystem : SystemBase
     }
 
     [BurstCompile]
-    public static float2 CalculatePhalanxPosition(int unitIndex, int totalUnits, int unitsPerRow, float spacing, float2 anchor)
+    public static float2 CalculatePhalanxPosition(int slotIndex, int unitsPerRow, float spacing, float2 anchor, int rowCount)
     {
-        // Calculate the position of a unit in a phalanx formation.  
-        if (unitsPerRow <= 0)
-            unitsPerRow = 16;
-        int row = unitIndex / unitsPerRow;
-        int col = unitIndex % unitsPerRow;
+        int row = slotIndex / unitsPerRow;
+        int col = slotIndex % unitsPerRow;
 
-        int rowCount = (totalUnits + unitsPerRow - 1) / unitsPerRow;
-        int columnsThisRow = math.min(unitsPerRow, totalUnits - row * unitsPerRow);
-
-        float formationWidth = (columnsThisRow - 1) * spacing;
+        float formationWidth = (unitsPerRow - 1) * spacing;
         float offsetX = col * spacing - formationWidth * 0.5f;
 
         float formationHeight = (rowCount - 1) * spacing;
         float offsetY = -row * spacing + formationHeight * 0.5f;
 
-        // Ensure rows with fewer columns do not drift by clamping offsets.  
-        if (columnsThisRow < unitsPerRow)
-        {
-            offsetX = math.clamp(offsetX, -formationWidth * 0.5f, formationWidth * 0.5f);
-        }
-
         return anchor + new float2(offsetX, offsetY);
     }
-
     public static NativeHashMap<Entity, int> GetCountsPerKey(NativeMultiHashMap<Entity, Entity> groupToUnits, Allocator allocator)
     {
         // Count the number of units in each group.
@@ -508,8 +541,11 @@ public partial class FormationManagerSystem : SystemBase
         {
             var groupEntity = GroupEntities[index];
             var group = Groups[groupEntity];
+
             if (!group.ReIndexSlots)
                 return;
+
+            int unitsPerRow = math.max(1, group.UnitsPerRow);
 
             var aliveUnits = new NativeList<SlotEntry>(Allocator.Temp);
 
@@ -521,43 +557,85 @@ public partial class FormationManagerSystem : SystemBase
                         continue;
 
                     var formation = Formations[unitEntity];
-                    aliveUnits.Add(new SlotEntry { OldSlot = formation.SlotIndex, Entity = unitEntity });
+                    int oldSlot = formation.SlotIndex;
+
+                    // derive column/row from old slot
+                    int col = oldSlot % unitsPerRow;
+                    int row = oldSlot / unitsPerRow;
+
+                    aliveUnits.Add(new SlotEntry
+                    {
+                        Entity = unitEntity,
+                        OldSlot = oldSlot,
+                        Col = col,
+                        Row = row
+                    });
                 }
                 while (GroupToUnits.TryGetNextValue(out unitEntity, ref iterator));
             }
 
             if (aliveUnits.Length == 0)
             {
+                // clear the flag so we don't keep doing work
+                group.ReIndexSlots = false;
+                Groups[groupEntity] = group;
                 aliveUnits.Dispose();
                 return;
             }
 
-            aliveUnits.Sort(new SlotComparer());
+            // Sort by Column first, then Row (so we process each column front-to-back)
+            aliveUnits.Sort(new ColumnRowComparer());
+
+            int currentCol = -1;
+            int newRowInCol = 0;
 
             for (int i = 0; i < aliveUnits.Length; i++)
             {
-                var formation = Formations[aliveUnits[i].Entity];
-                formation.SlotIndex = i;
-                Formations[aliveUnits[i].Entity] = formation;
+                var entry = aliveUnits[i];
+
+                if (entry.Col != currentCol)
+                {
+                    currentCol = entry.Col;
+                    newRowInCol = 0;
+                }
+
+                int newSlot = (newRowInCol * unitsPerRow) + entry.Col;
+                newRowInCol++;
+
+                var formation = Formations[entry.Entity];
+                formation.SlotIndex = newSlot;
+                Formations[entry.Entity] = formation;
             }
+
+            // IMPORTANT: reset the flag so this only happens when group size changes
+            group.ReIndexSlots = false;
+            Groups[groupEntity] = group;
 
             aliveUnits.Dispose();
         }
 
         private struct SlotEntry
         {
-            public int OldSlot;
             public Entity Entity;
+            public int OldSlot;
+            public int Col;
+            public int Row;
         }
 
-        private struct SlotComparer : IComparer<SlotEntry>
+        private struct ColumnRowComparer : IComparer<SlotEntry>
         {
             public int Compare(SlotEntry a, SlotEntry b)
             {
-                return a.OldSlot.CompareTo(b.OldSlot);
+                // Column first
+                int c = a.Col.CompareTo(b.Col);
+                if (c != 0) return c;
+
+                // Then front-to-back within the column
+                return a.Row.CompareTo(b.Row);
             }
         }
     }
+
 
 
 }
