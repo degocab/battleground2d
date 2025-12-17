@@ -21,7 +21,7 @@ public class UnitFactory
     }
     private int _nextFormationID = 0;
     //public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
-    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, CommandData initialCommand, float2 spawnPosition, FormationType formationType)
+    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, OrderData initialCommand, float2 spawnPosition, FormationType formationType)
     {
         int formationID = _nextFormationID++;
 
@@ -35,7 +35,8 @@ public class UnitFactory
             FormationGroupEntity = groupEntity,
             FormationID = formationID,
             AnchorPosition = spawnPosition,
-            UnitType = unitType
+            UnitType = unitType,
+            FormationType = formationType
         };
         List<float2> positions = new List<float2>();
         switch (formationType)
@@ -54,7 +55,8 @@ public class UnitFactory
                 break;
         }
         entityManager.AddComponentData(groupEntity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Target});
-        if (unitType == UnitType.Default)
+        entityManager.AddComponentData(groupEntity, new FormationDebugComponent { });
+        if (unitType == UnitType.Ally)
         {
             entityManager.AddComponentData(groupEntity, new AllyTag { }); 
         }
@@ -67,7 +69,7 @@ public class UnitFactory
         }
     }
 
-    private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)
+    private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)
     {
         if (formationGroupEntity == null || formationGroupEntity == Entity.Null)
         {
@@ -84,8 +86,8 @@ public class UnitFactory
             ,FormationGroupEntity = formationGroupEntity,
             SlotIndex = i,
         });
-        CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(position);
-        entityManager.SetComponentData(unit, command);
+        OrderData order = initialCommand ?? OrderFactory.CreateMoveOrder(position);
+        entityManager.SetComponentData(unit, order);
         //entityManager.AddSharedComponentData(unit, formationGroup.Value);
 
         return unit;
@@ -99,17 +101,17 @@ public class UnitFactory
     //TODO: add bool for setting AI commander component
     public void SpawnCommander()
     {
-        var commander = CreateUnitBase(new float2(4, 0), UnitType.Default, 7, Direction.Right, 100000f);
+        var commander = CreateUnitBase(new float2(4, 0), UnitType.Ally, 7, Direction.Right, 100000f);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
-    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand = null, float2? spawnPosition = null)
+    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, float2? spawnPosition = null)
     {
         var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
 
         // Use provided command or create default move command
-        CommandData command = initialCommand ?? CommandFactory.CreateMoveCommand(spawnPosition);
-        entityManager.SetComponentData(unit, command);
+        OrderData order = initialCommand ?? OrderFactory.CreateMoveOrder(spawnPosition);
+        entityManager.SetComponentData(unit, order);
 
         return unit;
     }
@@ -117,7 +119,7 @@ public class UnitFactory
     // Overload for specific command types
     //private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand, CommandType commandType)
     //{
-    //    return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateCommand(commandType));
+    //    return SpawnUnit(position, unitType, unitDirection, rank, CommandFactory.CreateOrder(commandType));
     //}
 
     private Entity CreateUnitBase(float2 position, UnitType unitType, int rank, Direction unitDirection, float health)
@@ -126,7 +128,7 @@ public class UnitFactory
         var unit = entityManager.CreateEntity(archetype);
 
         // Set common components
-        if (unitType == UnitType.Default)
+        if (unitType == UnitType.Ally)
             SetTransformComponents(unit, new float3(position.x, position.y, 0));
         else
             SetTransformComponents(unit, new float3( position.x, position.y, 0));
@@ -136,7 +138,7 @@ public class UnitFactory
         SetAnimationComponent(unit, unitType, unitDirection);
         SetUnitIdentity(unit, unitType, rank);
 
-        if (unitType == UnitType.Default)
+        if (unitType == UnitType.Ally)
         {
             entityManager.AddComponentData(unit, new AllyTag { });
 
@@ -225,17 +227,17 @@ public class UnitFactory
         });
     }
 
-    private CommandData CreateMoveCommand(float3 startPosition)
+    private OrderData CreateMoveCommand(float3 startPosition)
     {
-        return new CommandData
+        return new OrderData
         {
-            Command = CommandType.MoveTo,
+            CurrentOrder = OrderType.MoveTo,
             TargetPosition = new float2(startPosition.x - 1.0f, startPosition.y + UnityEngine.Random.Range(-0.1f, 0.1f))
         };
     }
 
     private int GetRank(int index) => 1; // Simple rank assignment for now
-    private UnitType GetUnitType(int unitType) => unitType == 1 ? UnitType.Default : UnitType.Enemy;
+    private UnitType GetUnitType(int unitType) => unitType == 1 ? UnitType.Ally : UnitType.Enemy;
 }
 
 public struct AllyTag:IComponentData
@@ -264,7 +266,7 @@ public class UnitArchetypeFactory
             typeof(PositionComponent), typeof(Translation), typeof(MovementSpeedComponent),
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
-            typeof(CommandData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
+            typeof(OrderData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
             typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent), typeof(HasTarget)
         );
     }

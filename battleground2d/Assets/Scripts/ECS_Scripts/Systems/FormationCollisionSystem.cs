@@ -59,15 +59,15 @@ public class FormationCollisionSystem : SystemBase
 
             DrawAnchorPoint(groupComponents[i].AnchorPosition, Color.green, .25f);
         }
-        var groupCommandMap = new NativeHashMap<Entity, CommandData>(groupEntities.Length, Allocator.Temp);
+        var groupCommandMap = new NativeHashMap<Entity, OrderData>(groupEntities.Length, Allocator.Temp);
 
         Entities
             .WithReadOnly(groupCollisionMap)
-            .ForEach((Entity entity, ref FormationGroupComponent formationGroup, ref CommandData command) => {
+            .ForEach((Entity entity, ref FormationGroupComponent formationGroup, ref OrderData order) => {
                 if (!groupCollisionMap.TryGetValue(entity, out var formationGroupIsColliding)) return;
                 bool isColliding = formationGroupIsColliding;
                 formationGroup.isColliding = isColliding;
-                groupCommandMap.TryAdd(entity, command);
+                groupCommandMap.TryAdd(entity, order);
 
             }).Run();
 
@@ -75,7 +75,7 @@ public class FormationCollisionSystem : SystemBase
         Entities
             .WithReadOnly(groupCollisionMap)
             .WithReadOnly(groupCommandMap)
-            .ForEach((Entity entity, ref FormationComponent formation, ref CommandData command) =>
+            .ForEach((Entity entity, ref FormationComponent formation, ref OrderData order) =>
             {
                 if (!formation.FormationGroupEntity.HasValue) return;
 

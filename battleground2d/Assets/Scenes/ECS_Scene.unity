@@ -262,7 +262,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d20512c46cde8234fb4a7209d684ba50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 3
   offset: {x: 0, y: 0}
   targetPosition: {x: 0, y: 0, z: 0}
 --- !u!1 &910295580
@@ -297,7 +297,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2e509e05fce60041a8e37e53990a754, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthSlider: {fileID: 1299382298}
+  healthSlider: {fileID: 0}
 --- !u!114 &910295582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -538,215 +538,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948c6eac03994cd49bad23b71ceeec7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  title: ToDo
+  title: LIST TITLE
   textList:
-  - s: "## PHASE 1: FINALIZE COMBAT SYSTEM (Next 2-3 weeks)\r\n\r\n### Week 1: Core
-      Combat Polish\r\n``\r`\n[x] fix player only able to attack in original quadrant\n[x
-      ] fix player attacks not setting the right direction \n[x] fix attacks being
-      delayed\n[x] PRIORITY : fix states, replace all bools with combat state, then
-      rename to EntityState\n\t[x] replace isTakingDamage\n\t[x] replace isDefending\n\t[x]
-      replace isBlocking\n\t[x] replace isAttacking\n[x] fix ai units take dmg animation
-      looping multiple times\n[x] add block phase system \r\n\t[x] add player block\n\t[x]
-      add ai block\n\t[x] fix ai blocking regardless of direction\n[x] setup death
-      phase (clean up dead units)\r\n\t[x] delete entities\n\t[x] play death animation\n\t[x]
-      fix sprite layer, should be below all live sprites\n\t[x] fix units dying in
-      idle or other states.\n[x] change directional view to be independent of movement
-      direction\r\n    [x] update animation direction to use view direction vs movement
-      direction\r\n\t[x] AI\n\t[x] Player\n\n```\r\n\r\n"
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: "## PHASE 2 \u2014 FORMATIONS & TACTICS (MVP ONLY)\r\n\r\n### Week 3 \u2014
-      Formation Foundation (DONE)\r\n[x] Add FormationComponent & FormationGroupComponent\r\n[x]
-      Create FormationCombatSystem (override target finding)\r\n[x] Create FormationMovementSystem\r\n[x]
-      Implement Hold Position behavior\r\n\r\n### Week 4 \u2014 Formation MVP (Simple
-      + Stable)\r\n[x] DECOUPLE UNIT COMMANDS\r\n    [x] Formations hold all necessary
-      info\r\n    [x] FindTarget no longer runs on every unit before clash\r\n\r\n[~]
-      Implement basic Advance / Attack Move commands\r\n    [~] Straight-line advance\r\n   
-      [~] Basic attack-move logic\r\n    \u2192 Good enough for now; refine later
-      in polish phase.\r\n\r\n[ ] Basic Charge command\r\n    [ ] Only works when
-      formation has a valid target\r\n    [ ] No stamina/morale bonuses yet\r\n   
-      \u2192 Move to later \u201CAdvanced Combat Feel\u201D phase.\r\n\r\n[x] Add
-      Formation collision (groups avoid/flow around each other)\r\n\r\n[~] Formation
-      Stability Pass\r\n    [~] Fix hard bugs (stuck units, NaN velocity, cannot
-      exit combat)\r\n    [~] Ensure formations can:\r\n        - move into combat\r\n       
-      - fight normally\r\n        - (basic) break off / reposition\r\n    \u2192
-      Treat remaining weirdness as \u201Cknown jank\u201D and log it for later.\n"
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: "## PHASE 3 \u2014 BATTLE LOOP & GLOBAL FRONTLINE (CORE GAMEPLAY)\n\nThe war
-      must evolve everywhere, even offscreen.\n\nWeek 5 \u2014 Sector / Frontline
-      Simulation\n[ ] Add \"Sector\" or \"FrontlineSlice\" system\n    [ ] Use GridSystem
-      to divide the battlefield into logical sectors\n\n[ ] SectorSimulationSystem\n   
-      [ ] Each sector tracks:\n        - unit counts per side\n        - morale /
-      intensity\n        - control state (push / pull / neutral)\n    [ ] Sectors
-      influence neighbors (front bends, collapses, breakthroughs)\n    [ ] Simulation
-      runs even if no player is present\n\n[ ] Formation-to-Sector Integration\n   
-      [ ] Formations register into closest sector\n    [ ] Sector state influences
-      formation decisions (hold/push/fall back)\n\nWeek 6 \u2014 Complete One Battle
-      Loop\n[ ] Define battle flow: Setup \u2192 Running \u2192 Victory/Defeat\n[
-      ] Player can move/pan across the entire battlefield without dead zones\n[ ]
-      Visual transitions between sectors look continuous\n[ ] Add basic HUD for frontline
-      pressure / sector status\n[ ] Verify:\n    - AFK in one area \u2192 rest of
-      battle still evolves\n    - Running down the line shows continuous organic
-      combat"
-    state: 2
+  - s: empty content item
+    state: 0
     show: 1
-    deleteQuestion: 0
-  - s: "##PHASE 4 \u2014 CO-OP & MESSAGING (REALISTIC TEAMPLAY)\n\nTwo players on
-      different sides of the battlefield seeing the same war evolve.\n\n##Week 7
-      \u2014 Co-op Foundation\n[ ] Add support for 2-player input / control\n[ ]
-      Both players share the same SectorSimulationSystem\n[ ] Each player can issue
-      formation commands independently\n[ ] Sector/formation updates from one player
-      affect the entire battle\n\n##Week 8 \u2014 Messenger System\n[ ] MessageEntity
-      definition\n    [ ] Source player\n    [ ] Destination player\n    [ ] Payload
-      (help, retreat, attack order, etc.)\n    [ ] Current sector\n\n[ ] AI Messenger
-      Units\n    [ ] Spawn messenger when a player sends a message\n    [ ] Messenger
-      physically travels sector-to-sector\n    [ ] Can die in combat, be delayed,
-      or arrive successfully\n    [ ] Deliver UI notification on arrival\n\n[ ] Player-as-Messenger
-      (automatic)\n    [ ] If player runs across the battlefield:\n        - They
-      simply traverse sectors\n        - They see the evolving frontline as it truly
-      is"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "##PHASE 5 \u2014 UNIT VARIETY & AI COMMANDER\n\n##Week 9 \u2014 Unit Types
-      + Basic AI\n[ ] Add unit type enum (infantry, cavalry, archer, etc.)\n\n[ ]
-      AI Commander\n    [ ] Gives formation-level decisions:\n        - reinforce
-      weak sectors\n        - initiate push\n        - retreat collapsing sectors\n       
-      - shift reserves\n    [ ] Mimics player actions but strategically\n\n[ ] Add
-      Archer Units\n    [ ] Basic projectile logic\n    [ ] Integrate with combat
-      + sector simulation"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "##PHASE 6 \u2014 PERFORMANCE & SCALING (GPU COLLISIONS HERE)\n\nThis is the
-      right time for compute shaders, not earlier.\n\n##Week 10 \u2014 Optimization
-      Pass\n[ ] Separate combat systems (better single-responsibility)\n[ ] Optimize
-      targeting, movement, and collision queries\n[ ] Introduce group-based physics
-      where possible\n[ ] Corpse persistence system (decals, pooled bodies)\n\n##Week
-      11 \u2014 GPU Collision Physics (Compute Shader Integration)\n\nYour big system
-      from the document goes here.\n\n[ ] Create UnitData struct (32-byte aligned)\n[
-      ] Implement UnitPhysics.compute (initial brute-force kernel)\n[ ] Implement
-      GPUCollisionSystem.cs\n[ ] Integrate with CPU Quadrant System:\n    - Use UnitQuadrantTag
-      to select units for GPU physics\n[ ] Replace per-unit CPU collision resolution
-      with GPU outputs\n[ ] Ensure RenderSystem reads post-GPU Translation values\n\n##Week
-      12 \u2014 GPU Broad-Phase + Full GPU Loop (Scales to 250k+)\n[ ] Implement
-      GPU Grid Broad Phase\n    - Per-cell assignment kernel\n    - Neighbor lookups\n   
-      - Atomics-based compaction\n\n[ ] Implement Collision-Pair Compaction\n   
-      - Build list of real pairs\n    - Second kernel resolves only true contacts\n\n[
-      ] Remove CPU readback bottleneck\n    - Keep positions/velocities on GPU\n   
-      - CPU only consumes high-level events\n\n[ ] Add pressure-wave / organic motion
-      behaviors on GPU"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "##PHASE 7 \u2014 COMBAT FEEL & POLISH\n\n##Week 13 \u2014 Combat Feel\n[
-      ] Smooth attack/block/death animations\n[ ] Fix attack direction & hitboxes\n[
-      ] Unit crit chance\n[ ] Defend-while-moving animation/state\n[ ] Fix units
-      freezing during attack\n"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: "##PHASE 8 \u2014 ADVANCED FEATURES & CINEMATIC MOMENTS\n[ ] Cavalry charge
-      impact physics\n[ ] Arrow physics refinements\n[ ] Environmental / background
-      design\n[ ] Dynamic rank promotion (fill gaps in line)\n[ ] Advanced radial
-      commands for formations\n[ ] Commander / captain crit systems\n[ ] Backwards-walking
-      animations"
-    state: 0
-    show: 0
-    deleteQuestion: 0
-  - s: 'OPTIMIZATIONS
-
-      [x] optimize rendering system
-
-      [x] optimize animation
-      system
-
-      [] optimize combat system
-
-      [x] optimize movement system'
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: "Gameplay V1\n[x] Add simple movement using HasTarget\r\n[x] Add enemy spawning\r\n[x]
-      Make units search for each other\r\n[x] Make units march/charge eachother\n[x]
-      Make units fight(for now just swing)\r\n\t[x] add unit damage\r\n\t[x] add
-      combat collision resolution\r\n[x] add fix for target eval, add prev targ to
-      hastarget, if hastarget is withing range, set prevTarg to null, if its out
-      of range, set to prev to current\n\t- prob need to set this in another compoonent
-      that isnt removed that is persistant\n\t- then when we do findtarget again,
-      we check prev and ignore if that is found,\n\t- also need to \n[x] fix commander
-      getting hit after leaving target range, could also be affecting units still.\n[]
-      Group system\n\t- add system to organize units into groups and have group collision
-      first/group target find/command assigning\n\t- keep groups in tight formation
-      based on formation?\n[] Add simple AI for defense stance"
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: 'Merge test physics system into existing codebase
-
-      [x] movement system
-
-      [x]
-      addcollisionbuffersystem
-
-      [x] add missing components
-
-      [x] collision
-      detection/resolution system
-
-      [x] cleanup'
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: 'Investigate a grid system
-
-      [x] create grid system for proximity based
-      collisions checks
-
-      - we dont want to loop through the entire unit count
-
-      [x]
-      quadrant system
-
-      [x] find target with ecs and unity job system
-
-      [x]
-      find target int unity ecs'
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: "Physics v1\n[x] create simple collision \n"
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: 'Create new way to get frame coorinates
-
-      [x] New method to get frame
-      coordinates (uv * height) (uv * width)
-
-      [x] Update start to load all
-      frames?'
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: 'Update rendering to easily allow 100k objects at 30fps
-
-      [x] import
-      code from code monkey''s "100,000 Units Animated in Unity ECS!."'
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: "Animations v1\n[x] add logic for walk \n\n[x] add logic for take damage \n[x]
-      add logic for death animation\n[x] abstract methods for both AI and player"
-    state: 3
-    show: 0
-    deleteQuestion: 0
-  - s: frame max timer not resetting while holding move after attack
-    state: 3
-    show: 0
     deleteQuestion: 0
 --- !u!4 &985990580
 Transform:
@@ -1140,6 +936,8 @@ GameObject:
   - component: {fileID: 1877706034}
   - component: {fileID: 1877706033}
   - component: {fileID: 1877706035}
+  - component: {fileID: 1877706036}
+  - component: {fileID: 1877706037}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1159,9 +957,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7c6e6470b151804c8f8bd736dbb004c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  frameTimerMaxDebug: 0.1
-  movementSpeedDebug: 0.228
-  UnitCountToSpawn: 10000
+  frameTimerMaxDebug: 0
+  movementSpeedDebug: 0.1
+  UnitCountToSpawn: 256
   instance: {fileID: 1877706033}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   walkingSpriteSheetMaterial: {fileID: 2100000, guid: 0824e77110035c7418b29350f1d469e2,
@@ -1193,6 +991,34 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cfb092a9f9f0b934baf9b0145d347ce0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1877706036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877706032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c7afd4a279db5545b2f463a2c87fa2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Enabled: 1
+  Origin:
+    x: -32
+    y: -16
+--- !u!114 &1877706037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1877706032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d14480262e0faa4fbdddb4a926dd5b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1985584785

@@ -35,7 +35,7 @@ public class EntitySpawner : MonoBehaviour
     public GameObject unitPrefab;  // Drag your prefab with MeshRenderer in Unity editor
     public enum Direction { Up, Down, Left, Right }
     public enum AnimationType { Idle, Run, Die, Attack, Walk, Defend, Block, TakeDamage }
-    public enum UnitType { Default, Enemy }
+    public enum UnitType { Ally, Enemy }
 
     public Dictionary<(UnitType, Direction, AnimationType), UnityEngine.Material[]> materialDictionary;
     [SerializeField] private SpawnConfig spawnConfig;
@@ -68,19 +68,25 @@ public class EntitySpawner : MonoBehaviour
             {
                 unitFactory = new UnitFactory(entityManager);
                 int entitiesToSpawn = spawnConfig.UnitCountToSpawn;
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateDefendCommand(new float3(-20, 0, 0)), new float2(-20, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateDefendCommand(new float3(-10f, 0, 0)), new float2(-10, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateDefendCommand(new float3(0, 0, 0)), new float2(0, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateDefendCommand(new float3(10f, 0, 0)), new float2(10, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Default, Direction.Left, CommandFactory.CreateDefendCommand(new float3(20f, 0, 0)), new float2(20, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(-20, 0, 0)), new float2(-20, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(-10f, 0, 0)), new float2(-10, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(0, 0, 0)), new float2(0, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(10f, 0, 0)), new float2(10, 0), FormationType.Phalanx);
+                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(20f, 0, 0)), new float2(20, 0), FormationType.Phalanx);
 
                 //enemy
                 int enemyiesToSpawn = entitiesToSpawn / 4;
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-20, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-10f, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(0, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(10, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(20f, 10), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-20, 10), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-10f, 10), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(0, 10), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(10, 10), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(20f, 10), FormationType.Horde);
+
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-20, 15), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-10f, 15), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(0, 15), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(10, 15), FormationType.Horde);
+                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(20f, 15), FormationType.Horde);
                 unitFactory.SpawnCommander();
 
                 hasSpawnedUnits = true; // ← MARK AS SPAWNED

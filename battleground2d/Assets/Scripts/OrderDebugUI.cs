@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CommandDebugUI : MonoBehaviour
+public class OrderDebugUI : MonoBehaviour
 {
     public static string Text;
     public static float TimeRemaining;

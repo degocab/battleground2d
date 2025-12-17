@@ -11,12 +11,12 @@ using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateAfter(typeof(QuadrantSystem))]
-[UpdateBefore(typeof(ProcessCommandSystem))]
+[UpdateBefore(typeof(ProcessOrderSystem))]
 public class PlayerControlSystem : SystemBase
 {
 
-    private string lastCommandText = "";
-    private float lastCommandTime = 0f;
+    private string lastOrderText = "";
+    private float lastOrderTime = 0f;
     private const float COMMAND_DISPLAY_DURATION = 1.5f;
 
 
@@ -146,13 +146,13 @@ public class PlayerControlSystem : SystemBase
         {
             if (Input.GetKeyDown((KeyCode)key))
             {
-                int commandType = key - (int)KeyCode.Alpha1;
-                var newCommand = CreateCommandFromNumber(commandType, commanderTranslation.Value, GetMouseWorldPosition());
+                int orderType = key - (int)KeyCode.Alpha1;
+                var newOrder = CreateOrderFromKey(orderType, commanderTranslation.Value, GetMouseWorldPosition());
                 // DEBUG UI
-                lastCommandText = $"Command: {newCommand.Command.ToString()}";
-                lastCommandTime = (float)Time.ElapsedTime;
+                lastOrderText = $"Order: {newOrder.CurrentOrder.ToString()}";
+                lastOrderTime = (float)Time.ElapsedTime;
                 // Use a local variable to capture the command for the job
-                var commandCopy = newCommand;
+                var orderCopy = newOrder;
 
                 // SINGLE job that does both operations safely
                 //var commandJobHandle = Entities
@@ -169,12 +169,12 @@ public class PlayerControlSystem : SystemBase
                 //        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
 
                 //        // Then update command data
-                //        commandData = commandCopy;
+                //        commandData = orderCopy;
 
                 //    }).ScheduleParallel(Dependency);
 
 
-                //Debug.Log($"Assigned command: {newCommand.Command} to all units");
+                //Debug.Log($"Assigned command: {newOrder.Command} to all units");
                 //Dependency = commandJobHandle;
 
 
@@ -186,12 +186,12 @@ public class PlayerControlSystem : SystemBase
                      .WithAll<AllyTag>()
                      .WithNone<CommanderComponent, Unit>()
                      .ForEach((Entity entity, int entityInQueryIndex,
-                     ref FormationGroupComponent formationGroup, ref CommandData commandData) =>
+                     ref FormationGroupComponent formationGroup, ref OrderData order) =>
                      {
 
                          // Then update command data
-                         commandData = commandCopy;
-                         //if (commandCopy.Command == CommandType.FindTarget)
+                         order = orderCopy;
+                         //if (orderCopy.Command == CommandType.FindTarget)
                          //{
                          //    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
                          //}
@@ -325,7 +325,7 @@ public class PlayerControlSystem : SystemBase
     }
     void OnGUI()
     {
-        if (Time.ElapsedTime - lastCommandTime > COMMAND_DISPLAY_DURATION)
+        if (Time.ElapsedTime - lastOrderTime > COMMAND_DISPLAY_DURATION)
             return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
@@ -334,64 +334,64 @@ public class PlayerControlSystem : SystemBase
 
         GUI.Label(
             new Rect(20, 20, 600, 40),
-            lastCommandText,
+            lastOrderText,
             style
         );
     }
 
-    private CommandData CreateCommandFromNumber(int number, float3 commanderPosition, float2 moveToPosition)
+    private OrderData CreateOrderFromKey(int number, float3 commanderPosition, float2 moveToPosition)
     {
-        CommandData comm = new CommandData();
+        OrderData order = new OrderData();
         switch (number)
         {
             case 0: // Move -  1
-                comm = CommandFactory.CreateChargeCommand();
+                order = OrderFactory.CreateChargeOrder();
                 break;
 
             case 1: // Find target - 2
-                comm = CommandFactory.CreateMarchCommand();
+                order = OrderFactory.CreateMarchOrder();
                 break;
 
             case 2: // MarchForward - 3
-                comm = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange,  10f, EntitySpawner.Direction.Right);
+                order = OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange,  10f, EntitySpawner.Direction.Right);
                 break;
 
             case 3: // Defend - 4
-                comm = CommandFactory.CreateCommand(CommandType.Defend);
+                order = OrderFactory.CreateOrder(OrderType.Defend);
                 break;
 
             case 4: // Long move - 5
-                comm = CommandFactory.CreateMoveCommand(moveToPosition);
+                order = OrderFactory.CreateMoveOrder(moveToPosition);
                 break;
 
             case 5: // Stop - 6
-                comm = CommandFactory.CreateCommand(CommandType.Idle);
+                order = OrderFactory.CreateOrder(OrderType.Idle);
                 break;
 
             case 6: // FindTarget command - 7
-                comm = CommandFactory.CreateFindTargetCommand();
+                order = OrderFactory.CreateFindTargetOrder();
                 break;
 
             case 7: // Custom command 2
-                comm = CommandFactory.CreateMoveCommand(moveToPosition);
+                order = OrderFactory.CreateMoveOrder(moveToPosition);
                 break;
 
             case 8: // Custom command 3
                 Debug.Log("create find comand");
-                comm = CommandFactory.CreateFindTargetCommand(); // Attack anything
+                order = OrderFactory.CreateFindTargetOrder(); // Attack anything
                 break;
 
             default: // Fallback
-                comm = CommandFactory.CreateCommand(CommandType.Idle);
+                order = OrderFactory.CreateOrder(OrderType.Idle);
                 break;
 
 
         }
-        Debug.Log("Command#" + comm.Command.ToString());
-        CommandDebugUI.Text = $"Command: {comm.Command.ToString()}";
-        CommandDebugUI.TimeRemaining = 1.5f;
+        Debug.Log("Order#" + order.CurrentOrder.ToString());
+        OrderDebugUI.Text = $"Order: {order.CurrentOrder.ToString()}";
+        OrderDebugUI.TimeRemaining = 1.5f;
 
-        return comm;
+        return order;
     }
 
     public static float2 GetMouseWorldPosition()

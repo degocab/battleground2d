@@ -55,16 +55,25 @@ public struct FormationGroupComponent : IComponentData
     public float2 BoundsMax; // AABB max corner
     public bool isColliding;
     public FormationStatus FormationGroupStatus;
-    public CommandType CurrentCommand;
+    public OrderType CurrentOrder;
     public bool ShouldUpdateAnchorToCurrentPosition; // NEW
     public Entity FormationGroupEntity;
 
     public float2 CurrentUnitAveragePosition;
+    public int CurrentUnitCount;
     public int PriorGroupCount;
     public bool ReIndexSlots;
 
     public EntitySpawner.Direction FormationFacingDirection;
     public EntitySpawner.UnitType FormationUnitType;
-    public bool InitialCommand;
+    public bool InitialOrder;
     public bool AnchorLocked;
+
+    public FormationType FormationType;
+}
+
+public struct FormationDebugComponent : IComponentData
+{
+    public OrderType Status;
+    public float2 WorldPosition;
 }

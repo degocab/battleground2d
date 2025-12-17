@@ -70,7 +70,7 @@ public partial class FormationCombatSystem : SystemBase
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
             return;
         //formation group mapping
-        // to apply commands?
+        // to apply orders?
 
         FormationQuadrantMultiHashMap.Clear();
         var entityCount = _query.CalculateEntityCount();
@@ -88,7 +88,7 @@ public partial class FormationCombatSystem : SystemBase
         Dependency = job.ScheduleParallel(_query, Dependency);
         Dependency.Complete();
         // ADDED: Debug drawing for quadrants
-        DebugDrawQuadrants();
+        //DebugDrawQuadrants();
 
         //formation movment
 
@@ -139,7 +139,7 @@ public partial class FormationCombatSystem : SystemBase
         {
             ClosestTargets = writeBuffer,
             EntityTypeHandle = GetEntityTypeHandle(),
-            CommandTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            OrderDataTypeHandle = GetComponentTypeHandle<OrderData>(false),
             //ECB = ecbWriter,
             EngagementRadius = 5f,
             FormationGroupTypeHandle = GetComponentTypeHandle<FormationGroupComponent>(false)
@@ -162,7 +162,7 @@ public partial class FormationCombatSystem : SystemBase
                      ref FormationComponent formation
                      , ref AnimationComponent animationComponent
                      , in Translation translation
-                     , in CommandData command
+                     , in OrderData order
                      ) =>
             {
                 var unitFormatonStatus = formation.Status;
@@ -177,7 +177,7 @@ public partial class FormationCombatSystem : SystemBase
                         break;
 
                     case FormationStatus.Engaged:
-                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation, command);
+                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation, order);
                         break;
 
                     case FormationStatus.Broken:
@@ -239,9 +239,9 @@ public partial class FormationCombatSystem : SystemBase
     }
 
     private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                               ref FormationComponent formation, Translation translation, CommandData command)
+                                               ref FormationComponent formation, Translation translation, OrderData order)
     {
-        if (command.Command == CommandType.Defend)
+        if (order.CurrentOrder == OrderType.Defend)
         {
             float maxEngageDistance = 0.5f;
 
@@ -429,7 +429,7 @@ public partial class FormationCombatSystem : SystemBase
         [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
-        public ComponentTypeHandle<CommandData> CommandTypeHandle;
+        public ComponentTypeHandle<OrderData> OrderDataTypeHandle;
         public ComponentTypeHandle<FormationGroupComponent> FormationGroupTypeHandle;
 
         public float EngagementRadius; // radius, not squared
@@ -438,7 +438,7 @@ public partial class FormationCombatSystem : SystemBase
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
             var formationGroups = chunk.GetNativeArray(FormationGroupTypeHandle);
-            var commands = chunk.GetNativeArray(CommandTypeHandle);
+            var orders = chunk.GetNativeArray(OrderDataTypeHandle);
 
             float engagementRadiusSq = EngagementRadius * EngagementRadius;
 
@@ -447,26 +447,26 @@ public partial class FormationCombatSystem : SystemBase
                 int flatIndex = firstEntityIndex + i;
 
                 var group = formationGroups[i];
-                var cmd = commands[i];
+                var order = orders[i];
                 var closest = ClosestTargets[flatIndex];
 
                 if (closest.Entity == Entity.Null)
                     continue;
 
                 bool isAdvancing =
-                    group.CurrentCommand == CommandType.March ||
-                    group.CurrentCommand == CommandType.MoveDirectionalRange;
+                    group.CurrentOrder == OrderType.March ||
+                    group.CurrentOrder == OrderType.MoveDirectionalRange;
 
                 // transition to engaged ONCE when we first make contact
                 if (isAdvancing && closest.DistanceSq <= engagementRadiusSq)
                 {
-                    group.CurrentCommand = CommandType.FindTarget;
+                    group.CurrentOrder = OrderType.FindTarget;
                     group.FormationGroupStatus = FormationStatus.Engaged;
 
-                    cmd.Command = CommandType.FindTarget;
+                    order.CurrentOrder = OrderType.FindTarget;
 
                     formationGroups[i] = group;
-                    commands[i] = cmd;
+                    orders[i] = order;
                 }
 
                 // No anchor updates here. Slot follow happens elsewhere via CurrentUnitAveragePosition.

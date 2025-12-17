@@ -1,13 +1,13 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 
-public struct CommandData : IComponentData
+public struct OrderData : IComponentData
 {
-    public CommandType Command;
+    public OrderType CurrentOrder;
     public float2 TargetPosition; // Optional (used for MoveTo, etc.)
     public Entity TargetEntity;   // Optional (used for Attack, etc.)
-    public CommandType previousCommand;
+    public OrderType PreviousOrder;
     public float MoveRange;
     public EntitySpawner.Direction FormationDirectionToMove;
-    public bool InitialCommand;
+    public bool InitialOrder;
 }

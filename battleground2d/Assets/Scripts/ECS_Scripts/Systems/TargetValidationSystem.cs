@@ -4,7 +4,7 @@ using Unity.Transforms;
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(FindTargetSystem))]
-    [UpdateAfter(typeof(ProcessCommandSystem))]
+    [UpdateAfter(typeof(ProcessOrderSystem))]
     public partial class TargetValidationSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem _ecbSystem;
@@ -32,7 +32,7 @@ using Unity.Transforms;
                         hasTarget.TargetEntity != Entity.Null &&
                         !translationFromEntity.HasComponent(hasTarget.TargetEntity))
                     {
-                        ecb.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+                        ecb.AddComponent<FindTargetTag>(entityInQueryIndex, entity);
                         ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
                     }
                 }).ScheduleParallel();

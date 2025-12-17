@@ -15,7 +15,7 @@ using static UnityEngine.EventSystems.EventTrigger;
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(TargetValidationSystem))]
 [UpdateAfter(typeof(PlayerControlSystem))]
-public class ProcessCommandSystem : JobComponentSystem
+public class ProcessOrderSystem : JobComponentSystem
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
     private EntityQuery _formationGroupQuery;
@@ -90,7 +90,7 @@ public class ProcessCommandSystem : JobComponentSystem
         // Check if we have a commander
         EntityQuery _query = GetEntityQuery(
 ComponentType.ReadOnly<Unit>(),
-ComponentType.ReadWrite<CommandData>(),
+ComponentType.ReadWrite<OrderData>(),
 ComponentType.ReadWrite<CombatState>(),
 ComponentType.ReadOnly<DefenseComponent>(),
 ComponentType.ReadOnly<AttackComponent>(),
@@ -105,65 +105,65 @@ ComponentType.Exclude<CommanderComponent>());
     //.WithName("ProcessCommandsENEMYAI")
     //.WithAll<CommandData, FormationGroupComponent>()
     //.ForEach((int entityInQueryIndex, Entity entity,
-    //         ref CommandData command,
+    //         ref CommandData order,
     //         ref FormationGroupComponent formationGroup) =>
     //{
-    //    //Simple enemy AI command
-    //    if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy && command.InitialCommand == true)
+    //    //Simple enemy AI order
+    //    if (formationGroup.UnitType == EntitySpawner.UnitType.Enemy && order.InitialCommand == true)
     //    {
-    //        command = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 10f, EntitySpawner.Direction.Right);
-    //        formationGroup.CurrentCommand = command.Command;
+    //        order = CommandFactory.CreateMoveDirectionalRangeCommand(CommandType.MoveDirectionalRange, 10f, EntitySpawner.Direction.Right);
+    //        formationGroup.CurrentCommand = order.Command;
 
     //    }
 
     //}).WithoutBurst().Run();
         Entities
             .WithName("ProcessCommands")
-            .WithAll<CommandData, FormationGroupComponent>()
+            .WithAll<OrderData, FormationGroupComponent>()
             .ForEach((int entityInQueryIndex, Entity entity,
-                     ref CommandData command,
+                     ref OrderData order,
                      ref FormationGroupComponent formationGroup) =>
             {
 
                 float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
-                if (formationGroup.FormationGroupStatus == FormationStatus.Engaged && command.Command == CommandType.Idle)
+                if (formationGroup.FormationGroupStatus == FormationStatus.Engaged && order.CurrentOrder == OrderType.Idle)
                 {
-                    command.Command = CommandType.Defend;
+                    order.CurrentOrder = OrderType.Defend;
                 }
-                switch (command.Command)
+                switch (order.CurrentOrder)
                 {
-                    case CommandType.Idle:
+                    case OrderType.Idle:
                         break;
-                    case CommandType.FindTarget:
+                    case OrderType.FindTarget:
                         if (distance > 5f)
                         {
                             //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
                         }
                         //formationGroup.FormationGroupStatus = FormationStatus.Engaged;
                         break;
-                    case CommandType.MoveTo:
+                    case OrderType.MoveTo:
                         break;
-                    case CommandType.March:
+                    case OrderType.March:
                         break;
-                    case CommandType.Charge:
+                    case OrderType.Charge:
                         break;
-                    case CommandType.MoveDirectionalRange:
-                        if (command.InitialCommand)//only set this once at start of command!
+                    case OrderType.MoveDirectionalRange:
+                        if (order.InitialOrder)//only set this once at start of order!
                         {
                             var currentFormationPos = formationGroup.AnchorPosition;
-                            var directionVector = CombatUtils.GetDirectionVector(command.FormationDirectionToMove) * command.MoveRange;
+                            var directionVector = CombatUtils.GetDirectionVector(order.FormationDirectionToMove) * order.MoveRange;
                             formationGroup.AnchorPosition = currentFormationPos + (directionVector * .25f);//.25 to convert to meters! 
-                            command.InitialCommand = false;
+                            order.InitialOrder = false;
                         }
                         break;
-                    case CommandType.Attack:
+                    case OrderType.Attack:
 
                         if (distance > 5f)
                         {
                             //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
                         }
                         break;
-                    case CommandType.Defend:
+                    case OrderType.Defend:
                         formationGroup.FormationGroupStatus = FormationStatus.Hold;
                         //if (fms._groupAveragePositions.TryGetValue(formationGroup.FormationGroupEntity, out var currentAveragePos))
                         //{
@@ -179,20 +179,20 @@ ComponentType.Exclude<CommanderComponent>());
                         break;
                 }
 
-                if (command.Command == CommandType.MoveTo)
+                if (order.CurrentOrder == OrderType.MoveTo)
                 {
                     // Update formation anchor position directly!
-                    formationGroup.AnchorPosition = command.TargetPosition;
+                    formationGroup.AnchorPosition = order.TargetPosition;
                     //ecb.SetComponent( entity, formation);
                 }
-                formationGroup.CurrentCommand = command.Command;
+                formationGroup.CurrentOrder = order.CurrentOrder;
             }).WithoutBurst().Run();
 
         
-        var job = new AssignCommandJob
+        var job = new AssignOrderJob
         {
             //Time = UnityEngine.Time.deltaTime,
-            CommandDataTypeHandle = GetComponentTypeHandle<CommandData>(false),
+            OrderDataTypeHandle = GetComponentTypeHandle<OrderData>(false),
             FormationComponentTypeHandle = GetComponentTypeHandle<FormationComponent>(false),
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
@@ -212,9 +212,9 @@ ComponentType.Exclude<CommanderComponent>());
     }
 
     [BurstCompile]
-    private struct AssignCommandJob : IJobChunk
+    private struct AssignOrderJob : IJobChunk
     {
-        public ComponentTypeHandle<CommandData> CommandDataTypeHandle;
+        public ComponentTypeHandle<OrderData> OrderDataTypeHandle;
         public ComponentTypeHandle<FormationComponent> FormationComponentTypeHandle;
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
@@ -229,7 +229,7 @@ ComponentType.Exclude<CommanderComponent>());
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
 
-            var commandDataArray = chunk.GetNativeArray(CommandDataTypeHandle);
+            var orderDataArray = chunk.GetNativeArray(OrderDataTypeHandle);
             var formations = chunk.GetNativeArray(FormationComponentTypeHandle);
             var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
@@ -246,28 +246,28 @@ ComponentType.Exclude<CommanderComponent>());
                 AnimationComponent animationData = animations[i];
                 MovementSpeedComponent movementSpeed = movementSpeeds[i];
                 float2 entityPos = translation.Value.xy;
-                var command = commandDataArray[i];
+                var order = orderDataArray[i];
                 var formation = formations[i];
                 var combatState = combatStateArray[i];
                 var defenseComponent = defenseComponents[i];
                 var attackComponent = attackComponents[i];
 
-                if (command.Command != command.previousCommand)
-                    command.TargetEntity = Entity.Null;
+                if (order.CurrentOrder != order.PreviousOrder)
+                    order.TargetEntity = Entity.Null;
 
-                ProcessCommand(ref command, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
+                ProcessOrder(ref order, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
              animationData.Direction, chunkIndex, ECB, ref formation);
 
 
-                command.previousCommand = command.Command;
-                commandDataArray[i] = command;  // You do this for command, but not for formation!
-                formations[i] = formation;  // You do this for command, but not for formation!
-                //combatStateArray[i] = combatState;  // You do this for command, but not for formation!
-                //movementSpeeds[i] = movementSpeed;  // You do this for command, but not for formation!
+                order.PreviousOrder = order.CurrentOrder;
+                orderDataArray[i] = order;  // You do this for order, but not for formation!
+                formations[i] = formation;  // You do this for order, but not for formation!
+                //combatStateArray[i] = combatState;  // You do this for order, but not for formation!
+                //movementSpeeds[i] = movementSpeed;  // You do this for order, but not for formation!
             }
         }
 
-        private void ProcessCommand(ref CommandData command, ref CombatState combatState,
+        private void ProcessOrder(ref OrderData order, ref CombatState combatState,
                                      ref MovementSpeedComponent movementSpeed, AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
                                      float2 entityPos, EntitySpawner.Direction direction,
                                      int chunkIndex, EntityCommandBuffer.ParallelWriter ecb
@@ -277,21 +277,21 @@ ComponentType.Exclude<CommanderComponent>());
             //maybe dont do anything if attacking/defending/blocking///process after?
             //if (attackComponent.isDefending || defenseComponent.IsBlocking) return;
 
-            switch (command.Command)
+            switch (order.CurrentOrder)
             {
-                case CommandType.Idle:
+                case OrderType.Idle:
                     break;
 
-                case CommandType.March:
-                case CommandType.Charge:
-                    HandleMovementCommand(command.Command, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb);
+                case OrderType.March:
+                case OrderType.Charge:
+                    HandleMovementOrder(order.CurrentOrder, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb);
                     break;
-                case CommandType.FindTarget:
+                case OrderType.FindTarget:
                     formation.Status = FormationStatus.Hold;
-                    HandleFindTargetCommand(ref command, ref combatState, entity, chunkIndex, ecb);
+                    HandleFindTargetOrder(ref order, ref combatState, entity, chunkIndex, ecb);
                     break;
 
-                case CommandType.MoveTo:
+                case OrderType.MoveTo:
                     if (formation.Status == FormationStatus.Engaged)
                     {
                         formation.Status = FormationStatus.Disengaging;
@@ -300,11 +300,11 @@ ComponentType.Exclude<CommanderComponent>());
                     {
                         formation.Status = FormationStatus.Hold; // moving into a new hold position
                     }
-                    HandleMoveToCommand(ref command, entity, entityPos, chunkIndex, ecb, ref formation);
+                    HandleMoveToOrder(ref order, entity, entityPos, chunkIndex, ecb, ref formation);
                     break;
                     
 
-                case CommandType.MoveDirectionalRange:
+                case OrderType.MoveDirectionalRange:
                     if (formation.Status == FormationStatus.Engaged)
                     {
                         formation.Status = FormationStatus.Disengaging;
@@ -313,18 +313,18 @@ ComponentType.Exclude<CommanderComponent>());
                     {
                         formation.Status = FormationStatus.Hold; // moving into a new hold position
                     }
-                    MarchInDirectionWithRange(command.Command, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb, 10f);
+                    MarchInDirectionWithRange(order.CurrentOrder, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb, 10f);
                     break;
 
-                case CommandType.Attack:
-                    HandleAttackCommand(ref command, ref combatState, entity, chunkIndex, ecb, ref formation);
+                case OrderType.Attack:
+                    HandleAttackOrder(ref order, ref combatState, entity, chunkIndex, ecb, ref formation);
                     break;
 
-                case CommandType.Defend:
+                case OrderType.Defend:
                     // TODO: Implement defend logic
                     if (formation.Status == FormationStatus.Engaged)
                     {
-                        ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity); //target closest and fight them while staying in formation! 
+                        ecb.AddComponent<FindTargetTag>(chunkIndex, entity); //target closest and fight them while staying in formation! 
                     }
                     else
                     {
@@ -333,7 +333,7 @@ ComponentType.Exclude<CommanderComponent>());
                     break;
             }
         }
-        private void MarchInDirectionWithRange(CommandType commandType, ref CombatState combatState,
+        private void MarchInDirectionWithRange(OrderType orderType, ref CombatState combatState,
                                          ref MovementSpeedComponent movementSpeed, Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, float rangeToMarch)
@@ -351,7 +351,7 @@ ComponentType.Exclude<CommanderComponent>());
             });
         }
 
-        private void HandleMovementCommand(CommandType commandType, ref CombatState combatState,
+        private void HandleMovementOrder(OrderType orderType, ref CombatState combatState,
                                          ref MovementSpeedComponent movementSpeed, Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
@@ -359,7 +359,7 @@ ComponentType.Exclude<CommanderComponent>());
             float2 dir = CombatUtils.GetDirectionVector(direction);
             float endlessDistance = 1000f;
             float2 targetPos = entityPos + (dir * endlessDistance);
-            Debug.Log("HasTarget.TargetPosition updated by HandleMovementCommand in ProcessCommandSystem");
+            Debug.Log("HasTarget.TargetPosition updated by HandleMovementOrder in ProcessOrderSystem");
 
             ecb.AddComponent(chunkIndex, entity, new HasTarget
             {
@@ -368,26 +368,26 @@ ComponentType.Exclude<CommanderComponent>());
                 TargetEntity = Entity.Null
             });
 
-            movementSpeed.isRunnning = commandType == CommandType.Charge;
-            combatState.CurrentState = commandType == CommandType.Charge ?
+            movementSpeed.isRunnning = orderType == OrderType.Charge;
+            combatState.CurrentState = orderType == OrderType.Charge ?
                 CombatState.State.SeekingTarget : combatState.CurrentState;
         }
 
-        private void HandleFindTargetCommand(ref CommandData command, ref CombatState combatState,
+        private void HandleFindTargetOrder(ref OrderData order, ref CombatState combatState,
                                            Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
-            command.TargetEntity = Entity.Null;
-            command.TargetPosition = float2.zero;
-            ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
+            order.TargetEntity = Entity.Null;
+            order.TargetPosition = float2.zero;
+            ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
             combatState.CurrentState = CombatState.State.SeekingTarget;
-            command.Command = CommandType.Idle;
+            order.CurrentOrder = OrderType.Idle;
         }
 
-        private void HandleMoveToCommand(ref CommandData command, Entity entity, float2 entityPos,
+        private void HandleMoveToOrder(ref OrderData order, Entity entity, float2 entityPos,
                                        int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation)
         {
-            //    float2 targetPos = math.lengthsq(command.TargetPosition) > 0.4f ?
-            //        command.TargetPosition : entityPos + command.TargetPosition;
+            //    float2 targetPos = math.lengthsq(order.TargetPosition) > 0.4f ?
+            //        order.TargetPosition : entityPos + order.TargetPosition;
 
             ecb.AddComponent(chunkIndex, entity, new HasTarget
             {
@@ -396,44 +396,44 @@ ComponentType.Exclude<CommanderComponent>());
                 //TargetEntity = Entity.Null
             });
 
-            command.Command = CommandType.Idle;
+            order.CurrentOrder = OrderType.Idle;
         }
 
-        private void HandleAttackCommand(ref CommandData command, ref CombatState combatState,
+        private void HandleAttackOrder(ref OrderData order, ref CombatState combatState,
                                        Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation)
         {
 
             //recheck if unit is not taking dmg/blocking
 
-            if (command.TargetEntity == Entity.Null && math.lengthsq(command.TargetPosition) > 0.4f)
+            if (order.TargetEntity == Entity.Null && math.lengthsq(order.TargetPosition) > 0.4f)
             {
                 // Move-then-attack
                 combatState.CurrentState = CombatState.State.SeekingTarget;
-                ecb.AddComponent<FindTargetCommandTag>(chunkIndex, entity);
-                ecb.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
+                ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
             }
-            else if (command.TargetEntity != Entity.Null)
+            else if (order.TargetEntity != Entity.Null)
             {
                 // Direct attack on entity
                 combatState.CurrentState = CombatState.State.Attacking;
-                Debug.Log("HasTarget.TargetPosition updated by HandleAttackCommand in ProcessCommandSystem");
+                Debug.Log("HasTarget.TargetPosition updated by HandleAttackOrder in ProcessOrderSystem");
                 formation.Status = FormationStatus.Engaged;
                 ecb.AddComponent(chunkIndex, entity, new HasTarget
                 {
                     Type = HasTarget.TargetType.Entity,
-                    TargetEntity = command.TargetEntity,
+                    TargetEntity = order.TargetEntity,
                     TargetPosition = float2.zero
                 });
-                ecb.AddComponent<AttackCommandTag>(chunkIndex, entity);
+                ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
             }
 
-            command.Command = CommandType.Idle;
+            order.CurrentOrder = OrderType.Idle;
         }
 
     }
 }
 
-public enum CommandType : byte
+public enum OrderType : byte
 {
     Idle,
     FindTarget,

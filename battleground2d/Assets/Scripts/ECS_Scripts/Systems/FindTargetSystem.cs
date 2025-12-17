@@ -71,7 +71,7 @@ public partial class FindTargetSystem : SystemBase
             ComponentType.ReadOnly<Unit>(),
             ComponentType.ReadOnly<AnimationComponent>(),
             ComponentType.ReadOnly<Translation>(),
-            ComponentType.ReadWrite<FindTargetCommandTag>(),
+            ComponentType.ReadWrite<FindTargetTag>(),
             ComponentType.Exclude<CommanderComponent>()
             //, ComponentType.Exclude<HasTarget>()
         );
@@ -132,7 +132,7 @@ public partial class FindTargetSystem : SystemBase
     [BurstCompile]
     private struct ClearCommandsJob : IJobChunk
     {
-        public ComponentTypeHandle<FindTargetCommandTag> FindTargetCommandTypeHandle;
+        public ComponentTypeHandle<FindTargetTag> FindTargetCommandTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
 
@@ -145,7 +145,7 @@ public partial class FindTargetSystem : SystemBase
             {
                 var entity = entityArray[i];
                 ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
-                ECB.RemoveComponent<FindTargetCommandTag>(chunkIndex, entity);
+                ECB.RemoveComponent<FindTargetTag>(chunkIndex, entity);
             }
         }
     }
@@ -233,7 +233,7 @@ public partial class FindTargetSystem : SystemBase
     {
         var clearJob = new ClearCommandsJob
         {
-            FindTargetCommandTypeHandle = GetComponentTypeHandle<FindTargetCommandTag>(false),
+            FindTargetCommandTypeHandle = GetComponentTypeHandle<FindTargetTag>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter()
         };

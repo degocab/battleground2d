@@ -16,7 +16,7 @@ using UnityEngine.UIElements;
 
 // This system manages formations of units, updating their positions and handling group-related logic.
 [UpdateBefore(typeof(FormationCombatSystem))]
-[UpdateAfter(typeof(ProcessCommandSystem))]
+[UpdateAfter(typeof(ProcessOrderSystem))]
 public partial class FormationManagerSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _ecbSystem; // Command buffer system for deferred entity commands.
@@ -95,6 +95,8 @@ public partial class FormationManagerSystem : SystemBase
 
         // Update the bounds of each formation group based on unit positions.
         UpdateFormationGroupBounds(groupToUnitCountMap, translations, unitFormations);
+        
+        UpdateGroupAveragePosition(translations);
 
         // Update the positions of units in their formations.
         UpdateFormationComponents(groupToUnitCountMap);
@@ -114,6 +116,31 @@ public partial class FormationManagerSystem : SystemBase
         groupToUnitCountMap.Dispose();
         //_groupToUnitsMap.Dispose();
         //_formationGroupMap.Dispose();
+    }
+
+    private void UpdateGroupAveragePosition( ComponentDataFromEntity<Translation> translations)
+    {
+        var groupToUnitsMapRO = _groupToUnitsMap;
+        var translationsRO = translations;
+
+        Entities
+            .WithReadOnly(groupToUnitsMapRO)
+            .WithReadOnly(translationsRO)
+            .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroup, ref FormationDebugComponent formationDebug) =>
+            {
+                float2 avg = CalculateAveragePositionForGroup(
+                    groupEntity,
+                    groupToUnitsMapRO,
+                    translationsRO
+                );
+
+                formationGroup.CurrentUnitAveragePosition = avg;
+                formationDebug.Status = formationGroup.CurrentOrder;
+                formationDebug.WorldPosition = avg;
+
+            })
+            .Run();
+
     }
 
     private void InitializeOrClearNativeMaps(int unitCount, int groupCount)
@@ -174,7 +201,7 @@ public partial class FormationManagerSystem : SystemBase
             .WithReadOnly(formationGroupMapTemp)
             .ForEach((Entity entity, int entityInQueryIndex,
                       ref FormationComponent formationComponent,
-                      ref CommandData command,
+                      ref OrderData order,
                       ref HasTarget hasTarget) =>
             {
                 // Formation "weight" / mass depending on type
@@ -191,7 +218,7 @@ public partial class FormationManagerSystem : SystemBase
                     return;
 
                 // Always propagate the group's current command down to the unit
-                command.Command = formationGroup.CurrentCommand;
+                order.CurrentOrder = formationGroup.CurrentOrder;
 
                 // Optional: number of units in this group for slot layout
                 groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var unitCountInGroup);
@@ -285,9 +312,9 @@ public partial class FormationManagerSystem : SystemBase
 
                             // While disengaging we never want FindTarget to re-fire
                             // and reacquire melee targets.
-                            if (HasComponent<FindTargetCommandTag>(entity))
+                            if (HasComponent<FindTargetTag>(entity))
                             {
-                                parallelEcb.RemoveComponent<FindTargetCommandTag>(entityInQueryIndex, entity);
+                                parallelEcb.RemoveComponent<FindTargetTag>(entityInQueryIndex, entity);
                             }
 
                             break;
@@ -311,61 +338,118 @@ public partial class FormationManagerSystem : SystemBase
 
     private void UpdateFormationGroupBounds(NativeHashMap<Entity, int> groupToUnitCountMap, ComponentDataFromEntity<Translation> translations, ComponentDataFromEntity<FormationComponent> unitFormations)
     {
+        var groupToUnitsMapRO = _groupToUnitsMap;     // copy field -> local
+        var translationsRO = translations;         // also best practice if translations is a field/lookup
+
+        var jobHandle = Entities
+            .WithNone<DeadTagComponent>()
+            .WithAll<FormationGroupComponent>()
+            .WithReadOnly(groupToUnitsMapRO)
+            .WithReadOnly(translationsRO)
+            .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroup) =>
+            {
+                // inside your ForEach(groupEntity, ref formationGroup) ...
+                float2 min = new float2(float.MaxValue, float.MaxValue);
+                float2 max = new float2(float.MinValue, float.MinValue);
+                int count = 0;
+
+                NativeMultiHashMapIterator<Entity> it;
+                Entity unitEntity;
+
+                if (groupToUnitsMapRO.TryGetFirstValue(groupEntity, out unitEntity, out it))
+                {
+                    do
+                    {
+                        if (translationsRO.HasComponent(unitEntity))
+                        {
+                            var t = translationsRO[unitEntity];
+                            float2 p = new float2(t.Value.x, t.Value.y); // keep same plane as your original func
+
+                            min = math.min(min, p);
+                            max = math.max(max, p);
+                            count++;
+                        }
+                    }
+                    while (groupToUnitsMapRO.TryGetNextValue(out unitEntity, ref it));
+                }
+
+                if (count == 0 || formationGroup.UnitsPerRow <= 0)
+                {
+                    // same behavior as your original early-out
+                    formationGroup.BoundsMin = formationGroup.AnchorPosition;
+                    formationGroup.BoundsMax = formationGroup.AnchorPosition;
+                }
+                else
+                {
+                    float unitRadius = 0.125f;
+                    float2 pad = new float2(unitRadius, unitRadius);
+
+                    formationGroup.BoundsMin = min - pad;
+                    formationGroup.BoundsMax = max + pad;
+                }
+
+            })
+            .WithBurst()
+            .ScheduleParallel(Dependency);
+
+        // Force it to finish “at the end”
+        jobHandle.Complete();
 
 
         // Update the bounds of each formation group based on the positions of its units.
-        Entities
-            .WithNone<DeadTagComponent>()
-            .WithAll<FormationGroupComponent>()
-            .WithReadOnly(groupToUnitCountMap)
-            .WithReadOnly(_groupToUnitsMap)
-            .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroupComponent) =>
-            {
+        //Entities
+        //    .WithNone<DeadTagComponent>()
+        //    .WithAll<FormationGroupComponent>()
+        //    .WithReadOnly(groupToUnitCountMap)
+        //    .WithReadOnly(_groupToUnitsMap)
+        //    .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroupComponent) =>
+        //    {
 
 
-                if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
-                {
-                    var unitEntitiesList = GetValuesForKey(_groupToUnitsMap, groupEntity, Allocator.TempJob);
-                    if (formationGroupComponent.PriorGroupCount != unitEntitiesList.Length)
-                    {
-                        //re index slots
-                        formationGroupComponent.ReIndexSlots = true;
-                        formationGroupComponent.PriorGroupCount = unitEntitiesList.Length;
-                        ////foreach (var unitEntity in unitEntitiesList)
-                        //for (int i = 0; i < unitEntitiesList.Length; i++)
-                        //{
-                        //    var unitEntity = unitEntitiesList[i];
-                        //    if (unitFormations.HasComponent(unitEntity))
-                        //    {
-                        //        var unitFormation = unitFormations[unitEntity];
-                        //        unitFormation.SlotIndex = i;
-                        //        unitFormations[unitEntity] = unitFormation;
-                        //    }
-                        //}
-                    }
+        //        if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
+        //        {
+        //            var unitEntitiesList = GetValuesForKey(_groupToUnitsMap, groupEntity, Allocator.TempJob);
+        //            if (formationGroupComponent.PriorGroupCount != unitEntitiesList.Length)
+        //            {
+        //                //re index slots
+        //                formationGroupComponent.ReIndexSlots = true;
+        //                formationGroupComponent.PriorGroupCount = unitEntitiesList.Length;
+        //                ////foreach (var unitEntity in unitEntitiesList)
+        //                //for (int i = 0; i < unitEntitiesList.Length; i++)
+        //                //{
+        //                //    var unitEntity = unitEntitiesList[i];
+        //                //    if (unitFormations.HasComponent(unitEntity))
+        //                //    {
+        //                //        var unitFormation = unitFormations[unitEntity];
+        //                //        unitFormation.SlotIndex = i;
+        //                //        unitFormations[unitEntity] = unitFormation;
+        //                //    }
+        //                //}
+        //            }
 
-                    float2 avg;
-                    if (formationGroupComponent.FormationGroupStatus == FormationStatus.Engaged)
-                    {
-                        // stable average around anchor (or average of FormationPosition)
-                        avg = formationGroupComponent.AnchorPosition;
-                    }
-                    else
-                    {
-                        avg = CalculateAveragePositionForGroup(unitEntitiesList, translations);
-                    }
-                    formationGroupComponent.CurrentUnitAveragePosition = math.lerp(
-                        formationGroupComponent.CurrentUnitAveragePosition, avg, 0.1f);
+        //            float2 avg;
+        //            if (formationGroupComponent.FormationGroupStatus == FormationStatus.Engaged)
+        //            {
+        //                // stable average around anchor (or average of FormationPosition)
+        //                avg = formationGroupComponent.AnchorPosition;
+        //            }
+        //            else
+        //            {
+        //                avg = CalculateAveragePositionForGroup(unitEntitiesList, translations);
+        //            }
+        //            formationGroupComponent.CurrentUnitAveragePosition = math.lerp(
+        //                formationGroupComponent.CurrentUnitAveragePosition, avg, 0.1f);
 
 
-                    var bounds = CalculateFormationBounds(unitEntitiesList, translations, formationGroupComponent.UnitsPerRow,
-                        formationGroupComponent.UnitSpacing, formationGroupComponent.CurrentUnitAveragePosition);
+        //            var bounds = CalculateFormationBounds(unitEntitiesList, translations, formationGroupComponent.UnitsPerRow,
+        //                formationGroupComponent.UnitSpacing, formationGroupComponent.CurrentUnitAveragePosition);
 
-                    formationGroupComponent.BoundsMin = bounds.Min;
-                    formationGroupComponent.BoundsMax = bounds.Max;
-                    unitEntitiesList.Dispose();
-                }
-            }).WithoutBurst().Run();
+        //            formationGroupComponent.BoundsMin = bounds.Min;
+        //            formationGroupComponent.BoundsMax = bounds.Max;
+        //            unitEntitiesList.Dispose();
+        //        }
+        //    }).WithoutBurst().Run();
+
 
 
 
@@ -415,7 +499,6 @@ public partial class FormationManagerSystem : SystemBase
         Dependency = unitEntities.Dispose(Dependency);
         Dependency.Complete();
     }
-
     private static float2 CalculateAveragePositionForGroup(NativeList<Entity> unitEntities, ComponentDataFromEntity<Translation> translations)
     {
         // Calculate the average position of all units in a group.
@@ -434,6 +517,36 @@ public partial class FormationManagerSystem : SystemBase
 
         return validUnitCount > 0 ? sum / validUnitCount : float2.zero;
     }
+
+    private static float2 CalculateAveragePositionForGroup(
+        Entity groupEntity,
+        NativeMultiHashMap<Entity, Entity> groupToUnitsMap,
+        ComponentDataFromEntity<Translation> translations
+    )
+    {
+        float2 sum = float2.zero;
+        int count = 0;
+
+        NativeMultiHashMapIterator<Entity> it;
+        Entity unitEntity;
+
+        if (groupToUnitsMap.TryGetFirstValue(groupEntity, out unitEntity, out it))
+        {
+            do
+            {
+                if (translations.HasComponent(unitEntity))
+                {
+                    var t = translations[unitEntity];
+                    sum += new float2(t.Value.x, t.Value.y);
+                    count++;
+                }
+            }
+            while (groupToUnitsMap.TryGetNextValue(out unitEntity, ref it));
+        }
+
+        return count > 0 ? sum / count : float2.zero;
+    }
+
 
     private static FormationBounds CalculateFormationBounds(NativeList<Entity> unitEntities, ComponentDataFromEntity<Translation> translations, int unitsPerRow, float spacing, float2 anchor)
     {

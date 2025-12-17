@@ -13,7 +13,7 @@ public class UpdateTargetPositionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _query = GetEntityQuery(typeof(HasTarget), typeof(Translation), typeof(FindTargetCommandTag));
+        _query = GetEntityQuery(typeof(HasTarget), typeof(Translation), typeof(FindTargetTag));
     }
 
     protected override void OnUpdate()

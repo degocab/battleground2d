@@ -26,7 +26,7 @@ public class CollisionResolutionSystem : SystemBase
                     in ECS_PhysicsBody2DAuthoring body,
                     in ECS_CircleCollider2DAuthoring collider,
                     in DynamicBuffer<CollisionEvent2D> collisions,
-                    in CommandData command) =>
+                    in OrderData order) =>
           {
               if (body.isStatic || collisions.Length == 0)
                   return;
@@ -42,7 +42,7 @@ public class CollisionResolutionSystem : SystemBase
 
                   isAnchored =
                       myFormation.FormationType == FormationType.Phalanx &&
-                      command.Command == CommandType.Defend;
+                      order.CurrentOrder == OrderType.Defend;
               }
 
               float2 startPos = translation.Value.xy;

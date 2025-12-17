@@ -1,4 +1,4 @@
 ﻿using Unity.Entities;
 
 // Add to existing components
-public struct AttackCommandTag : IComponentData { }
+public struct AttackOrderTag : IComponentData { }

@@ -82,8 +82,8 @@ public partial class TargetReevaluationSystem : SystemBase
                     {
                         int entityInQueryIndex = firstEntityIndex + i;
                         ECB.RemoveComponent<HasTarget>(entityInQueryIndex, entities[i]);
-                        // Optionally add FindTargetCommandTag if you want them to find new targets immediately
-                        ECB.AddComponent<FindTargetCommandTag>(entityInQueryIndex, entities[i]);
+                        // Optionally add FindTargetTag if you want them to find new targets immediately
+                        ECB.AddComponent<FindTargetTag>(entityInQueryIndex, entities[i]);
                     }
                 }
             }
