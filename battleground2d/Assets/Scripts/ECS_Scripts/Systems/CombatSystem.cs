@@ -390,7 +390,7 @@ public partial class CombatSystem : SystemBase
 
         private bool ShouldDefend(ref AttackComponent attack, AnimationComponent animation)
         {
-            float baseDefendChance = animation.UnitType == EntitySpawner.UnitType.Ally ? .1f : 1f;
+            float baseDefendChance = animation.UnitType == EntitySpawner.UnitType.Ally ? 1f : .1f;
 
             // Generate random value and check against defend chance
             float randomValue = Random.NextFloat(0f, 1f);

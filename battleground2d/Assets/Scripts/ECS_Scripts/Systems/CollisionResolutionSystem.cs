@@ -13,20 +13,21 @@ public class CollisionResolutionSystem : SystemBase
             return;
 
         var formationData = GetComponentDataFromEntity<FormationComponent>(true);
+        var orderLookup = GetComponentDataFromEntity<OrderData>(true);
 
         Entities
           .WithName("CollisionResolutionSystem")
           .WithNone<DeadTagComponent>()
           .WithAll<CollidableTag>()
           .WithReadOnly(formationData)
+          .WithReadOnly(orderLookup)
           .WithBurst()
           .ForEach((Entity entity,
                     ref Translation translation,
                     ref ECS_Velocity2D velocity,
                     in ECS_PhysicsBody2DAuthoring body,
                     in ECS_CircleCollider2DAuthoring collider,
-                    in DynamicBuffer<CollisionEvent2D> collisions,
-                    in OrderData order) =>
+                    in DynamicBuffer<CollisionEvent2D> collisions) =>
           {
               if (body.isStatic || collisions.Length == 0)
                   return;
@@ -40,9 +41,14 @@ public class CollisionResolutionSystem : SystemBase
                   var myFormation = formationData[entity];
                   myWeight = myFormation.FormationWeight;
 
-                  isAnchored =
-                      myFormation.FormationType == FormationType.Phalanx &&
-                      order.CurrentOrder == OrderType.Defend;
+                  // Only consider "anchored" if this unit actually has an OrderData component
+                  if (orderLookup.HasComponent(entity))
+                  {
+                      var order = orderLookup[entity];
+                      isAnchored =
+                          myFormation.FormationType == FormationType.Phalanx &&
+                          order.CurrentOrder == OrderType.Defend;
+                  }
               }
 
               float2 startPos = translation.Value.xy;

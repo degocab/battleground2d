@@ -41,7 +41,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
             ) =>
             {
                 // RESPECT COMBAT STATE - don't move if defending
-                if (combatState.CurrentState == CombatState.State.Attacking ||
+                if (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.TakingDamage ||
                     combatState.CurrentState == CombatState.State.Blocking)
                 {
                     movementSpeed.velocity = float3.zero;

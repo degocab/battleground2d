@@ -58,7 +58,7 @@ public class EntitySpawner : MonoBehaviour
 
     private void Update()
     {
-        if (hasSpawnedUnits) return; // ← CRITICAL: Don't spawn again
+        if (hasSpawnedUnits) return; 
 
         var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
@@ -67,32 +67,81 @@ public class EntitySpawner : MonoBehaviour
             if (gameState.CurrentState == GameState.Playing)
             {
                 unitFactory = new UnitFactory(entityManager);
-                int entitiesToSpawn = spawnConfig.UnitCountToSpawn;
-                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(-20, 0, 0)), new float2(-20, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(-10f, 0, 0)), new float2(-10, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(0, 0, 0)), new float2(0, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(10f, 0, 0)), new float2(10, 0), FormationType.Phalanx);
-                unitFactory.SpawnUnits(256, UnitType.Ally, Direction.Left, OrderFactory.CreateDefendOrder(new float3(20f, 0, 0)), new float2(20, 0), FormationType.Phalanx);
+                int entitiesToSpawn = math.clamp(spawnConfig.UnitCountToSpawn, 1, 256);
 
-                //enemy
-                int enemyiesToSpawn = entitiesToSpawn / 4;
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-20, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-10f, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(0, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(10, 10), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(20f, 10), FormationType.Horde);
+                // --- ALLIES ---
+                // Add more rows here whenever you want (e.g., new[] {0f, -8f, -16f})
+                float[] allyRowsY = { 0f };
+                SpawnAllyPhalanxRows(unitFactory, entitiesToSpawn, allyRowsY);
 
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-20, 15), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(-10f, 15), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(0, 15), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(10, 15), FormationType.Horde);
-                unitFactory.SpawnUnits(256, UnitType.Enemy, Direction.Right, OrderFactory.CreateMoveDirectionalRangeOrder(OrderType.MoveDirectionalRange, 50f, EntitySpawner.Direction.Down), new float2(20f, 15), FormationType.Horde);
+                // --- ENEMIES ---
+                float enemyMoveRange = 50f;
+                // Add more rows by just appending values
+                float[] enemyRowsY = { 10f, 15f };
+                SpawnEnemyHordeRows(unitFactory, entitiesToSpawn, enemyMoveRange, enemyRowsY);
+
                 unitFactory.SpawnCommander();
 
-                hasSpawnedUnits = true; // ← MARK AS SPAWNED
+                hasSpawnedUnits = true;
+            }
+        }
+
+    }
+
+    private void SpawnAllyPhalanxRows(UnitFactory factory, int unitsPerFormation, float[] rowsY)
+    {
+        // X positions for ally phalanx columns
+        float[] allyXs = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f};
+
+        foreach (var rowY in rowsY)
+        {
+            foreach (var x in allyXs)
+            {
+                var position2D = new float2(x, rowY);
+                var defendOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY, 0));
+
+                factory.SpawnUnits(
+                    unitsPerFormation,
+                    UnitType.Ally,
+                    Direction.Left,
+                    defendOrder,
+                    position2D,
+                    FormationType.Phalanx);
             }
         }
     }
+
+    private void SpawnEnemyHordeRows(
+        UnitFactory factory,
+        int unitsPerFormation,
+        float enemyMoveRange,
+        float[] rowsY)
+    {
+        // X positions for enemy horde columns
+        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f};
+
+        foreach (var rowY in rowsY)
+        {
+            foreach (var x in colsX)
+            {
+                var position2D = new float2(x, rowY);
+                var moveOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
+                    OrderType.MoveDirectionalRange,
+                    enemyMoveRange,
+                    Direction.Down);
+
+                factory.SpawnUnits(
+                    unitsPerFormation,
+                    UnitType.Enemy,
+                    Direction.Right,
+                    moveOrder,
+                    position2D,
+                    FormationType.Horde);
+            }
+        }
+    }
+
+
     public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? walkRandom = null, Unity.Mathematics.Random? runRandom = default)
     {
 

@@ -387,7 +387,6 @@ public partial class FormationManagerSystem : SystemBase
                     formationGroup.BoundsMin = min - pad;
                     formationGroup.BoundsMax = max + pad;
                 }
-
             })
             .WithBurst()
             .ScheduleParallel(Dependency);
@@ -396,59 +395,20 @@ public partial class FormationManagerSystem : SystemBase
         jobHandle.Complete();
 
 
-        // Update the bounds of each formation group based on the positions of its units.
-        //Entities
-        //    .WithNone<DeadTagComponent>()
-        //    .WithAll<FormationGroupComponent>()
-        //    .WithReadOnly(groupToUnitCountMap)
-        //    .WithReadOnly(_groupToUnitsMap)
-        //    .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroupComponent) =>
-        //    {
+        //Update the bounds of each formation group based on the positions of its units.
+        Entities
+            .WithNone<DeadTagComponent>()
+            .WithAll<FormationGroupComponent>()
+            .WithReadOnly(groupToUnitCountMap)
+            .ForEach((Entity groupEntity, ref FormationGroupComponent formationGroup) =>
+            {
 
 
-        //        if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
-        //        {
-        //            var unitEntitiesList = GetValuesForKey(_groupToUnitsMap, groupEntity, Allocator.TempJob);
-        //            if (formationGroupComponent.PriorGroupCount != unitEntitiesList.Length)
-        //            {
-        //                //re index slots
-        //                formationGroupComponent.ReIndexSlots = true;
-        //                formationGroupComponent.PriorGroupCount = unitEntitiesList.Length;
-        //                ////foreach (var unitEntity in unitEntitiesList)
-        //                //for (int i = 0; i < unitEntitiesList.Length; i++)
-        //                //{
-        //                //    var unitEntity = unitEntitiesList[i];
-        //                //    if (unitFormations.HasComponent(unitEntity))
-        //                //    {
-        //                //        var unitFormation = unitFormations[unitEntity];
-        //                //        unitFormation.SlotIndex = i;
-        //                //        unitFormations[unitEntity] = unitFormation;
-        //                //    }
-        //                //}
-        //            }
-
-        //            float2 avg;
-        //            if (formationGroupComponent.FormationGroupStatus == FormationStatus.Engaged)
-        //            {
-        //                // stable average around anchor (or average of FormationPosition)
-        //                avg = formationGroupComponent.AnchorPosition;
-        //            }
-        //            else
-        //            {
-        //                avg = CalculateAveragePositionForGroup(unitEntitiesList, translations);
-        //            }
-        //            formationGroupComponent.CurrentUnitAveragePosition = math.lerp(
-        //                formationGroupComponent.CurrentUnitAveragePosition, avg, 0.1f);
-
-
-        //            var bounds = CalculateFormationBounds(unitEntitiesList, translations, formationGroupComponent.UnitsPerRow,
-        //                formationGroupComponent.UnitSpacing, formationGroupComponent.CurrentUnitAveragePosition);
-
-        //            formationGroupComponent.BoundsMin = bounds.Min;
-        //            formationGroupComponent.BoundsMax = bounds.Max;
-        //            unitEntitiesList.Dispose();
-        //        }
-        //    }).WithoutBurst().Run();
+                if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
+                {
+                    formationGroup.CurrentUnitCount = groupValueCount;
+                }
+            }).WithoutBurst().Run();
 
 
 

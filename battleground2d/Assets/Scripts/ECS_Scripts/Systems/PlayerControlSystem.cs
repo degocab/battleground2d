@@ -311,8 +311,11 @@ public class PlayerControlSystem : SystemBase
                 }
 
 
-                ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
-                UpdateCameraPosition(translation.Value);
+                if (combatState.CurrentState != CombatState.State.TakingDamage)
+                {
+                    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                    UpdateCameraPosition(translation.Value); 
+                }
 
             }).Run();
         // Add the command buffer system
@@ -415,10 +418,23 @@ public class PlayerControlSystem : SystemBase
         return new Vector2(moveX, moveY);
     }
 
+    [SerializeField] float smooth = 0.2f;
+    private float zoomVelocity;
+
     private void UpdateCameraZoom()
     {
-        float targetSize = Input.GetKey(KeyCode.Tab) ? 10f : 4f;
-        Camera.main.orthographicSize = targetSize;
+        float targetSize = 3f;
+
+        if (Input.GetKey(KeyCode.LeftShift))
+            targetSize = 4f;
+        if (Input.GetKey(KeyCode.Tab))
+            targetSize = 8f;
+
+        Camera.main.orthographicSize = Mathf.SmoothDamp(
+            Camera.main.orthographicSize,
+            targetSize,
+            ref zoomVelocity,
+            smooth);
     }
 
     //private void UpdateCameraPosition(float3 playerPosition)

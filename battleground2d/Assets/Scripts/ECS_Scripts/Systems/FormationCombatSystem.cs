@@ -168,11 +168,19 @@ public partial class FormationCombatSystem : SystemBase
                 var unitFormatonStatus = formation.Status;
                 //if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
                 //    unitFormatonStatus = FormationStatus.Hold;
+
+                //IF TAKING DMG, dont process formation logic
+                if (combatState.CurrentState == CombatState.State.TakingDamage ||
+                    combatState.CurrentState == CombatState.State.Dying)
+                {
+                    return;
+                }
+
                 switch (unitFormatonStatus)
                 {
                     case FormationStatus.Hold:
                     default:
-                        animationComponent.Direction = formation.Direction;
+                        //animationComponent.Direction = formation.Direction;
                         HandleHoldFormation(ref hasTarget, ref combatState, ref formation, translation);
                         break;
 

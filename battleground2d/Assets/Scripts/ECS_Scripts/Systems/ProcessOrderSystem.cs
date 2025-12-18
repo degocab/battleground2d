@@ -186,9 +186,8 @@ ComponentType.Exclude<CommanderComponent>());
                     //ecb.SetComponent( entity, formation);
                 }
                 formationGroup.CurrentOrder = order.CurrentOrder;
-            }).WithoutBurst().Run();
+            }).WithBurst().Run();
 
-        
         var job = new AssignOrderJob
         {
             //Time = UnityEngine.Time.deltaTime,
