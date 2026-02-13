@@ -21,7 +21,7 @@ public class UnitFactory
     }
     private int _nextFormationID = 0;
     //public void SpawnUnits(int count, UnitType unitType = UnitType.Enemy, Direction unitDirection = Direction.Right, CommandData? initialCommand = null, float2? spawnPosition = null, FormationGenerator.FormationType formationType = default)
-    public void SpawnUnits(int count, UnitType unitType, Direction unitDirection, OrderData initialCommand, float2 spawnPosition, FormationType formationType)
+    public Entity SpawnUnits(int count, UnitType unitType, Direction unitDirection, OrderData initialCommand, float2 spawnPosition, FormationType formationType)
     {
         int formationID = _nextFormationID++;
 
@@ -67,6 +67,7 @@ public class UnitFactory
             //SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
             SpawnUnit(i, positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, groupEntity);
         }
+        return groupEntity;
     }
 
     private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)

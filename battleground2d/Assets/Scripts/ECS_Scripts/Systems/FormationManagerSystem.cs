@@ -334,8 +334,6 @@ public partial class FormationManagerSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
-
-
     private void UpdateFormationGroupBounds(NativeHashMap<Entity, int> groupToUnitCountMap, ComponentDataFromEntity<Translation> translations, ComponentDataFromEntity<FormationComponent> unitFormations)
     {
         var groupToUnitsMapRO = _groupToUnitsMap;     // copy field -> local
@@ -459,24 +457,6 @@ public partial class FormationManagerSystem : SystemBase
         Dependency = unitEntities.Dispose(Dependency);
         Dependency.Complete();
     }
-    private static float2 CalculateAveragePositionForGroup(NativeList<Entity> unitEntities, ComponentDataFromEntity<Translation> translations)
-    {
-        // Calculate the average position of all units in a group.
-        float2 sum = float2.zero;
-        int validUnitCount = 0;
-
-        foreach (var unitEntity in unitEntities)
-        {
-            if (translations.HasComponent(unitEntity))
-            {
-                var translation = translations[unitEntity];
-                sum += new float2(translation.Value.x, translation.Value.y);
-                validUnitCount++;
-            }
-        }
-
-        return validUnitCount > 0 ? sum / validUnitCount : float2.zero;
-    }
 
     private static float2 CalculateAveragePositionForGroup(
         Entity groupEntity,
@@ -505,36 +485,6 @@ public partial class FormationManagerSystem : SystemBase
         }
 
         return count > 0 ? sum / count : float2.zero;
-    }
-
-
-    private static FormationBounds CalculateFormationBounds(NativeList<Entity> unitEntities, ComponentDataFromEntity<Translation> translations, int unitsPerRow, float spacing, float2 anchor)
-    {
-        // Calculate the bounds of a formation based on the positions of its units.
-        if (unitEntities.Length == 0 || unitsPerRow <= 0)
-            return new FormationBounds { Min = anchor, Max = anchor };
-
-        float2 min = new float2(float.MaxValue, float.MaxValue);
-        float2 max = new float2(float.MinValue, float.MinValue);
-
-        foreach (var unitEntity in unitEntities)
-        {
-            if (translations.HasComponent(unitEntity))
-            {
-                var translation = translations[unitEntity];
-                float2 position = new float2(translation.Value.x, translation.Value.y);
-
-                min = math.min(min, position);
-                max = math.max(max, position);
-            }
-        }
-
-        // Add padding for unit radius.
-        float unitRadius = 0.125f;
-        min -= new float2(unitRadius, unitRadius);
-        max += new float2(unitRadius, unitRadius);
-
-        return new FormationBounds { Min = min, Max = max };
     }
 
     [BurstCompile]

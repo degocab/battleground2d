@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -60,7 +61,7 @@ public class EntitySpawner : MonoBehaviour
     {
         if (hasSpawnedUnits) return; 
 
-        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         if (entityManager.TryGetSingleton<GameStateComponent>(out var gameState))
         {
@@ -71,13 +72,13 @@ public class EntitySpawner : MonoBehaviour
 
                 // --- ALLIES ---
                 // Add more rows here whenever you want (e.g., new[] {0f, -8f, -16f})
-                float[] allyRowsY = { 0f };
+                float[] allyRowsY = { 0f/*, -5f */};
                 SpawnAllyPhalanxRows(unitFactory, entitiesToSpawn, allyRowsY);
 
                 // --- ENEMIES ---
                 float enemyMoveRange = 50f;
                 // Add more rows by just appending values
-                float[] enemyRowsY = { 10f, 15f };
+                float[] enemyRowsY = { 10f/*, 15f, 20f, 25f*/ };
                 SpawnEnemyHordeRows(unitFactory, entitiesToSpawn, enemyMoveRange, enemyRowsY);
 
                 unitFactory.SpawnCommander();
@@ -91,7 +92,26 @@ public class EntitySpawner : MonoBehaviour
     private void SpawnAllyPhalanxRows(UnitFactory factory, int unitsPerFormation, float[] rowsY)
     {
         // X positions for ally phalanx columns
-        float[] allyXs = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f};
+        float[] allyXs = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f};
+        Entity cmd = entityManager.CreateEntity();
+        entityManager.AddComponentData(cmd, new CommandComponent
+        {
+            FactionType = UnitType.Ally,
+            CommandID = 0 // Left
+        });
+        entityManager.AddComponentData(cmd, new CommandPerception
+        {
+            IntelVersion = 0,
+            Control = 0f,
+            Intensity01 = 0f,
+            Momentum = 0f,
+            PrevControl = 0f,
+            Pressure = CommandPressureState.Stable
+        });
+
+        entityManager.AddBuffer<OwnedFormationGroup>(cmd);
+        // Collect first (safe across structural changes)
+        var spawnedGroups = new List<Entity>(rowsY.Length * allyXs.Length);
 
         foreach (var rowY in rowsY)
         {
@@ -100,25 +120,49 @@ public class EntitySpawner : MonoBehaviour
                 var position2D = new float2(x, rowY);
                 var defendOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY, 0));
 
-                factory.SpawnUnits(
+                var formationGroupEntity = factory.SpawnUnits(
                     unitsPerFormation,
                     UnitType.Ally,
                     Direction.Left,
                     defendOrder,
                     position2D,
                     FormationType.Phalanx);
+
+                spawnedGroups.Add(formationGroupEntity);
             }
         }
+
+        // Now get the buffer AFTER spawns (no structural changes after this point)
+        var buffer = entityManager.GetBuffer<OwnedFormationGroup>(cmd);
+        for (int i = 0; i < spawnedGroups.Count; i++)
+            buffer.Add(new OwnedFormationGroup { Value = spawnedGroups[i] });
     }
 
-    private void SpawnEnemyHordeRows(
-        UnitFactory factory,
-        int unitsPerFormation,
-        float enemyMoveRange,
-        float[] rowsY)
+    private void SpawnEnemyHordeRows(UnitFactory factory, int unitsPerFormation, float enemyMoveRange, float[] rowsY)
     {
-        // X positions for enemy horde columns
-        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f};
+        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f };
+
+        Entity cmd = entityManager.CreateEntity();
+
+        entityManager.AddComponentData(cmd, new CommandComponent
+        {
+            FactionType = UnitType.Enemy,
+            CommandID = 0
+        });
+
+        entityManager.AddComponentData(cmd, new CommandPerception
+        {
+            IntelVersion = 0,
+            Control = 0f,
+            Intensity01 = 0f,
+            Momentum = 0f,
+            PrevControl = 0f,
+            Pressure = CommandPressureState.Stable
+        });
+
+        entityManager.AddBuffer<OwnedFormationGroup>(cmd);
+
+        var spawnedGroups = new List<Entity>(rowsY.Length * colsX.Length);
 
         foreach (var rowY in rowsY)
         {
@@ -130,16 +174,23 @@ public class EntitySpawner : MonoBehaviour
                     enemyMoveRange,
                     Direction.Down);
 
-                factory.SpawnUnits(
+                var formationGroupEntity = factory.SpawnUnits(
                     unitsPerFormation,
                     UnitType.Enemy,
                     Direction.Right,
                     moveOrder,
                     position2D,
                     FormationType.Horde);
+
+                spawnedGroups.Add(formationGroupEntity);
             }
         }
+
+        var buffer = entityManager.GetBuffer<OwnedFormationGroup>(cmd);
+        for (int i = 0; i < spawnedGroups.Count; i++)
+            buffer.Add(new OwnedFormationGroup { Value = spawnedGroups[i] });
     }
+
 
 
     public static void UpdateAnimationFields(ref AnimationComponent animationComponent, Unity.Mathematics.Random? walkRandom = null, Unity.Mathematics.Random? runRandom = default)
