@@ -118,7 +118,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                         }
                         //hasTarget.TargetPosition.x = targetPos.x + 10f;
                     }
-                    
+
                 //}
                 //else
                 //{
@@ -128,6 +128,16 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 //    movementSpeed.velocity = float3.zero;
                 //    //commandData.Command = CommandType.FindTarget;
                 //}
+
+
+                if (combatState.CurrentState == CombatState.State.SeekingTarget && math.distancesq(hasTarget.TargetPosition, translation.Value.xy) > 1f)
+                {
+                    movementSpeed.isRunnning = true;
+                }
+                else
+                {
+                    movementSpeed.isRunnning = false;
+                }
 
             }).ScheduleParallel();
 

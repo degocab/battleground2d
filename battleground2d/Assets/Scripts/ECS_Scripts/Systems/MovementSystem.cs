@@ -118,7 +118,7 @@ public class MovementSystem : SystemBase
               if (movementSpeedComponent.isRunnning)
               {
                   Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
-                  movementSpeedComponent.randomSpeed = 2f;//random.NextFloat(minRange, maxRange);
+                  movementSpeedComponent.randomSpeed = 1.25f;//random.NextFloat(minRange, maxRange);
               }
               else
               {
