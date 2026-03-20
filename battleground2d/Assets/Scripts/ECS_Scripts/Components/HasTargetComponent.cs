@@ -8,4 +8,6 @@ public struct HasTarget : IComponentData
     public TargetType Type;
     public Entity TargetEntity; // Used if Type == Entity
     public float2 TargetPosition; // Used if Type == Position
+
+    public bool isActive;
 }

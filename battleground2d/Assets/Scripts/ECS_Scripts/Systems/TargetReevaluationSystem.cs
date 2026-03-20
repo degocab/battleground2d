@@ -17,7 +17,7 @@ public partial class TargetReevaluationSystem : SystemBase
     protected override void OnCreate()
     {
         _reevaluationQuery = GetEntityQuery(
-            ComponentType.ReadWrite<HasTarget>(),
+            ComponentType.ReadWrite<CombatTarget>(),
             ComponentType.Exclude<CommanderComponent>()
         );
 
@@ -50,7 +50,7 @@ public partial class TargetReevaluationSystem : SystemBase
             ECB = ecb,
             RandomSeed = (uint)(currentTime * 1000),
             EntityTypeHandle = GetEntityTypeHandle(),
-            HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true)
+            CombatTargetTypeHandle = GetComponentTypeHandle<CombatTarget>(true)
         };
 
         Dependency = reevaluateJob.ScheduleParallel(_reevaluationQuery, Dependency);
@@ -64,28 +64,28 @@ public partial class TargetReevaluationSystem : SystemBase
         public uint RandomSeed;
 
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<CombatTarget> CombatTargetTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var random = new Unity.Mathematics.Random(RandomSeed + (uint)chunkIndex);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
-            var hasTargets = chunk.GetNativeArray(HasTargetTypeHandle);
+            var combatTargets = chunk.GetNativeArray(CombatTargetTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
-                // Only process entities with Entity targets (not Position targets)
-                if (hasTargets[i].Type == HasTarget.TargetType.Entity)
-                {
+                //// Only process entities with Entity targets (not Position targets)
+                //if (combatTargets[i].Type == CombatTarget.TargetType.Entity)
+                //{
                     var r = random.NextFloat();
                     if (r < 0.8f)
                     {
                         int entityInQueryIndex = firstEntityIndex + i;
-                        ECB.RemoveComponent<HasTarget>(entityInQueryIndex, entities[i]);
+                        ECB.RemoveComponent<CombatTarget>(entityInQueryIndex, entities[i]);
                         // Optionally add FindTargetTag if you want them to find new targets immediately
                         ECB.AddComponent<FindTargetTag>(entityInQueryIndex, entities[i]);
                     }
-                }
+                //}
             }
         }
     }

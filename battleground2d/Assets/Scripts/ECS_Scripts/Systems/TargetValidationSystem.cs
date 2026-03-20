@@ -25,15 +25,15 @@ using Unity.Transforms;
             Entities
                 .WithName("ValidateTargets")
                 .WithReadOnly(translationFromEntity)
-                .WithAll<HasTarget>()
-                .ForEach((Entity entity, int entityInQueryIndex, ref HasTarget hasTarget) =>
+                .WithAll<CombatTarget>()
+                .ForEach((Entity entity, int entityInQueryIndex, ref CombatTarget combatTarget) =>
                 {
-                    if (hasTarget.Type == HasTarget.TargetType.Entity &&
-                        hasTarget.TargetEntity != Entity.Null &&
-                        !translationFromEntity.HasComponent(hasTarget.TargetEntity))
+                    if (
+                        combatTarget.TargetEntity != Entity.Null &&
+                        !translationFromEntity.HasComponent(combatTarget.TargetEntity))
                     {
                         ecb.AddComponent<FindTargetTag>(entityInQueryIndex, entity);
-                        ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                        ecb.RemoveComponent<CombatTarget>(entityInQueryIndex, entity);
                     }
                 }).ScheduleParallel();
 

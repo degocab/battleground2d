@@ -95,12 +95,12 @@ public partial class FindTargetSystem : SystemBase
         [ReadOnly] public NativeArray<EntityWithPosition> ClosestTargets;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public EntityCommandBuffer.ParallelWriter ECB;
-        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<CombatTarget> CombatTargetTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             var chunkEntities = chunk.GetNativeArray(EntityTypeHandle);
-            bool chunkHasTarget = chunk.Has<HasTarget>(HasTargetTypeHandle);
+            bool chunkCombatTarget = chunk.Has<CombatTarget>(CombatTargetTypeHandle);
 
             for (int i = 0; i < chunk.Count; i++)
             {
@@ -109,14 +109,14 @@ public partial class FindTargetSystem : SystemBase
 
                 if (ClosestTargets[flatIndex].Entity != Entity.Null)
                 {
-                    var target = new HasTarget
+                    var target = new CombatTarget
                     {
                         TargetEntity = ClosestTargets[flatIndex].Entity,
                         TargetPosition = ClosestTargets[flatIndex].Position,
-                        Type = HasTarget.TargetType.Entity
+                        //Type = CombatTarget.TargetType.Entity
                     };
 
-                    if (chunkHasTarget)
+                    if (chunkCombatTarget)
                     {
                         ECB.SetComponent(chunkIndex, entity, target);
                     }
@@ -144,7 +144,7 @@ public partial class FindTargetSystem : SystemBase
             for (int i = 0; i < chunk.Count; i++)
             {
                 var entity = entityArray[i];
-                ECB.RemoveComponent<HasTarget>(chunkIndex, entity);
+                ECB.RemoveComponent<CombatTarget>(chunkIndex, entity);
                 ECB.RemoveComponent<FindTargetTag>(chunkIndex, entity);
             }
         }
@@ -277,7 +277,7 @@ public partial class FindTargetSystem : SystemBase
             ClosestTargets = writeBuffer,
             EntityTypeHandle = GetEntityTypeHandle(),
             ECB = _endSimulationECBSystem.CreateCommandBuffer().AsParallelWriter(),
-            HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true)
+            CombatTargetTypeHandle = GetComponentTypeHandle<CombatTarget>(true)
         };
 
         var addHandle = addComponentJob.ScheduleParallel(_findTargetQuery, findHandle);
@@ -288,3 +288,10 @@ public partial class FindTargetSystem : SystemBase
     }
 }
 
+public struct CombatTarget : IComponentData
+{
+    public Entity TargetEntity;
+    public float2 TargetPosition;
+
+    public bool isActive;
+}
