@@ -113,6 +113,7 @@ public partial class FindTargetSystem : SystemBase
                     {
                         TargetEntity = ClosestTargets[flatIndex].Entity,
                         TargetPosition = ClosestTargets[flatIndex].Position,
+                        isActive = true
                         //Type = CombatTarget.TargetType.Entity
                     };
 

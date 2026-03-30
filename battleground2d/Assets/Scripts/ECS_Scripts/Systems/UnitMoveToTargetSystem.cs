@@ -29,7 +29,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
             .WithAll<MovementGoal>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref MovementGoal movementGoal, ref CombatState combatState, ref DefenseComponent defenseComponent
+            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref MovementGoal movementGoal, ref CombatState combatState, ref DefenseComponent defenseComponent, ref MovementStatus movementStatus
             ) =>
             {
                 // RESPECT COMBAT STATE - don't move if defending
@@ -37,6 +37,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     combatState.CurrentState == CombatState.State.Blocking)
                 {
                     movementSpeed.velocity = float3.zero;
+                    movementStatus.CurrentStatus = MovementStatus.Status.Idle;
                     return; // Exit early - don't process movement
                 }
 
@@ -46,7 +47,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 reachThreshold = 0.01f;// should reach position in formation
                 float2 direction = math.normalize(targetPos - translation.Value.xy);
                 movementSpeed.velocity.xy = direction;
-
+                movementStatus.CurrentStatus = MovementStatus.Status.Moving;
 
                 if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
                 {
@@ -59,6 +60,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     //        combatState.CurrentState = CombatState.State.Attacking;
                     //    }
                     //}
+                    movementStatus.CurrentStatus = MovementStatus.Status.ReachedDestination;
                 }
 
                 if (combatState.CurrentState == CombatState.State.SeekingTarget && math.distancesq(movementGoal.Position, translation.Value.xy) > 1f)
@@ -77,3 +79,12 @@ public partial class UnitMoveToTargetSystem : SystemBase
 }
 
 public struct RestrictMovementTag : IComponentData { }
+
+public struct MovementStatus : IComponentData
+{
+    public Status CurrentStatus;
+    public enum Status
+    {
+        Idle, Moving, ReachedDestination
+    }
+}

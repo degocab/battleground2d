@@ -348,6 +348,13 @@ ComponentType.Exclude<CommanderComponent>());
                 //TargetPosition = targetPos,
                 //TargetEntity = Entity.Null
             });
+            ecb.AddComponent(chunkIndex, entity, new CombatTarget
+            {
+                //Type = HasTarget.TargetType.Position,
+                ////TargetPosition = targetPos,
+                ////TargetEntity = Entity.Null
+                isActive = true
+            });
         }
 
         private void HandleMovementOrder(OrderType orderType, ref CombatState combatState,

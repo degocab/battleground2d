@@ -269,6 +269,7 @@ public class UnitArchetypeFactory
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(OrderData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
             typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent), typeof(HasTarget)
+            , typeof(MovementGoal), typeof(MovementStatus)
         );
     }
 
@@ -281,6 +282,7 @@ public class UnitArchetypeFactory
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
             typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(DefenseComponent), typeof(AttackPhasesComponent)
+            ,typeof(MovementGoal),typeof(MovementStatus)
         //, typeof(TargetComponent)
         );
     }

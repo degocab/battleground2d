@@ -133,7 +133,7 @@ public partial class FormationCombatSystem : SystemBase
         var findHandle = findJob.ScheduleParallel(_findTargetQuery, Dependency);
         Dependency.Complete();
         var ecbWriter = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        Debug.Log($"writeBuffer: { (writeBuffer != null ? writeBuffer.Length : 0)}");
+        //Debug.Log($"writeBuffer: { (writeBuffer != null ? writeBuffer.Length : 0)}");
 
         var addComponentJob = new AddTargetComponentJob
         {
