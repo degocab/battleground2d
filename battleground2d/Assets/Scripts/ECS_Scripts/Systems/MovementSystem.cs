@@ -31,11 +31,52 @@ public class MovementSystem : SystemBase
             return;
         var deltaTime = Time.DeltaTime;
 
+
+        float moveX = 0f;
+        float moveY = 0f;
+        bool isRunning = false;
+
+        if (Input.GetKey(KeyCode.W)) moveY = 1f;
+        if (Input.GetKey(KeyCode.S)) moveY = -1f;
+        if (Input.GetKey(KeyCode.A)) moveX = -1f;
+        if (Input.GetKey(KeyCode.D)) moveX = 1f;
+        if (Input.GetKey(KeyCode.LeftShift)) isRunning = true;
+
+        // Get mouse position for aiming
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -Camera.main.transform.position.z;
+        Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
+        float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
+        Entities
+    .WithName("SetCommanderVelocity")
+    .WithAll<PlayerInputComponent>()
+    .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+    {
+
+
+
+        movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
+        movementSpeedComponent.isRunnning = isRunning;
+        movementSpeedComponent.isPlayerControlled = true;
+        movementSpeedComponent.aimDirection = worldMousePosFloat;
+        ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+
+    }).Run();
+
         float minRange = 1f;
         float maxRange = 1.125f;
         var speedJobHandle = Entities.WithName("ApplyRandomSpeed")
-          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity) =>
+            .WithNone<PlayerInputComponent>()
+          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity, in MovementGoal movementGoal) =>
           {
+
+              float reachThreshold = .4f;
+              float2 targetPos = float2.zero;
+              targetPos = movementGoal.Position;
+              reachThreshold = 0.01f;// should reach position in formation
+              float2 direction = math.normalize(targetPos - translation.Value.xy);
+              movementSpeedComponent.velocity.xy = direction;
+
               if (movementSpeedComponent.isRunnning)
               {
                   Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
@@ -110,5 +151,22 @@ public class MovementSystem : SystemBase
         // Set the final dependency for the next system
         Dependency = restrictMovemenJobHandle;
     }
+    private static void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
+    {
+        playerInput.velocity.x = movementInput.x;
+        playerInput.velocity.y = movementInput.y;
+        playerInput.isRunnning = isRunning;
+    }
+    private static Vector2 GetMovementInput()
+    {
+        float moveX = 0f;
+        float moveY = 0f;
 
+        if (Input.GetKey(KeyCode.W)) moveY = 1f;
+        if (Input.GetKey(KeyCode.S)) moveY = -1f;
+        if (Input.GetKey(KeyCode.A)) moveX = -1f;
+        if (Input.GetKey(KeyCode.D)) moveX = 1f;
+
+        return new Vector2(moveX, moveY);
+    }
 }

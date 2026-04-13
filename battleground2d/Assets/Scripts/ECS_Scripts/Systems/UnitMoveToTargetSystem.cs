@@ -29,14 +29,14 @@ public partial class UnitMoveToTargetSystem : SystemBase
             .WithAll<MovementGoal>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref MovementSpeedComponent movementSpeed, ref MovementGoal movementGoal, ref CombatState combatState, ref DefenseComponent defenseComponent, ref MovementStatus movementStatus
+            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, /*ref MovementSpeedComponent movementSpeed,*/ ref MovementGoal movementGoal, ref CombatState combatState, ref DefenseComponent defenseComponent, ref MovementStatus movementStatus
             ) =>
             {
                 // RESPECT COMBAT STATE - don't move if defending
                 if (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.TakingDamage ||
                     combatState.CurrentState == CombatState.State.Blocking)
                 {
-                    movementSpeed.velocity = float3.zero;
+                    //movementSpeed.velocity = float3.zero;
                     movementStatus.CurrentStatus = MovementStatus.Status.Idle;
                     return; // Exit early - don't process movement
                 }
@@ -46,12 +46,12 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 targetPos = movementGoal.Position;
                 reachThreshold = 0.01f;// should reach position in formation
                 float2 direction = math.normalize(targetPos - translation.Value.xy);
-                movementSpeed.velocity.xy = direction;
+                //movementSpeed.velocity.xy = direction;
                 movementStatus.CurrentStatus = MovementStatus.Status.Moving;
 
                 if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
                 {
-                    movementSpeed.velocity = float3.zero;
+                    //movementSpeed.velocity = float3.zero;
                     //if (movementGoal != Entity.Null) //TODO: change movementGoal.Type == HasTarget.TargetType.Entity?
                     //{
                     //    if (combatState.CurrentState == CombatState.State.Idle ||
@@ -63,14 +63,14 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     movementStatus.CurrentStatus = MovementStatus.Status.ReachedDestination;
                 }
 
-                if (combatState.CurrentState == CombatState.State.SeekingTarget && math.distancesq(movementGoal.Position, translation.Value.xy) > 1f)
-                {
-                    movementSpeed.isRunnning = true;
-                }
-                else
-                {
-                    movementSpeed.isRunnning = false;
-                }
+                //if (combatState.CurrentState == CombatState.State.SeekingTarget && math.distancesq(movementGoal.Position, translation.Value.xy) > 1f)
+                //{
+                //    movementSpeed.isRunnning = true;
+                //}
+                //else
+                //{
+                //    movementSpeed.isRunnning = false;
+                //}
 
             }).ScheduleParallel();
 

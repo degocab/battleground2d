@@ -21,7 +21,7 @@ public class PhysicsSystem : SystemBase
             .WithNone<DeadTagComponent>()
             .WithAll<ECS_PhysicsBody2DAuthoring>() // Optional: Only move dynamic bodies
                                                    //.ForEach((ref Translation translation, in Velocity2D velocity, in PhysicsBody2D body) =>
-            .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent) =>
+            .ForEach((ref Translation translation, ref PositionComponent position, in MovementSpeedComponent movementSpeedComponent) =>
             {
                 //// Apply force to update velocity (F = ma -> v = v0 + a * t)
                 //velocity.Value += force.Value * deltaTime;

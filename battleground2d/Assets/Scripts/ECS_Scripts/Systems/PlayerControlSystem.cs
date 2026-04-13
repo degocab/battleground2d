@@ -121,20 +121,20 @@ public class PlayerControlSystem : SystemBase
         }
         // This job sets the desired velocity based on input or AI for commander.
         //var inputJobHandle = 
-        Entities
-            .WithName("SetCommanderVelocity")
-            .WithAll<PlayerInputComponent>()
-            .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-            {
+        //Entities
+        //    .WithName("SetCommanderVelocity")
+        //    .WithAll<PlayerInputComponent>()
+        //    .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
+        //    {
 
 
 
-                movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
-                movementSpeedComponent.isRunnning = isRunnning;
-                movementSpeedComponent.isPlayerControlled = true;
-                movementSpeedComponent.aimDirection = worldMousePosFloat;
+        //        movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
+        //        movementSpeedComponent.isRunnning = isRunnning;
+        //        movementSpeedComponent.isPlayerControlled = true;
+        //        movementSpeedComponent.aimDirection = worldMousePosFloat;
 
-            }).Run();
+        //    }).Run();
 
 
         //var ecb = _ecbSystem.CreateCommandBuffer();
@@ -221,7 +221,7 @@ public class PlayerControlSystem : SystemBase
                 ref AttackComponent attackComponent,
                 ref AttackCooldownComponent attackCooldown,
                 ref AnimationComponent animationComponent,
-                ref MovementSpeedComponent movementSpeedComponent,
+                //ref MovementSpeedComponent movementSpeedComponent,
                 ref DefenseComponent defenseComponent
             ) =>
             {
@@ -313,7 +313,7 @@ public class PlayerControlSystem : SystemBase
 
                 if (combatState.CurrentState != CombatState.State.TakingDamage)
                 {
-                    ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
+                    //ProcessMovement(ref movementSpeedComponent, GetMovementInput(), isRunning);
                     UpdateCameraPosition(translation.Value); 
                 }
 
@@ -465,12 +465,12 @@ public class PlayerControlSystem : SystemBase
         //Debug.Log("Attack Started");
     }
 
-    private void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
-    {
-        playerInput.velocity.x = movementInput.x;
-        playerInput.velocity.y = movementInput.y;
-        playerInput.isRunnning = isRunning;
-    }
+    //private void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
+    //{
+    //    playerInput.velocity.x = movementInput.x;
+    //    playerInput.velocity.y = movementInput.y;
+    //    playerInput.isRunnning = isRunning;
+    //}
 
 
     private void PerformAttack(ref CombatState combatState, ref AttackComponent attackComponent, ref AnimationComponent animationComponent)

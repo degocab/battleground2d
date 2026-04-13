@@ -96,7 +96,7 @@ ComponentType.ReadOnly<DefenseComponent>(),
 ComponentType.ReadOnly<AttackComponent>(),
 ComponentType.ReadOnly<Translation>(),
 ComponentType.ReadOnly<AnimationComponent>(),
-ComponentType.ReadWrite<MovementSpeedComponent>(),
+//ComponentType.ReadWrite<MovementSpeedComponent>(),
 ComponentType.Exclude<CommanderComponent>());
 
         var ecb = _ecbSystem.CreateCommandBuffer();
@@ -199,7 +199,7 @@ ComponentType.Exclude<CommanderComponent>());
             DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
             AttackComponentTypeHandle = GetComponentTypeHandle<AttackComponent>(true),
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
-            MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
+            //MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
             //,entityManager = EntityManager
         };
@@ -216,7 +216,7 @@ ComponentType.Exclude<CommanderComponent>());
         public ComponentTypeHandle<OrderData> OrderDataTypeHandle;
         public ComponentTypeHandle<FormationComponent> FormationComponentTypeHandle;
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
-        public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
+        //public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
@@ -234,7 +234,7 @@ ComponentType.Exclude<CommanderComponent>());
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
-            var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
+            //var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
             var defenseComponents = chunk.GetNativeArray(DefenseComponentTypeHandle);
             var attackComponents = chunk.GetNativeArray(AttackComponentTypeHandle);
 
@@ -243,7 +243,7 @@ ComponentType.Exclude<CommanderComponent>());
                 Entity entity = entities[i];
                 Translation translation = translations[i];
                 AnimationComponent animationData = animations[i];
-                MovementSpeedComponent movementSpeed = movementSpeeds[i];
+                //MovementSpeedComponent movementSpeed = movementSpeeds[i];
                 float2 entityPos = translation.Value.xy;
                 var order = orderDataArray[i];
                 var formation = formations[i];
@@ -254,7 +254,7 @@ ComponentType.Exclude<CommanderComponent>());
                 if (order.CurrentOrder != order.PreviousOrder)
                     order.TargetEntity = Entity.Null;
 
-                ProcessOrder(ref order, ref combatState, ref movementSpeed, attackComponent, defenseComponent, entity, entityPos,
+                ProcessOrder(ref order, ref combatState, /*ref movementSpeed, */attackComponent, defenseComponent, entity, entityPos,
              animationData.Direction, chunkIndex, ECB, ref formation);
 
 
@@ -267,7 +267,7 @@ ComponentType.Exclude<CommanderComponent>());
         }
 
         private void ProcessOrder(ref OrderData order, ref CombatState combatState,
-                                     ref MovementSpeedComponent movementSpeed, AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
+                                     /*ref MovementSpeedComponent movementSpeed, */AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
                                      float2 entityPos, EntitySpawner.Direction direction,
                                      int chunkIndex, EntityCommandBuffer.ParallelWriter ecb
              , ref FormationComponent formation)
@@ -283,7 +283,7 @@ ComponentType.Exclude<CommanderComponent>());
 
                 case OrderType.March:
                 case OrderType.Charge:
-                    HandleMovementOrder(order.CurrentOrder, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb);
+                    HandleMovementOrder(order.CurrentOrder, ref combatState/*, ref movementSpeed*/, entity, entityPos, direction, chunkIndex, ecb);
                     break;
                 case OrderType.FindTarget:
                     formation.Status = FormationStatus.Hold;
@@ -312,7 +312,7 @@ ComponentType.Exclude<CommanderComponent>());
                     {
                         formation.Status = FormationStatus.Hold; // moving into a new hold position
                     }
-                    MarchInDirectionWithRange(order.CurrentOrder, ref combatState, ref movementSpeed, entity, entityPos, direction, chunkIndex, ecb, 10f);
+                    MarchInDirectionWithRange(order.CurrentOrder, ref combatState/*, ref movementSpeed*/, entity, entityPos, direction, chunkIndex, ecb, 10f);
                     break;
 
                 case OrderType.Attack:
@@ -333,7 +333,7 @@ ComponentType.Exclude<CommanderComponent>());
             }
         }
         private void MarchInDirectionWithRange(OrderType orderType, ref CombatState combatState,
-                                         ref MovementSpeedComponent movementSpeed, Entity entity,
+                                         /*ref MovementSpeedComponent movementSpeed,*/ Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, float rangeToMarch)
         {
@@ -358,7 +358,7 @@ ComponentType.Exclude<CommanderComponent>());
         }
 
         private void HandleMovementOrder(OrderType orderType, ref CombatState combatState,
-                                         ref MovementSpeedComponent movementSpeed, Entity entity,
+                                         /*ref MovementSpeedComponent movementSpeed, */Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
@@ -374,7 +374,7 @@ ComponentType.Exclude<CommanderComponent>());
                 TargetEntity = Entity.Null
             });
 
-            movementSpeed.isRunnning = orderType == OrderType.Charge;
+            //movementSpeed.isRunnning = orderType == OrderType.Charge;
             combatState.CurrentState = orderType == OrderType.Charge ?
                 CombatState.State.SeekingTarget : combatState.CurrentState;
         }
