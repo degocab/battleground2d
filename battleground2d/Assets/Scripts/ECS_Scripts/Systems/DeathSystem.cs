@@ -51,7 +51,7 @@ public partial class DeathSystem : SystemBase
                         //ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
                         //ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
                         //ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                        //ecb.RemoveComponent<FormationSlotGoal>(entityInQueryIndex, entity);
                         //ecb.RemoveComponent<TargetComponent>(entityInQueryIndex, entity);
                         //ecb.RemoveComponent<Unit>(entityInQueryIndex, entity);
                         //ecb.RemoveComponent<QuadrantEntity>(entityInQueryIndex, entity);
@@ -99,7 +99,7 @@ public partial class DeathSystem : SystemBase
         //            ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
         //            ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
         //            ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
-        //            ecb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+        //            ecb.RemoveComponent<FormationSlotGoal>(entityInQueryIndex, entity);
         //        }
 
         //    }).ScheduleParallel();

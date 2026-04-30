@@ -26,11 +26,11 @@ public partial class MovementGoalResolverSystem : SystemBase
 
         Entities
             .WithName("MovementGoalResolverJob")
-            .WithAll<HasTarget>()
+            .WithAll<FormationSlotGoal>()
             .WithAll<CombatTarget>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref MovementGoal movementGoal, in Translation translation, in MovementSpeedComponent movementSpeed, in HasTarget hasTarget, in CombatState combatState, in CombatTarget combatTarget
+            .ForEach((Entity entity, int entityInQueryIndex, ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal hasTarget, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData
             ) =>
             {
 
@@ -38,15 +38,23 @@ public partial class MovementGoalResolverSystem : SystemBase
                 //if there a combat target 
                 //  go to target
                 //if there is a hastarget
-                //  go to this second
-                if (combatTarget.isActive) //follow combat target first
-                {
-                    movementGoal.Position = combatTarget.TargetPosition;
-                }
-                else// if (hasTarget.isActive)// follow all other adfter for now
+                ////  go to this second
+                if (orderData.CurrentOrder == OrderType.Defend)
                 {
                     movementGoal.Position = hasTarget.TargetPosition;
                 }
+                else
+                {
+                    if (combatTarget.isActive) //follow combat target first
+                    {
+                        movementGoal.Position =  combatTarget.TargetPosition;
+                    }
+                }
+
+                //else// if (hasTarget.isActive)// follow all other adfter for now
+                //{
+                //    movementGoal.Position = hasTarget.TargetPosition;
+                //}
 
 
             }).ScheduleParallel();

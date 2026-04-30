@@ -13,7 +13,7 @@ public class UpdateTargetPositionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        _query = GetEntityQuery(typeof(HasTarget), typeof(Translation), typeof(FindTargetTag));
+        _query = GetEntityQuery(typeof(FormationSlotGoal), typeof(Translation), typeof(FindTargetTag));
     }
 
     protected override void OnUpdate()
@@ -23,7 +23,7 @@ public class UpdateTargetPositionSystem : SystemBase
         var job = new UpdateTargetPositionJob
         {
             TargetTranslationLookup = targetTranslationLookup,
-            HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(false),
+            HasTargetTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(false),
             EntityTypeHandle = GetEntityTypeHandle()
         };
 
@@ -34,7 +34,7 @@ public class UpdateTargetPositionSystem : SystemBase
     private struct UpdateTargetPositionJob : IJobChunk
     {
         [ReadOnly] public ComponentDataFromEntity<Translation> TargetTranslationLookup;
-        public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
+        public ComponentTypeHandle<FormationSlotGoal> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -46,10 +46,10 @@ public class UpdateTargetPositionSystem : SystemBase
             //{
             //    var hasTarget = hasTargetComponents[i];
 
-            //    if (hasTarget.Type == HasTarget.TargetType.Entity &&
+            //    if (hasTarget.Type == FormationSlotGoal.TargetType.Entity &&
             //        TargetTranslationLookup.HasComponent(hasTarget.TargetEntity))
             //    {
-            //        Debug.Log("HasTarget.TargetPosition updated by UpdateTargetPositionJob");
+            //        Debug.Log("FormationSlotGoal.TargetPosition updated by UpdateTargetPositionJob");
 
             //        var targetTranslation = TargetTranslationLookup[hasTarget.TargetEntity];
             //        hasTarget.TargetPosition = targetTranslation.Value.xy;

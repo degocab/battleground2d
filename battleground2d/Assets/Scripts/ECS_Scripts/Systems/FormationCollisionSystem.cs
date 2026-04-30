@@ -75,7 +75,7 @@ public class FormationCollisionSystem : SystemBase
         Entities
             .WithReadOnly(groupCollisionMap)
             .WithReadOnly(groupCommandMap)
-            .ForEach((Entity entity, ref FormationComponent formation, ref OrderData order) =>
+            .ForEach((Entity entity, ref FormationComponent formation) =>
             {
                 if (!formation.FormationGroupEntity.HasValue) return;
 
@@ -102,13 +102,13 @@ public class FormationCollisionSystem : SystemBase
                 if (wantsIndividual && !isIndividual)
                 {
                     ecb.AddComponent<CollidableTag>(entity);
-                    formation.Status = FormationStatus.Engaged;
+                    //formationStatus.Value = FormationStatusEnum.Engaged;
                     formation.ColliderStatus = FormationColliderStatus.Individual;
                 }
                 else if (!wantsIndividual && isIndividual)
                 {
                     ecb.RemoveComponent<CollidableTag>(entity);
-                    formation.Status = FormationStatus.Hold;
+                    //formationStatus.Status = FormationStatusEnum.Hold;
                     formation.ColliderStatus = FormationColliderStatus.Group;
                 }
 
@@ -120,7 +120,7 @@ public class FormationCollisionSystem : SystemBase
                 //    //Debug.Log("Adding collidable tag");
                 //    ecb.AddComponent<CollidableTag>(entity);
                 //    //ecb.AddComponent<CommandData>(entity);
-                //    formation.Status = FormationStatus.Engaged;
+                //    formation.Status = FormationStatusEnum.Engaged;
                 //    var grpCommadn = groupCommandMap.TryGetValue(formation.FormationGroupEntity.Value, out var grpCommand);
                 //    command = grpCommand;
                 //}
@@ -128,7 +128,7 @@ public class FormationCollisionSystem : SystemBase
                 //{
                 //    ecb.RemoveComponent<CollidableTag>(entity);
                 //    //ecb.RemoveComponent<CommandData>(entity);
-                //    formation.Status = FormationStatus.Hold;
+                //    formation.Status = FormationStatusEnum.Hold;
 
                 //}
 

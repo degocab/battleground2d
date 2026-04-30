@@ -8,7 +8,7 @@ using UnityEngine;
 //{
 //    protected override void OnUpdate()
 //    {
-//        Entities.ForEach((Entity entity, ref Translation translation, ref HasTarget hasTarget) =>
+//        Entities.ForEach((Entity entity, ref Translation translation, ref FormationSlotGoal hasTarget) =>
 //        {
 //            if (entity != Entity.Null)
 //            {

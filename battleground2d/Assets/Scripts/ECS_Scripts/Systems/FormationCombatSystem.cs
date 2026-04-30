@@ -157,17 +157,18 @@ public partial class FormationCombatSystem : SystemBase
             .WithAll<FormationComponent>()
             .WithNone<DeadTagComponent>()
             .ForEach((Entity entity,
-                     ref HasTarget hasTarget,
+                    ref FormationStatus formationStatus,
                      ref CombatState combatState,
                      ref FormationComponent formation
                      , ref AnimationComponent animationComponent
                      , in Translation translation
                      , in OrderData order
+                     ,in FormationSlotGoal formationSlotGoal
                      ) =>
             {
-                var unitFormatonStatus = formation.Status;
-                //if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
-                //    unitFormatonStatus = FormationStatus.Hold;
+                var unitFormatonStatus = formationStatus.Value;
+                if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                    unitFormatonStatus = FormationStatusEnum.Hold;
 
                 //IF TAKING DMG, dont process formation logic
                 if (combatState.CurrentState == CombatState.State.TakingDamage ||
@@ -178,22 +179,22 @@ public partial class FormationCombatSystem : SystemBase
 
                 switch (unitFormatonStatus)
                 {
-                    case FormationStatus.Hold:
+                    case FormationStatusEnum.Hold:
                     default:
                         //animationComponent.Direction = formation.Direction;
-                        HandleHoldFormation(ref hasTarget, ref combatState, ref formation, translation);
+                        HandleHoldFormation(ref formationStatus, ref combatState, ref formation, translation, formationSlotGoal);
                         break;
 
-                    case FormationStatus.Engaged:
-                        HandleEngagedFormation(ref hasTarget, ref combatState, ref formation, translation, order);
+                    case FormationStatusEnum.Engaged:
+                        HandleEngagedFormation(formationSlotGoal, ref combatState, ref formation, translation, order, ref formationStatus);
                         break;
 
-                    case FormationStatus.Broken:
+                    case FormationStatusEnum.Broken:
                         // Let normal combat system handle it  
                         break;
 
-                    case FormationStatus.Disengaging:
-                        HandleDisengagingFormation(ref hasTarget, in combatState, ref formation, in translation);
+                    case FormationStatusEnum.Disengaging:
+                        HandleDisengagingFormation(formationSlotGoal, in combatState, ref formation, in translation, ref formationStatus);
                         break;
                 }
             }).ScheduleParallel();
@@ -207,47 +208,46 @@ public partial class FormationCombatSystem : SystemBase
     }
 
 
-    private static void HandleHoldFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                   ref FormationComponent formation, Translation translation)
+    private static void HandleHoldFormation(ref FormationStatus formationStatus, ref CombatState combatState,
+                                   ref FormationComponent formation, Translation translation, FormationSlotGoal hasTarget)
     {
         // Tight formation - very little movement allowed
         float maxEngageDistance = 0.5f;
 
         float2 formationPos = formation.FormationPosition;
         float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
-        if (hasTarget.Type == HasTarget.TargetType.Entity && hasTarget.TargetEntity != Entity.Null)
-        {
+
             //check target position from current before moving
             float distanceFromCurrentTranslation = math.distance(translation.Value.xy, hasTarget.TargetPosition);
             if (distanceFromCurrentTranslation > maxEngageDistance)
             {
                 // Too far - return to formation
-                //hasTarget.Type = HasTarget.TargetType.Position;
-                //hasTarget.TargetPosition = formationPos;
+                //formationSlotGoal.Type = FormationSlotGoal.TargetType.Position;
+                //formationSlotGoal.TargetPosition = formationPos;
                 //combatState.CurrentState = CombatState.State.Idle;
                 return;
             }
-        }
+        
         if (distanceFromFormation > maxEngageDistance)
         {
-            //Debug.Log("HasTarget.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
+            //Debug.Log("FormationSlotGoal.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
 
             // Too far - return to formation immediately
-            hasTarget.Type = HasTarget.TargetType.Position;
-            hasTarget.TargetPosition = formationPos;
+            //hasTarget.TargetPosition = formationPos;
+            formationStatus.Value = FormationStatusEnum.Hold; 
             combatState.CurrentState = CombatState.State.Idle;
         }
         // If they have an enemy target AND are close enough, let them attack!
         else
         {
-            //formation.FormationPosition = hasTarget.TargetPosition;
-            //hasTarget.Type = HasTarget.TargetType.Position;
+            //formation.FormationPosition = formationSlotGoal.TargetPosition;
+            //formationSlotGoal.Type = FormationSlotGoal.TargetType.Position;
             //combatState.CurrentState = CombatState.State.Attacking;
         }
     }
 
-    private static void HandleEngagedFormation(ref HasTarget hasTarget, ref CombatState combatState,
-                                               ref FormationComponent formation, Translation translation, OrderData order)
+    private static void HandleEngagedFormation(FormationSlotGoal hasTarget, ref CombatState combatState,
+                                               ref FormationComponent formation, Translation translation, OrderData order, ref FormationStatus formationStatus)
     {
         if (order.CurrentOrder == OrderType.Defend)
         {
@@ -257,21 +257,21 @@ public partial class FormationCombatSystem : SystemBase
             float distanceFromFormation = math.distance(translation.Value.xy, formationPos);
             if (distanceFromFormation > maxEngageDistance)
             {
-                //Debug.Log("HasTarget.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
+                //Debug.Log("FormationSlotGoal.TargetPosition updated by HandleHoldFormation in FormationCombatSystem");
 
                 // Too far - return to formation immediately
-                hasTarget.Type = HasTarget.TargetType.Position;
-                hasTarget.TargetPosition = formationPos;
+                //hasTarget.TargetPosition = formationPos;
+                formationStatus.Value = FormationStatusEnum.Hold;
                 combatState.CurrentState = CombatState.State.Idle;
             }
         }
     }
 
-    private static void HandleDisengagingFormation(
-    ref HasTarget hasTarget,
+    private static void HandleDisengagingFormation(FormationSlotGoal hasTarget,
     in CombatState combatState,
     ref FormationComponent formation,
-    in Translation translation)
+    in Translation translation
+    ,ref FormationStatus formationStatus)
     {
         float2 currentPos = translation.Value.xy;
         float2 formationPos = formation.FormationPosition;
@@ -280,9 +280,9 @@ public partial class FormationCombatSystem : SystemBase
         const float reformedRadius = 1.0f;
 
         // 1) Force movement toward anchor / retreat point
-        hasTarget.Type = HasTarget.TargetType.Position;
-        hasTarget.TargetEntity = Entity.Null;
-        hasTarget.TargetPosition = formationPos;
+        //hasTarget.TargetEntity = Entity.Null;
+        //hasTarget.TargetPosition = formationPos;
+        formationStatus.Value = FormationStatusEnum.Hold;
 
         // 2) Do NOT touch combatState here.
         //    CombatSystem will see TargetEntity == Null and, via
@@ -304,9 +304,9 @@ public partial class FormationCombatSystem : SystemBase
         {
             // We’re back in position and not actively fighting anymore:
             // let formation go back to Hold behavior.
-            formation.Status = FormationStatus.Hold;
+            formationStatus.Value = FormationStatusEnum.Hold;
             // Hold logic will handle keeping them in slot, and CombatSystem will keep
-            // doing its thing based on HasTarget/valid enemies.
+            // doing its thing based on FormationSlotGoal/valid enemies.
         }
     }
 
@@ -469,7 +469,7 @@ public partial class FormationCombatSystem : SystemBase
                 if (isAdvancing && closest.DistanceSq <= engagementRadiusSq)
                 {
                     group.CurrentOrder = OrderType.FindTarget;
-                    group.FormationGroupStatus = FormationStatus.Engaged;
+                    group.FormationGroupStatus = FormationStatusEnum.Engaged;
 
                     order.CurrentOrder = OrderType.FindTarget;
 
@@ -535,4 +535,9 @@ public partial class FormationCombatSystem : SystemBase
         Debug.DrawLine(bottomLeft, topRight, quadrantColor, duration);
     }
 
+}
+
+public struct FormationStatus : IComponentData
+{
+    public FormationStatusEnum Value;
 }

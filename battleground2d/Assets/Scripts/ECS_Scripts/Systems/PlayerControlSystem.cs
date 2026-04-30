@@ -165,8 +165,8 @@ public class PlayerControlSystem : SystemBase
                 //        {
                 //            return;
                 //        }
-                //        // First remove HasTarget component
-                //        parallelEcb.RemoveComponent<HasTarget>(entityInQueryIndex, entity);
+                //        // First remove FormationSlotGoal component
+                //        parallelEcb.RemoveComponent<FormationSlotGoal>(entityInQueryIndex, entity);
 
                 //        // Then update command data
                 //        commandData = orderCopy;
@@ -193,7 +193,7 @@ public class PlayerControlSystem : SystemBase
                          order = orderCopy;
                          //if (orderCopy.Command == CommandType.FindTarget)
                          //{
-                         //    formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                         //    formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
                          //}
 
                      }).WithoutBurst().Run();

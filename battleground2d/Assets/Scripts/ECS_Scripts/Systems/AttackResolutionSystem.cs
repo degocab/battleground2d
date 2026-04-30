@@ -50,7 +50,7 @@ public partial class AttackResolutionSystem : SystemBase
                 if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
                 {
                     //settting formatoin status to engagnge so unit can leave formatoin breifly
-                    formation.Status = FormationStatus.Engaged;
+                    //formation.Status = FormationStatusEnum.Engaged;
 
 
 
@@ -190,7 +190,7 @@ public partial class DefenseSystem : SystemBase
     {
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
-        var hasTargetFromEntity = GetComponentDataFromEntity<HasTarget>(true);
+        var hasTargetFromEntity = GetComponentDataFromEntity<FormationSlotGoal>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
 
@@ -211,17 +211,15 @@ public partial class DefenseSystem : SystemBase
             //Debug.Log("no defends in buffer"); 
             return;
         }
-        // Check if entity has HasTarget component - use the existing hasTargetFromEntity
+        // Check if entity has FormationSlotGoal component - use the existing hasTargetFromEntity
         bool hasTargetComponent = hasTargetFromEntity.HasComponent(entity);
 
         if (!hasTargetComponent)
         {
             Debug.Log("HasTarget.TargetPosition updated by DefenseResolutionJob");
-            ecb.AddComponent(entityInQueryIndex, entity, new HasTarget
+            ecb.AddComponent(entityInQueryIndex, entity, new FormationSlotGoal
             {
-                Type = HasTarget.TargetType.Entity,
-                TargetEntity = Entity.Null,
-                TargetPosition = float2.zero
+                TargetEntity = Entity.Null
             });
         }
         for (int i = 0; i < defends.Length; i++)

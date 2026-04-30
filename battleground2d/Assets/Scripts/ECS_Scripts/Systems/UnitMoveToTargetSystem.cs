@@ -52,7 +52,7 @@ public partial class UnitMoveToTargetSystem : SystemBase
                 if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
                 {
                     //movementSpeed.velocity = float3.zero;
-                    //if (movementGoal != Entity.Null) //TODO: change movementGoal.Type == HasTarget.TargetType.Entity?
+                    //if (movementGoal != Entity.Null) //TODO: change movementGoal.Type == FormationSlotGoal.TargetType.Entity?
                     //{
                     //    if (combatState.CurrentState == CombatState.State.Idle ||
                     //        combatState.CurrentState == CombatState.State.SeekingTarget)

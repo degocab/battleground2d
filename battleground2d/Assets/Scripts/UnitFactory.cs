@@ -62,6 +62,8 @@ public class UnitFactory
         }
         entityManager.AddComponentData(groupEntity, formationGroup);
         entityManager.AddComponentData(groupEntity, initialCommand);
+        entityManager.AddComponentData(groupEntity, new FormationStatus());
+        entityManager.AddComponentData(groupEntity, new FormationOrderIntent());
         for (int i = 0; i < positions.Count; i++)
         {
             //SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
@@ -82,8 +84,7 @@ public class UnitFactory
         {
             FormationID = formationID,
             LocalOffset = formationOffset,
-            FormationPosition = position,
-            Status = FormationStatus.Hold
+            FormationPosition = position
             ,FormationGroupEntity = formationGroupEntity,
             SlotIndex = i,
         });
@@ -268,8 +269,8 @@ public class UnitArchetypeFactory
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(OrderData), typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
-            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent), typeof(HasTarget)
-            , typeof(MovementGoal), typeof(MovementStatus)
+            typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(TargetComponent), typeof(DefenseComponent), typeof(AttackPhasesComponent), typeof(FormationSlotGoal)
+            , typeof(MovementGoal), typeof(MovementStatus), typeof(CombatTarget)
         );
     }
 

@@ -9,7 +9,7 @@ public struct FormationComponent : IComponentData
     public float2 LocalOffset; // Position relative to leader
     public float2 FormationPosition;
     public FormationType FormationType;
-    public FormationStatus Status;
+    //public FormationStatusEnum Status;
     public FormationColliderStatus ColliderStatus; 
     public Entity? FormationGroupEntity;
     public FormationColliderStatus PreviousColliderStatus;
@@ -25,7 +25,7 @@ public enum FormationColliderStatus
     Group,       // Use Group collider
     Individual,       // User unit collider
 }
-public enum FormationStatus
+public enum FormationStatusEnum
 {
     //None,       // No formation behavior
     Hold,       // Maintain position in formation
@@ -54,7 +54,7 @@ public struct FormationGroupComponent : IComponentData
     public float2 BoundsMin; // AABB min corner
     public float2 BoundsMax; // AABB max corner
     public bool isColliding;
-    public FormationStatus FormationGroupStatus;
+    public FormationStatusEnum FormationGroupStatus;
     public OrderType CurrentOrder;
     public bool ShouldUpdateAnchorToCurrentPosition; // NEW
     public Entity FormationGroupEntity;

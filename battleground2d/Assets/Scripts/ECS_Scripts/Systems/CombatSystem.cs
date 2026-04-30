@@ -30,7 +30,7 @@ public partial class CombatSystem : SystemBase
             ComponentType.ReadWrite<DefenseComponent>(),
             //ComponentType.ReadWrite<MovementSpeedComponent>(),
             ComponentType.ReadOnly<Translation>(),
-            ComponentType.ReadOnly<HasTarget>(),
+            ComponentType.ReadOnly<FormationSlotGoal>(),
             ComponentType.Exclude<CommanderComponent>()
         );
     }
@@ -99,7 +99,7 @@ public partial class CombatSystem : SystemBase
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
             //MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            HasTargetTypeHandle = GetComponentTypeHandle<HasTarget>(true),
+            HasTargetTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(true),
             DefenseTypeHandle = GetComponentTypeHandle<DefenseComponent>(false),
             Random = new Unity.Mathematics.Random((uint)(Time.ElapsedTime * 1000))
         };
@@ -123,7 +123,7 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<DefenseComponent> DefenseTypeHandle;
         //public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<HasTarget> HasTargetTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<FormationSlotGoal> HasTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public Unity.Mathematics.Random Random;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -215,7 +215,7 @@ public partial class CombatSystem : SystemBase
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, HasTarget hasTarget, ref DefenseComponent defense/*, ref MovementSpeedComponent movementSpeed*/)
+                                        Entity entity, int chunkIndex, Translation translation, FormationSlotGoal hasTarget, ref DefenseComponent defense/*, ref MovementSpeedComponent movementSpeed*/)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -289,7 +289,7 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
-                                      ref AttackComponent attack, Translation translation, HasTarget hasTarget)
+                                      ref AttackComponent attack, Translation translation, FormationSlotGoal hasTarget)
         {
             combatState.StateTimer += DeltaTime;
 
@@ -327,7 +327,7 @@ public partial class CombatSystem : SystemBase
             ref AttackComponent attack,
             ref AnimationComponent animation,
             Translation translation,
-            HasTarget hasTarget,
+            FormationSlotGoal hasTarget,
             //ref MovementSpeedComponent movementSpeed,
             float deltaTime)
         {
@@ -372,7 +372,7 @@ public partial class CombatSystem : SystemBase
         }
 
 
-        private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, HasTarget hasTarget)
+        private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, FormationSlotGoal hasTarget)
         {
             if (hasTarget.TargetEntity != Entity.Null &&
                 CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))

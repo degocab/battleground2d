@@ -31,6 +31,8 @@ public partial class FormationManagerSystem : SystemBase
 
     [NativeDisableParallelForRestriction]
     private NativeHashMap<Entity, FormationGroupComponent> _formationGroupMap; // Maps formation groups to their components.
+    [NativeDisableParallelForRestriction]
+    private NativeHashMap<Entity, FormationOrderIntent> _formationOrderIntentMap; // Maps formation groups to their components.
 
     protected override void OnCreate()
     {
@@ -45,6 +47,7 @@ public partial class FormationManagerSystem : SystemBase
         // Initialize the hash map for group average positions.
         _groupAveragePositions = new NativeHashMap<Entity, float2>(256, Allocator.Persistent);
         _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(256, Allocator.Persistent);
+        _formationOrderIntentMap = new NativeHashMap<Entity, FormationOrderIntent>(256, Allocator.Persistent);
         _groupToUnitsMap = new NativeMultiHashMap<Entity, Entity>(256, Allocator.Persistent);
     }
 
@@ -83,6 +86,12 @@ public partial class FormationManagerSystem : SystemBase
             _formationGroupMap = new NativeHashMap<Entity, FormationGroupComponent>(groupCount * 2, Allocator.Persistent);
         }
         else _formationGroupMap.Clear();
+        if (_formationOrderIntentMap.Capacity < groupCount * 2)
+        {
+            _formationOrderIntentMap.Dispose();
+            _formationOrderIntentMap = new NativeHashMap<Entity, FormationOrderIntent>(groupCount * 2, Allocator.Persistent);
+        }
+        else _formationOrderIntentMap.Clear();
         // Initialize or clear the native maps used for group-to-unit mapping and formation group data.
         InitializeOrClearNativeMaps(unitEntities.Length, groupCount);
 
@@ -99,6 +108,7 @@ public partial class FormationManagerSystem : SystemBase
         UpdateGroupAveragePosition(translations);
 
         // Update the positions of units in their formations.
+        Debug.Log("groupToUnitCountMap.Count: " + groupToUnitCountMap.Count());
         UpdateFormationComponents(groupToUnitCountMap);
 
         //// Update the bounds of each formation group based on unit positions.
@@ -169,6 +179,15 @@ public partial class FormationManagerSystem : SystemBase
             {
                 formationGroupWriter.TryAdd(entity, formationGroupComponent);
             }).WithBurst().ScheduleParallel(Dependency).Complete();
+        var formationOrderIntentWriter = _formationOrderIntentMap.AsParallelWriter();
+        // Populate the formation group map with all entities that have a FormationGroupComponent.
+        Entities
+            .WithNone<DeadTagComponent>()
+            .WithAll<FormationGroupComponent>()
+            .ForEach((Entity entity, ref FormationOrderIntent formationOrderIntent) =>
+            {
+                formationOrderIntentWriter.TryAdd(entity, formationOrderIntent);
+            }).WithBurst().ScheduleParallel(Dependency).Complete();
     }
 
     private void PopulateGroupToUnitsMap(NativeArray<Entity> unitEntities)
@@ -190,6 +209,7 @@ public partial class FormationManagerSystem : SystemBase
     private void UpdateFormationComponents(NativeHashMap<Entity, int> groupToUnitCountMap)
     {
         var formationGroupMapTemp = _formationGroupMap;
+        var formationOrderIntentMapTemp = _formationOrderIntentMap;
 
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var parallelEcb = ecb.AsParallelWriter();
@@ -199,10 +219,13 @@ public partial class FormationManagerSystem : SystemBase
             .WithAll<FormationComponent>()
             .WithReadOnly(groupToUnitCountMap)
             .WithReadOnly(formationGroupMapTemp)
+            .WithReadOnly(formationOrderIntentMapTemp)
             .ForEach((Entity entity, int entityInQueryIndex,
                       ref FormationComponent formationComponent,
                       ref OrderData order,
-                      ref HasTarget hasTarget) =>
+                      ref FormationSlotGoal formationSlotGoal
+                      //,in FormationOrderIntent formationOrderIntent
+                      ) =>
             {
                 // Formation "weight" / mass depending on type
                 formationComponent.FormationWeight =
@@ -216,21 +239,26 @@ public partial class FormationManagerSystem : SystemBase
                 // Look up this unit's formation group
                 if (!formationGroupMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationGroup))
                     return;
+                // Look up this unit's formation intent
+                if (!formationOrderIntentMapTemp.TryGetValue(formationComponent.FormationGroupEntity.Value, out var formationOrderIntent))
+                    return;
 
                 // Always propagate the group's current command down to the unit
                 order.CurrentOrder = formationGroup.CurrentOrder;
+                
 
                 // Optional: number of units in this group for slot layout
                 groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var unitCountInGroup);
                 int rowCount = (unitCountInGroup + formationGroup.UnitsPerRow - 1) / formationGroup.UnitsPerRow;
-                switch (formationComponent.Status)
+                switch (formationOrderIntent.Status)
                 {
-                    case FormationStatus.Hold:
+                    case FormationStatusEnum.Hold:
                         {
+
                             // In Hold: recompute slot positions tightly around the anchor
                             if (unitCountInGroup > 0)
                             {
-                                formationComponent.FormationPosition = CalculatePhalanxPosition(
+                                formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
                                 formationComponent.SlotIndex,
                                 formationGroup.UnitsPerRow,
                                 formationGroup.UnitSpacing,
@@ -240,29 +268,25 @@ public partial class FormationManagerSystem : SystemBase
                                 formationComponent.Direction = formationGroup.FormationFacingDirection;
                             }
 
-                            // We *don't* force HasTarget here unless you want the unit
+                            // We *don't* force FormationSlotGoal here unless you want the unit
                             // to explicitly walk back into its slot when idle.
                             // If you do, keep it very gentle and only when no entity target:
-                            if (hasTarget.TargetEntity == Entity.Null &&
-                            hasTarget.Type == HasTarget.TargetType.Position)
-                            {
-                                hasTarget.TargetPosition = formationComponent.FormationPosition;
-                            }
+                                formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
 
-                            // Don't touch HasTarget.TargetEntity – let Combat/Target systems assign it.
+                            // Don't touch FormationSlotGoal.TargetEntity – let Combat/Target systems assign it.
                             break;
                         }
 
-                    case FormationStatus.Engaged:
+                    case FormationStatusEnum.Engaged:
                         {
-                            // Engaged: combat systems are in charge of HasTarget and CombatState.
-                            // Do NOT overwrite HasTarget here, or you'll fight the CombatSystem.
+                            // Engaged: combat systems are in charge of FormationSlotGoal and CombatState.
+                            // Do NOT overwrite FormationSlotGoal here, or you'll fight the CombatSystem.
                             if (unitCountInGroup > 0)
                             {
                                 // During engagement, slot around the measured center (not commanded anchor)
                                 float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
 
-                                formationComponent.FormationPosition = CalculatePhalanxPosition(
+                                formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
                                     formationComponent.SlotIndex,
                                     formationGroup.UnitsPerRow,
                                     formationGroup.UnitSpacing,
@@ -272,10 +296,10 @@ public partial class FormationManagerSystem : SystemBase
 
                                 formationComponent.Direction = formationGroup.FormationFacingDirection;
                             }
-                            if (formationGroup.FormationGroupStatus != FormationStatus.Engaged)
+                            if (formationGroup.FormationGroupStatus != FormationStatusEnum.Engaged)
                             {
                                 // if the formation group is not engaged, switch the group to engaged
-                                formationGroup.FormationGroupStatus = FormationStatus.Engaged;
+                                formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
 
                                 parallelEcb.SetComponent(
                                     entityInQueryIndex,
@@ -287,8 +311,9 @@ public partial class FormationManagerSystem : SystemBase
                             break;
                         }
 
-                    case FormationStatus.Disengaging:
+                    case FormationStatusEnum.Disengaging:
                         {
+                            Debug.Log("Disengaging");
                             // Disengaging: formation/retreat logic owns movement.
                             // Force units to move toward the group's anchor/retreat point.
 
@@ -306,9 +331,8 @@ public partial class FormationManagerSystem : SystemBase
                                 formationComponent.Direction = formationGroup.FormationFacingDirection;
                             }
 
-                            hasTarget.Type = HasTarget.TargetType.Position;
-                            hasTarget.TargetEntity = Entity.Null;
-                            hasTarget.TargetPosition = formationComponent.FormationPosition;
+                            formationSlotGoal.TargetEntity = Entity.Null;
+                            formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
 
                             // While disengaging we never want FindTarget to re-fire
                             // and reacquire melee targets.
@@ -323,7 +347,7 @@ public partial class FormationManagerSystem : SystemBase
                     default:
                         {
                             // Other statuses (Moving, Routing, etc.) can be treated like a very loose Hold,
-                            // or left untouched depending on how you extend FormationStatus.
+                            // or left untouched depending on how you extend FormationStatusEnum.
 
                             // For now, we do nothing special here to avoid surprising interactions.
                             break;
