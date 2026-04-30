@@ -30,7 +30,7 @@ public partial class CombatSystem : SystemBase
             ComponentType.ReadWrite<DefenseComponent>(),
             //ComponentType.ReadWrite<MovementSpeedComponent>(),
             ComponentType.ReadOnly<Translation>(),
-            ComponentType.ReadOnly<FormationSlotGoal>(),
+            ComponentType.ReadOnly<CombatTarget>(),
             ComponentType.Exclude<CommanderComponent>()
         );
     }
@@ -99,7 +99,7 @@ public partial class CombatSystem : SystemBase
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
             //MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
-            HasTargetTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(true),
+            CombatTargetTypeHandle = GetComponentTypeHandle<CombatTarget>(true),
             DefenseTypeHandle = GetComponentTypeHandle<DefenseComponent>(false),
             Random = new Unity.Mathematics.Random((uint)(Time.ElapsedTime * 1000))
         };
@@ -123,7 +123,7 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<DefenseComponent> DefenseTypeHandle;
         //public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
-        [ReadOnly] public ComponentTypeHandle<FormationSlotGoal> HasTargetTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<CombatTarget> CombatTargetTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
         public Unity.Mathematics.Random Random;
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -133,7 +133,7 @@ public partial class CombatSystem : SystemBase
             var cooldowns = chunk.GetNativeArray(CooldownTypeHandle);
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
-            var hasTargets = chunk.GetNativeArray(HasTargetTypeHandle);
+            var combatTargets = chunk.GetNativeArray(CombatTargetTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var defenses = chunk.GetNativeArray(DefenseTypeHandle);
             //var movementSpeeds = chunk.GetNativeArray(MovementSpeedTypeHandle);
@@ -145,7 +145,7 @@ public partial class CombatSystem : SystemBase
                 var cooldown = cooldowns[i];
                 var animation = animations[i];
                 var translation = translations[i];
-                var hasTarget = hasTargets[i];
+                var combatTarget = combatTargets[i];
                 var entity = entities[i];
                 var defense = defenses[i];
                 //var movementSpeed = movementSpeeds[i];
@@ -155,15 +155,15 @@ public partial class CombatSystem : SystemBase
                 {
                     case CombatState.State.Idle:
                     default:
-                        HandleIdleState(ref combatState, ref animation, hasTarget);
+                        HandleIdleState(ref combatState, ref animation, combatTarget);
                         break;
                     case CombatState.State.SeekingTarget:
-                        HandleSeekingState(ref combatState, ref animation, ref attack, translation, hasTarget);
+                        HandleSeekingState(ref combatState, ref animation, ref attack, translation, combatTarget);
                         break;
 
                     case CombatState.State.Attacking:
                         HandleAttackingState(ref combatState, ref attack, ref cooldown, ref animation,
-                                           entity, chunkIndex, translation, hasTarget, ref defense/*, ref movementSpeed*/);
+                                           entity, chunkIndex, translation, combatTarget, ref defense/*, ref movementSpeed*/);
                         break;
 
                     case CombatState.State.TakingDamage:
@@ -172,7 +172,7 @@ public partial class CombatSystem : SystemBase
                         break;
 
                     case CombatState.State.Defending:
-                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, hasTarget/*, ref movementSpeed*/, DeltaTime);
+                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, combatTarget/*, ref movementSpeed*/, DeltaTime);
                         break;
 
                     case CombatState.State.Blocking:
@@ -180,8 +180,8 @@ public partial class CombatSystem : SystemBase
                         if (defense.BlockDuration <= 0f)
                         {
                             // Transition back to appropriate state after blocking ends
-                            if (hasTarget.TargetEntity != Entity.Null &&
-                                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+                            if (combatTarget.TargetEntity != Entity.Null &&
+                                CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
                             {
                                 // Still have valid target - go back to attacking
                                 combatState.CurrentState = CombatState.State.Attacking;
@@ -215,18 +215,18 @@ public partial class CombatSystem : SystemBase
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
                                         ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, FormationSlotGoal hasTarget, ref DefenseComponent defense/*, ref MovementSpeedComponent movementSpeed*/)
+                                        Entity entity, int chunkIndex, Translation translation, CombatTarget combatTarget, ref DefenseComponent defense/*, ref MovementSpeedComponent movementSpeed*/)
         {
             combatState.StateTimer += DeltaTime;
 
             // Check if target is still valid
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
                 TransitionToSeeking(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
+            float3 targetPos = TranslationFromEntity[combatTarget.TargetEntity].Value;
             bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
 
             // Check cooldown states
@@ -244,7 +244,7 @@ public partial class CombatSystem : SystemBase
 
                 ECB.AddComponent(chunkIndex, entity, new AttackEventComponent
                 {
-                    TargetEntity = hasTarget.TargetEntity,
+                    TargetEntity = combatTarget.TargetEntity,
                     Damage = attack.Damage,
                     SourceEntity = entity,
                     AttackTime = CurrentTime,
@@ -289,17 +289,17 @@ public partial class CombatSystem : SystemBase
         }
 
         private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
-                                      ref AttackComponent attack, Translation translation, FormationSlotGoal hasTarget)
+                                      ref AttackComponent attack, Translation translation, CombatTarget combatTarget)
         {
             combatState.StateTimer += DeltaTime;
 
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
                 TransitionToIdle(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
+            float3 targetPos = TranslationFromEntity[combatTarget.TargetEntity].Value;
             bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
 
             if (inRange)
@@ -327,17 +327,17 @@ public partial class CombatSystem : SystemBase
             ref AttackComponent attack,
             ref AnimationComponent animation,
             Translation translation,
-            FormationSlotGoal hasTarget,
+            CombatTarget combatTarget,
             //ref MovementSpeedComponent movementSpeed,
             float deltaTime)
         {
-            if (!CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
                 TransitionToSeeking(ref combatState, ref animation);
                 return;
             }
 
-            float3 targetPos = TranslationFromEntity[hasTarget.TargetEntity].Value;
+            float3 targetPos = TranslationFromEntity[combatTarget.TargetEntity].Value;
             bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
 
             if (!inRange)
@@ -372,13 +372,13 @@ public partial class CombatSystem : SystemBase
         }
 
 
-        private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, FormationSlotGoal hasTarget)
+        private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, CombatTarget combatTarget)
         {
-            if (hasTarget.TargetEntity != Entity.Null &&
-                CombatUtils.IsTargetValid(hasTarget.TargetEntity, TranslationFromEntity))
+            if (combatTarget.TargetEntity != Entity.Null &&
+                CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
                 combatState.CurrentState = CombatState.State.SeekingTarget;
-                combatState.TargetEntity = hasTarget.TargetEntity;
+                combatState.TargetEntity = combatTarget.TargetEntity;
                 combatState.StateTimer = 0f;
                 animation.AnimationType = EntitySpawner.AnimationType.Walk;
             }

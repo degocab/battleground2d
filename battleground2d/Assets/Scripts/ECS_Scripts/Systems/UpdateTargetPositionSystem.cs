@@ -40,7 +40,7 @@ public class UpdateTargetPositionSystem : SystemBase
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
         {
             //var entities = chunk.GetNativeArray(EntityTypeHandle);
-            //var hasTargetComponents = chunk.GetNativeArray(HasTargetTypeHandle);
+            //var hasTargetComponents = chunk.GetNativeArray(CombatTargetTypeHandle);
 
             //for (int i = 0; i < chunk.Count; i++)
             //{
