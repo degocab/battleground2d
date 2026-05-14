@@ -41,15 +41,16 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     return; // Exit early - don't process movement
                 }
 
-                float reachThreshold = .4f;
+                float reachThreshold = 1.4f;
                 float2 targetPos = float2.zero;
                 targetPos = movementGoal.Position;
                 reachThreshold = 0.01f;// should reach position in formation
                 float2 direction = math.normalize(targetPos - translation.Value.xy);
                 //movementSpeed.velocity.xy = direction;
                 movementStatus.CurrentStatus = MovementStatus.Status.Moving;
-
-                if (math.distance(translation.Value.xy, targetPos) < reachThreshold)
+                var dist = math.distance(translation.Value.xy, targetPos);
+                var isrunning = false;
+                if (dist < reachThreshold)
                 {
                     //movementSpeed.velocity = float3.zero;
                     //if (movementGoal != Entity.Null) //TODO: change movementGoal.Type == FormationSlotGoal.TargetType.Entity?
@@ -61,7 +62,14 @@ public partial class UnitMoveToTargetSystem : SystemBase
                     //    }
                     //}
                     movementStatus.CurrentStatus = MovementStatus.Status.ReachedDestination;
+                    isrunning = false;
                 }
+                else if (dist > 2f)
+                {;
+                    isrunning = true;
+                }
+
+                movementStatus.isRunning = isrunning;
 
                 //if (combatState.CurrentState == CombatState.State.SeekingTarget && math.distancesq(movementGoal.Position, translation.Value.xy) > 1f)
                 //{
@@ -83,6 +91,8 @@ public struct RestrictMovementTag : IComponentData { }
 public struct MovementStatus : IComponentData
 {
     public Status CurrentStatus;
+    public bool isRunning;
+
     public enum Status
     {
         Idle, Moving, ReachedDestination

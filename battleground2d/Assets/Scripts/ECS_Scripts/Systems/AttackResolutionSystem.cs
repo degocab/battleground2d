@@ -38,7 +38,7 @@ public partial class AttackResolutionSystem : SystemBase
             .WithReadOnly(combatStateDataFromEntity)
             .WithAll<AttackEventComponent>()
             .ForEach((Entity entity, int entityInQueryIndex,
-                    ref FormationComponent formation,
+                    //ref FormationComponent formation,
                     //ref AttackComponent attack,
                     in CombatState combatState,
                      in AttackEventComponent attackEvent,
@@ -56,7 +56,6 @@ public partial class AttackResolutionSystem : SystemBase
 
                     float3 targetPos = translationFromEntity[attackEvent.TargetEntity].Value;
                     //bool isTargetDefending = attackComponentFromEntity[attackEvent.TargetEntity].isDefending;
-                    bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
                     var attack = attackComponentFromEntity[entity];
                     if (ShouldAttackLand(attack.Range, 
                         //animationComponent.Direction
@@ -70,6 +69,7 @@ public partial class AttackResolutionSystem : SystemBase
                         //Debug.Log($"target: {animationFromEntity[attackEvent.TargetEntity].UnitType.ToString()} is defending:{isTargetDefending}");
                         //Debug.Log($"attacker: {animationComponent.UnitType.ToString()} is defending:{isTargetDefending}");
 
+                    bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
 
                         var defenderAnimation = animationFromEntity[attackEvent.TargetEntity];
 
@@ -132,10 +132,10 @@ public partial class AttackResolutionSystem : SystemBase
 
         // 3. Check facing and defense
         var defenderAnimation = animationFromEntity[attackEvent.TargetEntity];
-
-        return CanHitBasedOnFacingSimple(attackerPos.xy, defenderPos.xy,
-                                 attackerFacing/*attackEvent.AttackerFacing*/, defenderAnimation.Direction//,
-                                 /*isDefending*/);
+        return true;
+        //return CanHitBasedOnFacingSimple(attackerPos.xy, defenderPos.xy,
+        //                         attackerFacing/*attackEvent.AttackerFacing*/, defenderAnimation.Direction//,
+        //                         /*isDefending*/);
     }
     private static bool CanHitBasedOnFacingSimple(float2 attackerPos, float2 defenderPos, EntitySpawner.Direction attackerFacing,
                                          EntitySpawner.Direction defenderFacing
@@ -155,20 +155,71 @@ public partial class AttackResolutionSystem : SystemBase
     {
         //DefenseSystem.LogDirection(defender, attacker);
 
-        return (attacker == EntitySpawner.Direction.Left && defender == EntitySpawner.Direction.Right) ||
-               (attacker == EntitySpawner.Direction.Right && defender == EntitySpawner.Direction.Left) ||
-               (attacker == EntitySpawner.Direction.Up && defender == EntitySpawner.Direction.Down) ||
-               (attacker == EntitySpawner.Direction.Down && defender == EntitySpawner.Direction.Up);
+        switch (defender)
+        {
+            case EntitySpawner.Direction.Left:
+                return attacker == EntitySpawner.Direction.Right ||
+                       attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Down;
+
+            case EntitySpawner.Direction.Right:
+                return attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Down;
+
+            case EntitySpawner.Direction.Up:
+                return attacker == EntitySpawner.Direction.Down ||
+                       attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Right;
+
+            case EntitySpawner.Direction.Down:
+                return attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Right;
+
+            default:
+                return false;
+        }
+        //return (attacker == EntitySpawner.Direction.Left && defender == EntitySpawner.Direction.Right) ||
+        //       (attacker == EntitySpawner.Direction.Right && defender == EntitySpawner.Direction.Left) ||
+        //       (attacker == EntitySpawner.Direction.Up && defender == EntitySpawner.Direction.Down) ||
+        //       (attacker == EntitySpawner.Direction.Down && defender == EntitySpawner.Direction.Up);
     }
 
     private static bool IsDefendingInHemicircleDirection(EntitySpawner.Direction attacker, EntitySpawner.Direction defender)
     {
         //DefenseSystem.LogDirection(defender, attacker);
 
-        return (attacker == EntitySpawner.Direction.Left && (defender == EntitySpawner.Direction.Right || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
-               (attacker == EntitySpawner.Direction.Right && (defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
-               (attacker == EntitySpawner.Direction.Up && (defender == EntitySpawner.Direction.Down || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right)) ||
-               (attacker == EntitySpawner.Direction.Down && (defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right));
+        //return (attacker == EntitySpawner.Direction.Left && (defender == EntitySpawner.Direction.Right || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
+        //       (attacker == EntitySpawner.Direction.Right && (defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Down)) ||
+        //       (attacker == EntitySpawner.Direction.Up && (defender == EntitySpawner.Direction.Down || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right)) ||
+        //       (attacker == EntitySpawner.Direction.Down && (defender == EntitySpawner.Direction.Up || defender == EntitySpawner.Direction.Left || defender == EntitySpawner.Direction.Right));
+
+        switch (defender)
+        {
+            case EntitySpawner.Direction.Left:
+                return attacker == EntitySpawner.Direction.Right ||
+                       attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Down;
+
+            case EntitySpawner.Direction.Right:
+                return attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Down;
+
+            case EntitySpawner.Direction.Up:
+                return attacker == EntitySpawner.Direction.Down ||
+                       attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Right;
+
+            case EntitySpawner.Direction.Down:
+                return attacker == EntitySpawner.Direction.Up ||
+                       attacker == EntitySpawner.Direction.Left ||
+                       attacker == EntitySpawner.Direction.Right;
+
+            default:
+                return false;
+        }
     }
 }
 public struct DefendEventBuffer : IBufferElementData
@@ -190,7 +241,7 @@ public partial class DefenseSystem : SystemBase
     {
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
-        var hasTargetFromEntity = GetComponentDataFromEntity<FormationSlotGoal>(true);
+        var formationSlotGoalFromEntity = GetComponentDataFromEntity<FormationSlotGoal>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
 
@@ -198,7 +249,7 @@ public partial class DefenseSystem : SystemBase
         Entities
     .WithName("DefenseResolutionJob")
     .WithAll<DefendEventBuffer>()
-    .WithReadOnly(hasTargetFromEntity)
+    .WithReadOnly(formationSlotGoalFromEntity)
     .ForEach((Entity entity, int entityInQueryIndex,
     ref AttackComponent attackComponent,
     ref DefenseComponent defense,
@@ -211,25 +262,25 @@ public partial class DefenseSystem : SystemBase
             //Debug.Log("no defends in buffer"); 
             return;
         }
-        // Check if entity has FormationSlotGoal component - use the existing hasTargetFromEntity
-        bool hasTargetComponent = hasTargetFromEntity.HasComponent(entity);
+        // Check if entity has FormationSlotGoal component - use the existing formationSlotGoalFromEntity
+        bool hasFormationSlotGoalComponent = formationSlotGoalFromEntity.HasComponent(entity);
 
-        if (!hasTargetComponent)
+        if (!hasFormationSlotGoalComponent)
         {
-            Debug.Log("HasTarget.TargetPosition updated by DefenseResolutionJob");
+            Debug.Log("FormationSlotGoal.TargetPosition updated by DefenseResolutionJob");
             ecb.AddComponent(entityInQueryIndex, entity, new FormationSlotGoal
             {
                 TargetEntity = Entity.Null
             });
         }
-        for (int i = 0; i < defends.Length; i++)
-        {
-            //Debug.Log("Attack blocked by AI!!!!!!");
-            //reset block trigger?
-            //defense.IsBlocking = true;
-            //defense.BlockDuration = .2f;
-            //combatState.CurrentState = CombatState.State.Blocking;
-        }
+        //for (int i = 0; i < defends.Length; i++)
+        //{
+        //    //Debug.Log("Attack blocked by AI!!!!!!");
+        //    //reset block trigger?
+        //    //defense.IsBlocking = true;
+        //    //defense.BlockDuration = .2f;
+        //    //combatState.CurrentState = CombatState.State.Blocking;
+        //}
         //defense.IsBlocking = true;
         defense.BlockDuration = .2f;
         combatState.CurrentState = CombatState.State.Blocking;

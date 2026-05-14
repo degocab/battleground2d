@@ -369,7 +369,7 @@ ComponentType.Exclude<CommanderComponent>());
             float2 dir = CombatUtils.GetDirectionVector(direction);
             float endlessDistance = 1000f;
             float2 targetPos = entityPos + (dir * endlessDistance);
-            Debug.Log("HasTarget.TargetPosition updated by HandleMovementOrder in ProcessOrderSystem");
+            Debug.Log("FormationSlotGoal updated by HandleMovementOrder in ProcessOrderSystem");
 
             ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
             {
@@ -424,7 +424,7 @@ ComponentType.Exclude<CommanderComponent>());
             {
                 // Direct attack on entity
                 combatState.CurrentState = CombatState.State.Attacking;
-                Debug.Log("HasTarget.TargetPosition updated by HandleAttackOrder in ProcessOrderSystem");
+                Debug.Log("FormationSlotGoal updated by HandleAttackOrder in ProcessOrderSystem");
                 formationOrderIntent.Status = FormationStatusEnum.Engaged;
                 ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
                 {

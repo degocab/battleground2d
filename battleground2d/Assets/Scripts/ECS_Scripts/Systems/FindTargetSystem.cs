@@ -120,13 +120,16 @@ public partial class FindTargetSystem : SystemBase
 
                     //if (chunkCombatTarget)
                     //{
-                    //    ECB.SetComponent(chunkIndex, entity, target);
+                    //ECB.SetComponent(chunkIndex, entity, target);
                     //}
                     //else
                     //{
-                        ECB.AddComponent(chunkIndex, entity, target);
+                    ECB.AddComponent(chunkIndex, entity, target);
                     //}
                 }
+
+
+
             }
         }
     }

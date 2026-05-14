@@ -23,7 +23,7 @@ public class UpdateTargetPositionSystem : SystemBase
         var job = new UpdateTargetPositionJob
         {
             TargetTranslationLookup = targetTranslationLookup,
-            HasTargetTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(false),
+            FormationSlotGoalTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(false),
             EntityTypeHandle = GetEntityTypeHandle()
         };
 
@@ -34,7 +34,7 @@ public class UpdateTargetPositionSystem : SystemBase
     private struct UpdateTargetPositionJob : IJobChunk
     {
         [ReadOnly] public ComponentDataFromEntity<Translation> TargetTranslationLookup;
-        public ComponentTypeHandle<FormationSlotGoal> HasTargetTypeHandle;
+        public ComponentTypeHandle<FormationSlotGoal> FormationSlotGoalTypeHandle;
         [ReadOnly] public EntityTypeHandle EntityTypeHandle;
 
         public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)

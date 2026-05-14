@@ -67,7 +67,7 @@ public class MovementSystem : SystemBase
         float maxRange = 1.125f;
         var speedJobHandle = Entities.WithName("ApplyRandomSpeed")
             .WithNone<PlayerInputComponent>()
-          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity, in MovementGoal movementGoal) =>
+          .ForEach((ref Translation translation, ref PositionComponent position, ref MovementSpeedComponent movementSpeedComponent, in Entity entity, in MovementGoal movementGoal, in MovementStatus movementStatus) =>
           {
 
               float reachThreshold = .4f;
@@ -77,7 +77,7 @@ public class MovementSystem : SystemBase
               float2 direction = math.normalize(targetPos - translation.Value.xy);
               movementSpeedComponent.velocity.xy = direction;
 
-              if (movementSpeedComponent.isRunnning)
+          if (movementSpeedComponent.isRunnning || movementStatus.isRunning)
               {
                   Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
                   movementSpeedComponent.randomSpeed = 1.25f;//random.NextFloat(minRange, maxRange);

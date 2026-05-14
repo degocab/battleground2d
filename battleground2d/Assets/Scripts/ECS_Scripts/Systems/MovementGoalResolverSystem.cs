@@ -30,7 +30,7 @@ public partial class MovementGoalResolverSystem : SystemBase
             .WithAll<CombatTarget>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal hasTarget, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData
+            .ForEach((Entity entity, int entityInQueryIndex, ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData
             ) =>
             {
 
@@ -41,7 +41,7 @@ public partial class MovementGoalResolverSystem : SystemBase
                 ////  go to this second
                 if (orderData.CurrentOrder == OrderType.Defend)
                 {
-                    movementGoal.Position = hasTarget.TargetPosition;
+                    movementGoal.Position = formationSlotGoal.TargetPosition;
                 }
                 else
                 {
@@ -51,9 +51,9 @@ public partial class MovementGoalResolverSystem : SystemBase
                     }
                 }
 
-                //else// if (hasTarget.isActive)// follow all other adfter for now
+                //else// if (formationSlotGoal.isActive)// follow all other adfter for now
                 //{
-                //    movementGoal.Position = hasTarget.TargetPosition;
+                //    movementGoal.Position = formationSlotGoal.TargetPosition;
                 //}
 
 

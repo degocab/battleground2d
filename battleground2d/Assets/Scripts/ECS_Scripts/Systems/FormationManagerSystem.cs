@@ -60,6 +60,8 @@ public partial class FormationManagerSystem : SystemBase
             _formationGroupMap.Dispose();
         if (_groupToUnitsMap.IsCreated)
             _groupToUnitsMap.Dispose();
+        if (_formationOrderIntentMap.IsCreated)
+            _formationOrderIntentMap.Dispose();
         base.OnDestroy();
     }
 
@@ -108,7 +110,6 @@ public partial class FormationManagerSystem : SystemBase
         UpdateGroupAveragePosition(translations);
 
         // Update the positions of units in their formations.
-        Debug.Log("groupToUnitCountMap.Count: " + groupToUnitCountMap.Count());
         UpdateFormationComponents(groupToUnitCountMap);
 
         //// Update the bounds of each formation group based on unit positions.
