@@ -373,8 +373,7 @@ ComponentType.Exclude<CommanderComponent>());
 
             ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
             {
-                TargetPosition = targetPos,
-                TargetEntity = Entity.Null
+                TargetPosition = targetPos
             });
 
             //movementSpeed.isRunnning = orderType == OrderType.Charge;
@@ -428,7 +427,7 @@ ComponentType.Exclude<CommanderComponent>());
                 formationOrderIntent.Status = FormationStatusEnum.Engaged;
                 ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
                 {
-                    TargetEntity = order.TargetEntity
+                    //TargetEntity = order.TargetEntity
                 });
                 ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
             }

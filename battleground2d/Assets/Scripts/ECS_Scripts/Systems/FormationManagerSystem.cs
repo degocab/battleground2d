@@ -251,109 +251,142 @@ public partial class FormationManagerSystem : SystemBase
                 // Optional: number of units in this group for slot layout
                 groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var unitCountInGroup);
                 int rowCount = (unitCountInGroup + formationGroup.UnitsPerRow - 1) / formationGroup.UnitsPerRow;
-                switch (formationOrderIntent.Status)
+                //switch (formationOrderIntent.Status)
+                //{
+                //    //case FormationStatusEnum.Hold:
+                //    //    {
+
+                //    //        // In Hold: recompute slot positions tightly around the anchor
+                //    //        if (unitCountInGroup > 0)
+                //    //        {
+                //    //            formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
+                //    //            formationComponent.SlotIndex,
+                //    //            formationGroup.UnitsPerRow,
+                //    //            formationGroup.UnitSpacing,
+                //    //            formationGroup.AnchorPosition,
+                //    //            rowCount
+                //    //        );
+                //    //            formationComponent.Direction = formationGroup.FormationFacingDirection;
+                //    //        }
+
+                //    //        // We *don't* force FormationSlotGoal here unless you want the unit
+                //    //        // to explicitly walk back into its slot when idle.
+                //    //        // If you do, keep it very gentle and only when no entity target:
+                //    //            formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
+
+                //    //        // Don't touch FormationSlotGoal.TargetEntity – let Combat/Target systems assign it.
+                //    //        break;
+                //    //    }
+                //    case FormationStatusEnum.Hold:
+                //    case FormationStatusEnum.Disengaging:
+                //    case FormationStatusEnum.Engaged:
+                //        {
+                //            // Engaged: combat systems are in charge of FormationSlotGoal and CombatState.
+                //            // Do NOT overwrite FormationSlotGoal here, or you'll fight the CombatSystem.
+                //            if (unitCountInGroup > 0)
+                //            {
+                //                // During engagement, slot around the measured center (not commanded anchor)
+                //                float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
+
+                //                formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
+                //                    formationComponent.SlotIndex,
+                //                    formationGroup.UnitsPerRow,
+                //                    formationGroup.UnitSpacing,
+                //                    slotAnchor,
+                //                    rowCount
+                //                );
+
+                //                formationComponent.Direction = formationGroup.FormationFacingDirection;
+                //            }
+                //            if (formationGroup.FormationGroupStatus != FormationStatusEnum.Engaged)
+                //            {
+                //                // if the formation group is not engaged, switch the group to engaged
+                //                formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
+
+                //                parallelEcb.SetComponent(
+                //                    entityInQueryIndex,
+                //                    formationComponent.FormationGroupEntity.Value,
+                //                    formationGroup
+                //                );
+                //            }
+
+                //            break;
+                //        }
+
+                //    //case FormationStatusEnum.Disengaging:
+                //    //    {
+                //    //        Debug.Log("Disengaging");
+                //    //        // Disengaging: formation/retreat logic owns movement.
+                //    //        // Force units to move toward the group's anchor/retreat point.
+
+                //    //        // Optionally recompute FormationPosition using the *new* AnchorPosition,
+                //    //        // so everyone reforms into a proper block at the retreat location.
+                //    //        if (unitCountInGroup > 0)
+                //    //        {
+                //    //            formationComponent.FormationPosition = CalculatePhalanxPosition(
+                //    //            formationComponent.SlotIndex,
+                //    //            formationGroup.UnitsPerRow,
+                //    //            formationGroup.UnitSpacing,
+                //    //            formationGroup.AnchorPosition,
+                //    //            rowCount
+                //    //        );
+                //    //            formationComponent.Direction = formationGroup.FormationFacingDirection;
+                //    //        }
+
+                //    //        formationSlotGoal.TargetEntity = Entity.Null;
+                //    //        formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
+
+                //    //        // While disengaging we never want FindTarget to re-fire
+                //    //        // and reacquire melee targets.
+                //    //        if (HasComponent<FindTargetTag>(entity))
+                //    //        {
+                //    //            parallelEcb.RemoveComponent<FindTargetTag>(entityInQueryIndex, entity);
+                //    //        }
+
+                //    //        break;
+                //    //    }
+
+                //    default:
+                //        {
+                //            // Other statuses (Moving, Routing, etc.) can be treated like a very loose Hold,
+                //            // or left untouched depending on how you extend FormationStatusEnum.
+
+                //            // For now, we do nothing special here to avoid surprising interactions.
+                //            break;
+                //        }
+                //}
+
+
+                if (unitCountInGroup > 0)
                 {
-                    case FormationStatusEnum.Hold:
-                        {
+                    // During engagement, slot around the measured center (not commanded anchor)
+                    float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
 
-                            // In Hold: recompute slot positions tightly around the anchor
-                            if (unitCountInGroup > 0)
-                            {
-                                formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
-                                formationComponent.SlotIndex,
-                                formationGroup.UnitsPerRow,
-                                formationGroup.UnitSpacing,
-                                formationGroup.AnchorPosition,
-                                rowCount
-                            );
-                                formationComponent.Direction = formationGroup.FormationFacingDirection;
-                            }
+                    formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
+                        formationComponent.SlotIndex,
+                        formationGroup.UnitsPerRow,
+                        formationGroup.UnitSpacing,
+                        slotAnchor,
+                        rowCount
+                    );
 
-                            // We *don't* force FormationSlotGoal here unless you want the unit
-                            // to explicitly walk back into its slot when idle.
-                            // If you do, keep it very gentle and only when no entity target:
-                                formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
-
-                            // Don't touch FormationSlotGoal.TargetEntity – let Combat/Target systems assign it.
-                            break;
-                        }
-
-                    case FormationStatusEnum.Engaged:
-                        {
-                            // Engaged: combat systems are in charge of FormationSlotGoal and CombatState.
-                            // Do NOT overwrite FormationSlotGoal here, or you'll fight the CombatSystem.
-                            if (unitCountInGroup > 0)
-                            {
-                                // During engagement, slot around the measured center (not commanded anchor)
-                                float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
-
-                                formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
-                                    formationComponent.SlotIndex,
-                                    formationGroup.UnitsPerRow,
-                                    formationGroup.UnitSpacing,
-                                    slotAnchor,
-                                    rowCount
-                                );
-
-                                formationComponent.Direction = formationGroup.FormationFacingDirection;
-                            }
-                            if (formationGroup.FormationGroupStatus != FormationStatusEnum.Engaged)
-                            {
-                                // if the formation group is not engaged, switch the group to engaged
-                                formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
-
-                                parallelEcb.SetComponent(
-                                    entityInQueryIndex,
-                                    formationComponent.FormationGroupEntity.Value,
-                                    formationGroup
-                                );
-                            }
-
-                            break;
-                        }
-
-                    case FormationStatusEnum.Disengaging:
-                        {
-                            Debug.Log("Disengaging");
-                            // Disengaging: formation/retreat logic owns movement.
-                            // Force units to move toward the group's anchor/retreat point.
-
-                            // Optionally recompute FormationPosition using the *new* AnchorPosition,
-                            // so everyone reforms into a proper block at the retreat location.
-                            if (unitCountInGroup > 0)
-                            {
-                                formationComponent.FormationPosition = CalculatePhalanxPosition(
-                                formationComponent.SlotIndex,
-                                formationGroup.UnitsPerRow,
-                                formationGroup.UnitSpacing,
-                                formationGroup.AnchorPosition,
-                                rowCount
-                            );
-                                formationComponent.Direction = formationGroup.FormationFacingDirection;
-                            }
-
-                            formationSlotGoal.TargetEntity = Entity.Null;
-                            formationSlotGoal.TargetPosition = formationComponent.FormationPosition;
-
-                            // While disengaging we never want FindTarget to re-fire
-                            // and reacquire melee targets.
-                            if (HasComponent<FindTargetTag>(entity))
-                            {
-                                parallelEcb.RemoveComponent<FindTargetTag>(entityInQueryIndex, entity);
-                            }
-
-                            break;
-                        }
-
-                    default:
-                        {
-                            // Other statuses (Moving, Routing, etc.) can be treated like a very loose Hold,
-                            // or left untouched depending on how you extend FormationStatusEnum.
-
-                            // For now, we do nothing special here to avoid surprising interactions.
-                            break;
-                        }
+                    formationComponent.Direction = formationGroup.FormationFacingDirection;
                 }
+
+
+                formationGroup.FormationGroupStatus = FormationStatusEnum.Hold;
+
+                //if (formationGroup.FormationGroupStatus != FormationStatusEnum.Engaged)
+                //{
+                //    // if the formation group is not engaged, switch the group to engaged
+                //    formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
+
+                //    parallelEcb.SetComponent(
+                //        entityInQueryIndex,
+                //        formationComponent.FormationGroupEntity.Value,
+                //        formationGroup
+                //    );
+                //}
             }).WithBurst().ScheduleParallel(Dependency).Complete();
 
         ecb.Playback(EntityManager);

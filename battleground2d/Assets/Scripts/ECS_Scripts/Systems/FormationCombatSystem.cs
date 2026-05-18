@@ -167,7 +167,7 @@ public partial class FormationCombatSystem : SystemBase
                      ) =>
             {
                 var unitFormatonStatus = formationStatus.Value;
-                if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
+                //if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
                     unitFormatonStatus = FormationStatusEnum.Hold;
 
                 //IF TAKING DMG, dont process formation logic
@@ -177,26 +177,27 @@ public partial class FormationCombatSystem : SystemBase
                     return;
                 }
 
-                switch (unitFormatonStatus)
-                {
-                    case FormationStatusEnum.Hold:
-                    default:
-                        //animationComponent.Direction = formation.Direction;
-                        HandleHoldFormation(ref formationStatus, ref combatState, ref formation, translation, formationSlotGoal);
-                        break;
+                //switch (unitFormatonStatus)
+                //{
+                //    case FormationStatusEnum.Hold:
+                //    default:
+                //        //animationComponent.Direction = formation.Direction;
+                //        HandleHoldFormation(ref formationStatus, ref combatState, ref formation, translation, formationSlotGoal);
+                //        break;
 
-                    case FormationStatusEnum.Engaged:
-                        HandleEngagedFormation(formationSlotGoal, ref combatState, ref formation, translation, order, ref formationStatus);
-                        break;
+                //    case FormationStatusEnum.Engaged:
+                //        HandleEngagedFormation(formationSlotGoal, ref combatState, ref formation, translation, order, ref formationStatus);
+                //        break;
 
-                    case FormationStatusEnum.Broken:
-                        // Let normal combat system handle it  
-                        break;
+                //    case FormationStatusEnum.Broken:
+                //        // Let normal combat system handle it  
+                //        break;
 
-                    case FormationStatusEnum.Disengaging:
-                        HandleDisengagingFormation(formationSlotGoal, in combatState, ref formation, in translation, ref formationStatus);
-                        break;
-                }
+                //    case FormationStatusEnum.Disengaging:
+                //        HandleDisengagingFormation(formationSlotGoal, in combatState, ref formation, in translation, ref formationStatus);
+                //        break;
+                //}
+                HandleHoldFormation(ref formationStatus, ref combatState, ref formation, translation, formationSlotGoal);
             }).ScheduleParallel();
 
         CompleteDependency();
@@ -212,7 +213,7 @@ public partial class FormationCombatSystem : SystemBase
                                    ref FormationComponent formation, Translation translation, FormationSlotGoal formationSlotTarget)
     {
         // Tight formation - very little movement allowed
-        float maxEngageDistance = 0.5f;
+        float maxEngageDistance = 0.25f;
 
         float2 formationPos = formation.FormationPosition;
         float distanceFromFormation = math.distance(translation.Value.xy, formationPos);

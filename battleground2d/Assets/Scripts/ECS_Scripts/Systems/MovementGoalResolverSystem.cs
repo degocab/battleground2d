@@ -45,10 +45,14 @@ public partial class MovementGoalResolverSystem : SystemBase
                 }
                 else
                 {
-                    if (combatTarget.isActive) //follow combat target first
-                    {
+                    //if (combatState.CurrentState == CombatState.State.SeekingTarget) //follow combat target first
+                    //{
                         movementGoal.Position =  combatTarget.TargetPosition;
-                    }
+                    //}
+                    //else
+                    //{
+
+                    //}
                 }
 
                 //else// if (formationSlotGoal.isActive)// follow all other adfter for now
