@@ -26,7 +26,7 @@ public partial class CombatSystem : SystemBase
             ComponentType.ReadWrite<CombatState>(),
             ComponentType.ReadWrite<AttackComponent>(),
             ComponentType.ReadWrite<AttackCooldownComponent>(),
-            ComponentType.ReadWrite<AnimationComponent>(),
+            ComponentType.ReadOnly<AnimationComponent>(),
             ComponentType.ReadWrite<DefenseComponent>(),
             //ComponentType.ReadWrite<MovementSpeedComponent>(),
             ComponentType.ReadOnly<Translation>(),
@@ -98,7 +98,7 @@ public partial class CombatSystem : SystemBase
             CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             AttackTypeHandle = GetComponentTypeHandle<AttackComponent>(false),
             CooldownTypeHandle = GetComponentTypeHandle<AttackCooldownComponent>(false),
-            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(false),
+            AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             //MovementSpeedTypeHandle = GetComponentTypeHandle<MovementSpeedComponent>(false),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             CombatTargetTypeHandle = GetComponentTypeHandle<CombatTarget>(true),
@@ -121,7 +121,7 @@ public partial class CombatSystem : SystemBase
         public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         public ComponentTypeHandle<AttackComponent> AttackTypeHandle;
         public ComponentTypeHandle<AttackCooldownComponent> CooldownTypeHandle;
-        public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
+        [ReadOnly] public ComponentTypeHandle<AnimationComponent> AnimationTypeHandle;
         public ComponentTypeHandle<DefenseComponent> DefenseTypeHandle;
         //public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
         [ReadOnly] public ComponentTypeHandle<Translation> TranslationTypeHandle;
@@ -157,15 +157,15 @@ public partial class CombatSystem : SystemBase
                 {
                     case CombatState.State.Idle:
                     default:
-                        HandleIdleState(ref combatState, ref animation, combatTarget);
+                        HandleIdleState(ref combatState,  combatTarget);
                         break;
                     case CombatState.State.SeekingTarget:
-                        HandleSeekingState(ref combatState, ref animation, ref attack, translation, combatTarget);
+                        HandleSeekingState(ref combatState,  ref attack, translation, combatTarget);
                         break;
 
                     case CombatState.State.Attacking:
-                        HandleAttackingState(ref combatState, ref attack, ref cooldown, ref animation,
-                                           entity, chunkIndex, translation, combatTarget, ref defense/*, ref movementSpeed*/);
+                        HandleAttackingState(ref combatState, ref attack, ref cooldown, 
+                                           entity, chunkIndex, translation, combatTarget, ref defense, animation);
                         break;
 
                     case CombatState.State.TakingDamage:
@@ -174,7 +174,7 @@ public partial class CombatSystem : SystemBase
                         break;
 
                     case CombatState.State.Defending:
-                        HandleDefendingState(ref combatState, ref attack, ref animation, translation, combatTarget/*, ref movementSpeed*/, DeltaTime);
+                        HandleDefendingState(ref combatState, ref attack,  translation, combatTarget, DeltaTime);
                         break;
 
                     case CombatState.State.Blocking:
@@ -209,7 +209,7 @@ public partial class CombatSystem : SystemBase
 
                             // Timeout expired - transition to seeking to try to find the target again
                             if (attack.timeRemaingingToSetAsWaiting < 0.5f && attack.timeRemaingingToSetAsWaiting > 0f)
-                                TransitionToSeeking(ref combatState, ref animation);
+                                TransitionToSeeking(ref combatState);
                    
                         }
                         break;
@@ -223,22 +223,22 @@ public partial class CombatSystem : SystemBase
                 // Write back modified components
                 combatStates[i] = combatState;
                 attacks[i] = attack;
-                animations[i] = animation;
+              
                 cooldowns[i] = cooldown;
                 defenses[i] = defense;
             }
         }
 
         private void HandleAttackingState(ref CombatState combatState, ref AttackComponent attack,
-                                        ref AttackCooldownComponent cooldown, ref AnimationComponent animation,
-                                        Entity entity, int chunkIndex, Translation translation, CombatTarget combatTarget, ref DefenseComponent defense/*, ref MovementSpeedComponent movementSpeed*/)
+                                        ref AttackCooldownComponent cooldown, 
+                                        Entity entity, int chunkIndex, Translation translation, CombatTarget combatTarget, ref DefenseComponent defense, AnimationComponent animation)
         {
             combatState.StateTimer += DeltaTime;
 
             // Check if target is still valid
             if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
-                TransitionToSeeking(ref combatState, ref animation);
+                TransitionToSeeking(ref combatState);
                 return;
             }
 
@@ -272,7 +272,7 @@ public partial class CombatSystem : SystemBase
             else if (!inRange)
             {
                 // Target is out of range - go seek it
-                TransitionToSeeking(ref combatState, ref animation);
+                TransitionToSeeking(ref combatState);
             }
             else if (waitingOnAttackRateCD && inRange)
             {
@@ -300,69 +300,48 @@ public partial class CombatSystem : SystemBase
             // Timeout safety
             if (combatState.StateTimer > 30f)
             {
-                TransitionToSeeking(ref combatState, ref animation);
+                TransitionToSeeking(ref combatState);
             }
         }
         const float SeekingTimeout = 3f;
         const float WaitingTimerExtraDistance = 2f; // tune this
-        private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
-                                      ref AttackComponent attack, Translation translation, CombatTarget combatTarget)
+        private void HandleSeekingState(
+            ref CombatState combatState,
+
+            ref AttackComponent attack,
+            Translation translation,
+            CombatTarget combatTarget)
         {
             combatState.StateTimer += DeltaTime;
 
             if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
-                TransitionToIdle(ref combatState, ref animation);
+                ResetSeekingTimers(ref attack);
+                TransitionToIdle(ref combatState);
                 return;
             }
 
             float3 targetPos = TranslationFromEntity[combatTarget.TargetEntity].Value;
-            bool inRange = CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range);
 
-            if (inRange)
+            if (CombatUtils.IsTargetInRange(translation.Value, targetPos, attack.Range))
             {
-                // Target is in range - start attacking
-                combatState.CurrentState = CombatState.State.Attacking;
-                combatState.StateTimer = 0f;
-                animation.AnimationType = EntitySpawner.AnimationType.Idle; // Will be set to attack if can attack immediately
-                attack.timeRemaingingToSetAsWaiting = -1f;
-
-                animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                TransitionToAttacking(ref combatState,  ref attack);
                 return;
             }
 
-            float distanceToTarget = math.distance(translation.Value, targetPos);
-
-            // Only start timeout when close enough that this unit is probably stuck/waiting its turn,
-            // not while it is still traveling across the map.
-            float startWaitingTimerDistance = attack.Range * WaitingTimerExtraDistance;
-
-            if (distanceToTarget <= startWaitingTimerDistance)
+            if (ShouldWaitBehindFrontLine(ref attack, translation.Value, targetPos))
             {
-                // First frame near the fight area
-
-
-                if (attack.timeRemaingingToSetAsWaiting <= 0f)
-                {
-                    TransitionToWaiting(ref combatState, ref attack);
-                    return;
-                }
-            }
-            else
-            {
-                // Still actually traveling, so don't burn the waiting timeout yet.
-                attack.timeRemaingingToSetAsWaiting = -1f;
+                TransitionToWaiting(ref combatState, ref attack);
+                return;
             }
 
-            animation.AnimationType = EntitySpawner.AnimationType.Walk;
-
-
+            //animation.AnimationType = EntitySpawner.AnimationType.Walk;
         }
 
         private void HandleDefendingState(
             ref CombatState combatState,
             ref AttackComponent attack,
-            ref AnimationComponent animation,
+     
             Translation translation,
             CombatTarget combatTarget,
             //ref MovementSpeedComponent movementSpeed,
@@ -370,7 +349,7 @@ public partial class CombatSystem : SystemBase
         {
             if (!CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
             {
-                TransitionToSeeking(ref combatState, ref animation);
+                TransitionToSeeking(ref combatState);
                 return;
             }
 
@@ -379,7 +358,7 @@ public partial class CombatSystem : SystemBase
 
             if (!inRange)
             {
-                TransitionToSeeking(ref combatState, ref animation);
+                TransitionToSeeking(ref combatState);
                 return;
             }
 
@@ -409,7 +388,7 @@ public partial class CombatSystem : SystemBase
         }
 
 
-        private void HandleIdleState(ref CombatState combatState, ref AnimationComponent animation, CombatTarget combatTarget)
+        private void HandleIdleState(ref CombatState combatState, CombatTarget combatTarget)
         {
             if (combatTarget.TargetEntity != Entity.Null &&
                 CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
@@ -417,11 +396,11 @@ public partial class CombatSystem : SystemBase
                 combatState.CurrentState = CombatState.State.SeekingTarget;
                 combatState.TargetEntity = combatTarget.TargetEntity;
                 combatState.StateTimer = 0f;
-                animation.AnimationType = EntitySpawner.AnimationType.Walk;
+         
             }
             else
             {
-                animation.AnimationType = EntitySpawner.AnimationType.Idle;
+         
             }
         }
 
@@ -436,24 +415,73 @@ public partial class CombatSystem : SystemBase
             return shouldDefend;
         }
 
-        private void TransitionToSeeking(ref CombatState combatState, ref AnimationComponent animation)
+        private bool ShouldWaitBehindFrontLine(
+    ref AttackComponent attack,
+    float3 currentPosition,
+    float3 targetPosition)
+        {
+            float distanceToTarget = math.distance(currentPosition, targetPosition);
+            float waitCheckDistance = attack.Range * WaitingTimerExtraDistance;
+
+            if (distanceToTarget > waitCheckDistance)
+            {
+                attack.StuckTimer = 0f;
+                attack.LastSeekingDistance = distanceToTarget;
+                attack.timeRemaingingToSetAsWaiting = -1f;
+                return false;
+            }
+
+            bool hasPreviousDistance = attack.LastSeekingDistance > 0f;
+            bool isGettingCloser =
+                hasPreviousDistance &&
+                distanceToTarget < attack.LastSeekingDistance - 0.05f;
+
+            if (isGettingCloser)
+            {
+                attack.StuckTimer = 0f;
+            }
+            else
+            {
+                attack.StuckTimer += DeltaTime;
+            }
+
+            attack.LastSeekingDistance = distanceToTarget;
+
+            return attack.StuckTimer >= 1.0f;
+        }
+        private void TransitionToSeeking(ref CombatState combatState)
         {
             combatState.CurrentState = CombatState.State.SeekingTarget;
             combatState.StateTimer = 0f;
-            animation.AnimationType = EntitySpawner.AnimationType.Walk;
         }
 
-        private void TransitionToIdle(ref CombatState combatState, ref AnimationComponent animation)
+        private void TransitionToIdle(ref CombatState combatState)
         {
             combatState.CurrentState = CombatState.State.Idle;
             combatState.TargetEntity = Entity.Null;
             combatState.StateTimer = 0f;
-            animation.AnimationType = EntitySpawner.AnimationType.Idle;
         }
         private void TransitionToWaiting(ref CombatState combatState, ref AttackComponent attack)
         {
             combatState.CurrentState = CombatState.State.Waiting;
             attack.timeRemaingingToSetAsWaiting = -1f;
+        }
+
+        private void TransitionToAttacking(
+    ref CombatState combatState,
+    ref AttackComponent attack)
+        {
+            combatState.CurrentState = CombatState.State.Attacking;
+            combatState.StateTimer = 0f;
+
+            ResetSeekingTimers(ref attack);
+        }
+
+        private void ResetSeekingTimers(ref AttackComponent attack)
+        {
+            attack.timeRemaingingToSetAsWaiting = -1f;
+            attack.StuckTimer = 0f;
+            attack.LastSeekingDistance = 999999f;
         }
     }
 }

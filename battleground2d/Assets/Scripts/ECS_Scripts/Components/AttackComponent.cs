@@ -15,5 +15,8 @@ public struct AttackComponent : IComponentData
     public float DefendDuration;
     public float DefendCooldownRemaining;
     public float timeRemaingingToSetAsWaiting;
+
+    public float LastSeekingDistance;
+    public float StuckTimer;
 }
 
