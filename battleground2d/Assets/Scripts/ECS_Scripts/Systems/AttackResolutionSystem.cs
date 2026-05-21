@@ -241,7 +241,7 @@ public partial class DefenseSystem : SystemBase
     {
         var defenseFromEntity = GetComponentDataFromEntity<DefenseComponent>(true);
         var animationFromEntity = GetComponentDataFromEntity<AnimationComponent>(true);
-        var formationSlotGoalFromEntity = GetComponentDataFromEntity<CombatTarget>(true);
+        var formationSlotGoalFromEntity = GetComponentDataFromEntity<FindTargetTag>(true);
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
 
@@ -268,9 +268,8 @@ public partial class DefenseSystem : SystemBase
         if (!hasFormationSlotGoalComponent)
         {
             Debug.Log("FormationSlotGoal.TargetPosition updated by DefenseResolutionJob");
-            ecb.AddComponent(entityInQueryIndex, entity, new CombatTarget
+            ecb.AddComponent(entityInQueryIndex, entity, new FindTargetTag
             {
-                TargetEntity = Entity.Null
             });
         }
         //for (int i = 0; i < defends.Length; i++)

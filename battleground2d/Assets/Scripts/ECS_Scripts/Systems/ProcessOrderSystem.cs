@@ -91,7 +91,7 @@ public class ProcessOrderSystem : JobComponentSystem
         EntityQuery _query = GetEntityQuery(
 ComponentType.ReadOnly<Unit>(),
 ComponentType.ReadWrite<OrderData>(),
-ComponentType.ReadWrite<CombatState>(),
+//ComponentType.ReadWrite<CombatState>(),
 ComponentType.ReadOnly<DefenseComponent>(),
 ComponentType.ReadOnly<AttackComponent>(),
 ComponentType.ReadOnly<Translation>(),
@@ -193,7 +193,7 @@ ComponentType.Exclude<CommanderComponent>());
             //Time = UnityEngine.Time.deltaTime,
             OrderDataTypeHandle = GetComponentTypeHandle<OrderData>(false),
             FormationComponentTypeHandle = GetComponentTypeHandle<FormationComponent>(false),
-            CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
+            //CombatStateTypeHandle = GetComponentTypeHandle<CombatState>(false),
             EntityTypeHandle = GetEntityTypeHandle(),
             TranslationTypeHandle = GetComponentTypeHandle<Translation>(true),
             DefenseComponentTypeHandle = GetComponentTypeHandle<DefenseComponent>(true),
@@ -215,7 +215,7 @@ ComponentType.Exclude<CommanderComponent>());
     {
         public ComponentTypeHandle<OrderData> OrderDataTypeHandle;
         public ComponentTypeHandle<FormationComponent> FormationComponentTypeHandle;
-        public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
+        //public ComponentTypeHandle<CombatState> CombatStateTypeHandle;
         //public ComponentTypeHandle<MovementSpeedComponent> MovementSpeedTypeHandle;
 
         public EntityCommandBuffer.ParallelWriter ECB;
@@ -232,7 +232,7 @@ ComponentType.Exclude<CommanderComponent>());
 
             var orderDataArray = chunk.GetNativeArray(OrderDataTypeHandle);
             var formations = chunk.GetNativeArray(FormationComponentTypeHandle);
-            var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
+            //var combatStateArray = chunk.GetNativeArray(CombatStateTypeHandle);
             var entities = chunk.GetNativeArray(EntityTypeHandle);
             var translations = chunk.GetNativeArray(TranslationTypeHandle);
             var animations = chunk.GetNativeArray(AnimationTypeHandle);
@@ -250,7 +250,7 @@ ComponentType.Exclude<CommanderComponent>());
                 float2 entityPos = translation.Value.xy;
                 var order = orderDataArray[i];
                 var formation = formations[i];
-                var combatState = combatStateArray[i];
+                //var combatState = combatStateArray[i];
                 var defenseComponent = defenseComponents[i];
                 var attackComponent = attackComponents[i];
                 var formationOrderIntent = formationOrderIntents[i];
@@ -258,20 +258,20 @@ ComponentType.Exclude<CommanderComponent>());
                 if (order.CurrentOrder != order.PreviousOrder)
                     order.TargetEntity = Entity.Null;
 
-                ProcessOrder(ref order, ref combatState, /*ref movementSpeed, */attackComponent, defenseComponent, entity, entityPos,
+                ProcessOrder(ref order, /*ref combatState, ref movementSpeed, */attackComponent, defenseComponent, entity, entityPos,
              animationData.Direction, chunkIndex, ECB, ref formation, ref formationOrderIntent);
 
 
                 order.PreviousOrder = order.CurrentOrder;
                 orderDataArray[i] = order;  // You do this for order, but not for formation!
                 formations[i] = formation;  // You do this for order, but not for formation!
-                combatStateArray[i] = combatState;  // You do this for order, but not for formation!
+                //combatStateArray[i] = combatState;  // You do this for order, but not for formation!
                 //movementSpeeds[i] = movementSpeed;  // You do this for order, but not for formation!
                 formationOrderIntents[i] = formationOrderIntent;
             }
         }
 
-        private void ProcessOrder(ref OrderData order, ref CombatState combatState,
+        private void ProcessOrder(ref OrderData order, /*ref CombatState combatState,*/
                                      /*ref MovementSpeedComponent movementSpeed, */AttackComponent attackComponent, DefenseComponent defenseComponent, Entity entity,
                                      float2 entityPos, EntitySpawner.Direction direction,
                                      int chunkIndex, EntityCommandBuffer.ParallelWriter ecb
@@ -288,11 +288,11 @@ ComponentType.Exclude<CommanderComponent>());
 
                 case OrderType.March:
                 case OrderType.Charge:
-                    HandleMovementOrder(order.CurrentOrder, ref combatState/*, ref movementSpeed*/, entity, entityPos, direction, chunkIndex, ecb);
+                    HandleMovementOrder(order.CurrentOrder, /*ref combatState, ref movementSpeed,*/ entity, entityPos, direction, chunkIndex, ecb);
                     break;
                 case OrderType.FindTarget:
                     formationOrderIntent.Status = FormationStatusEnum.Hold;
-                    HandleFindTargetOrder(ref order, ref combatState, entity, chunkIndex, ecb);
+                    HandleFindTargetOrder(ref order, /*ref combatState,*/ entity, chunkIndex, ecb);
                     break;
 
                 case OrderType.MoveTo:
@@ -301,7 +301,7 @@ ComponentType.Exclude<CommanderComponent>());
                         formationOrderIntent.Status = FormationStatusEnum.Disengaging;
                     }
                     else
-                    {
+                    {   
                         formationOrderIntent.Status = FormationStatusEnum.Hold; // moving into a new hold position
                     }
                     HandleMoveToOrder(ref order, entity, entityPos, chunkIndex, ecb, ref formation);
@@ -317,11 +317,11 @@ ComponentType.Exclude<CommanderComponent>());
                     {
                         formationOrderIntent.Status = FormationStatusEnum.Hold; // moving into a new hold position
                     }
-                    MarchInDirectionWithRange(order.CurrentOrder, ref combatState/*, ref movementSpeed*/, entity, entityPos, direction, chunkIndex, ecb, 10f);
+                    MarchInDirectionWithRange(order.CurrentOrder/*, ref combatState, ref movementSpeed*/, entity, entityPos, direction, chunkIndex, ecb, 10f);
                     break;
 
                 case OrderType.Attack:
-                    HandleAttackOrder(ref order, ref combatState, entity, chunkIndex, ecb, ref formation, ref formationOrderIntent);
+                    HandleAttackOrder(ref order/*, ref combatState*/, entity, chunkIndex, ecb, ref formation, ref formationOrderIntent);
                     break;
 
                 case OrderType.Defend:
@@ -337,7 +337,7 @@ ComponentType.Exclude<CommanderComponent>());
                     break;
             }
         }
-        private void MarchInDirectionWithRange(OrderType orderType, ref CombatState combatState,
+        private void MarchInDirectionWithRange(OrderType orderType, /*ref CombatState combatState,*/
                                          /*ref MovementSpeedComponent movementSpeed,*/ Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, float rangeToMarch)
@@ -347,11 +347,11 @@ ComponentType.Exclude<CommanderComponent>());
             // * range(10) = float2(1,0) * 10 = float2(10, 0);
             float2 newTargetLocation = CombatUtils.GetDirectionVector(direction) * rangeToMarch;
             float2 targetPos = currentTargetLocation + newTargetLocation;
-            ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
-            {
-                TargetPosition = targetPos,
-                //TargetEntity = Entity.Null
-            });
+            //ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
+            //{
+            //    TargetPosition = targetPos,
+            //    //TargetEntity = Entity.Null
+            //});
             ecb.AddComponent(chunkIndex, entity, new CombatTarget
             {
                 //Type = FormationSlotGoal.TargetType.Position,
@@ -361,7 +361,7 @@ ComponentType.Exclude<CommanderComponent>());
             });
         }
 
-        private void HandleMovementOrder(OrderType orderType, ref CombatState combatState,
+        private void HandleMovementOrder(OrderType orderType,/* ref CombatState combatState,*/
                                          /*ref MovementSpeedComponent movementSpeed, */Entity entity,
                                          float2 entityPos, EntitySpawner.Direction direction,
                                          int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
@@ -371,23 +371,23 @@ ComponentType.Exclude<CommanderComponent>());
             float2 targetPos = entityPos + (dir * endlessDistance);
             Debug.Log("FormationSlotGoal updated by HandleMovementOrder in ProcessOrderSystem");
 
-            ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
-            {
-                TargetPosition = targetPos
-            });
+            //ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
+            //{
+            //    TargetPosition = targetPos
+            //});
 
             //movementSpeed.isRunnning = orderType == OrderType.Charge;
-            combatState.CurrentState = orderType == OrderType.Charge ?
-                CombatState.State.SeekingTarget : combatState.CurrentState;
+            //combatState.CurrentState = orderType == OrderType.Charge ?
+            //    CombatState.State.SeekingTarget : combatState.CurrentState;
         }
 
-        private void HandleFindTargetOrder(ref OrderData order, ref CombatState combatState,
+        private void HandleFindTargetOrder(ref OrderData order, /*ref CombatState combatState,*/
                                            Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb)
         {
             order.TargetEntity = Entity.Null;
             order.TargetPosition = float2.zero;
             ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
-            combatState.CurrentState = CombatState.State.SeekingTarget;
+            //combatState.CurrentState = CombatState.State.SeekingTarget;
             order.CurrentOrder = OrderType.Idle;
         }
 
@@ -397,41 +397,50 @@ ComponentType.Exclude<CommanderComponent>());
             float2 targetPos = math.lengthsq(order.TargetPosition) > 0.4f ?
                 order.TargetPosition : entityPos + order.TargetPosition;
 
-            ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
-            {
-                TargetPosition = targetPos,
-                //TargetEntity = Entity.Null
-            });
+            //ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
+            //{
+            //    TargetPosition = targetPos,
+            //    //TargetEntity = Entity.Null
+            //});
 
             order.CurrentOrder = OrderType.Idle;
         }
 
-        private void HandleAttackOrder(ref OrderData order, ref CombatState combatState,
+        private void HandleAttackOrder(ref OrderData order, /*ref CombatState combatState,*/
                                        Entity entity, int chunkIndex, EntityCommandBuffer.ParallelWriter ecb, ref FormationComponent formation, ref FormationOrderIntent formationOrderIntent)
         {
 
             //recheck if unit is not taking dmg/blocking
 
-            if (order.TargetEntity == Entity.Null && math.lengthsq(order.TargetPosition) > 0.4f)
+            //if (order.TargetEntity == Entity.Null && math.lengthsq(order.TargetPosition) > 0.4f)
+            //{
+            //    // Move-then-attack
+            //    //combatState.CurrentState = CombatState.State.SeekingTarget;
+            //    ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
+            //    ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
+            //}
+            //else if (order.TargetEntity != Entity.Null)
+            //{
+            //    // Direct attack on entity
+            //    //combatState.CurrentState = CombatState.State.Attacking;
+            //    Debug.Log("FormationSlotGoal updated by HandleAttackOrder in ProcessOrderSystem");
+            //    formationOrderIntent.Status = FormationStatusEnum.Hold;
+            //    //ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
+            //    //{
+            //    //    //TargetEntity = order.TargetEntity
+            //    //});
+            //    ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
+            //}
+            ecb.AddComponent(chunkIndex, entity, new CombatTarget
             {
-                // Move-then-attack
-                combatState.CurrentState = CombatState.State.SeekingTarget;
-                ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
-                ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
-            }
-            else if (order.TargetEntity != Entity.Null)
-            {
-                // Direct attack on entity
-                combatState.CurrentState = CombatState.State.Attacking;
-                Debug.Log("FormationSlotGoal updated by HandleAttackOrder in ProcessOrderSystem");
-                formationOrderIntent.Status = FormationStatusEnum.Engaged;
-                ecb.AddComponent(chunkIndex, entity, new FormationSlotGoal
-                {
-                    //TargetEntity = order.TargetEntity
-                });
-                ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
-            }
-
+                //Type = FormationSlotGoal.TargetType.Position,
+                ////TargetPosition = targetPos,
+                ////TargetEntity = Entity.Null
+                isActive = true
+            });
+            order.TargetEntity = Entity.Null;
+            order.TargetPosition = float2.zero;
+            ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
             order.CurrentOrder = OrderType.Idle;
         }
 

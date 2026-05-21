@@ -30,7 +30,7 @@ public partial class MovementGoalResolverSystem : SystemBase
             .WithAll<CombatTarget>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData
+            .ForEach((ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran
             ) =>
             {
 
@@ -43,11 +43,15 @@ public partial class MovementGoalResolverSystem : SystemBase
                 {
                     movementGoal.Position = formationSlotGoal.TargetPosition;
                 }
+                else if (combatState.CurrentState == CombatState.State.Waiting)
+                {
+                    movementGoal.Position = tran.Value.xy; //stay in place until combat starts
+                }
                 else
                 {
                     //if (combatState.CurrentState == CombatState.State.SeekingTarget) //follow combat target first
                     //{
-                        movementGoal.Position =  combatTarget.TargetPosition;
+                    movementGoal.Position = combatTarget.TargetPosition;
                     //}
                     //else
                     //{

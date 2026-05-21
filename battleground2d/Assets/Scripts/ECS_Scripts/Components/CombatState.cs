@@ -6,7 +6,8 @@ public struct CombatState : IComponentData
     {
         Idle, SeekingTarget, Attacking, Defending, Fleeing,
         TakingDamage, Blocking,
-        Dying
+        Dying,
+        Waiting
     }
     public State CurrentState;
     public Entity TargetEntity;

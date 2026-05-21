@@ -64,6 +64,8 @@ public partial class CombatSystem : SystemBase
                     attackComponent.DefendCooldownRemaining -= deltaTime;
                 if (healthComponent.timeRemaining > 0)
                     healthComponent.timeRemaining -= deltaTime;
+                if (attackComponent.timeRemaingingToSetAsWaiting > 0)
+                    attackComponent.timeRemaingingToSetAsWaiting -= deltaTime;
             }).ScheduleParallel();
 
         //update defending units
@@ -197,6 +199,20 @@ public partial class CombatSystem : SystemBase
                             combatState.CurrentState = CombatState.State.Blocking;
                         }
                         break;
+                    case CombatState.State.Waiting:
+                        if (attack.timeRemaingingToSetAsWaiting < 0f)
+                        {
+                            attack.timeRemaingingToSetAsWaiting = SeekingTimeout;
+                        }
+                        else
+                        {
+
+                            // Timeout expired - transition to seeking to try to find the target again
+                            if (attack.timeRemaingingToSetAsWaiting < 0.5f && attack.timeRemaingingToSetAsWaiting > 0f)
+                                TransitionToSeeking(ref combatState, ref animation);
+                   
+                        }
+                        break;
                 }
 
 
@@ -265,7 +281,7 @@ public partial class CombatSystem : SystemBase
                 {
                     // Choose to defend - become invulnerable but can't attack
                     combatState.CurrentState = CombatState.State.Defending;
-                    //animation.AnimationType = EntitySpawner.AnimationType.Defend;
+                    //attack.AnimationType = EntitySpawner.AnimationType.Defend;
                     attack.DefendCooldownRemaining = attack.DefendDuration;
                 }
                 else
@@ -277,7 +293,7 @@ public partial class CombatSystem : SystemBase
             }
             else
             {
-                // Waiting for animation cooldown but can still attack soon
+                // Waiting for attack cooldown but can still attack soon
                 animation.AnimationType = EntitySpawner.AnimationType.Idle;
             }
 
@@ -287,7 +303,8 @@ public partial class CombatSystem : SystemBase
                 TransitionToSeeking(ref combatState, ref animation);
             }
         }
-
+        const float SeekingTimeout = 3f;
+        const float WaitingTimerExtraDistance = 2f; // tune this
         private void HandleSeekingState(ref CombatState combatState, ref AnimationComponent animation,
                                       ref AttackComponent attack, Translation translation, CombatTarget combatTarget)
         {
@@ -308,18 +325,38 @@ public partial class CombatSystem : SystemBase
                 combatState.CurrentState = CombatState.State.Attacking;
                 combatState.StateTimer = 0f;
                 animation.AnimationType = EntitySpawner.AnimationType.Idle; // Will be set to attack if can attack immediately
+                attack.timeRemaingingToSetAsWaiting = -1f;
+
+                animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                return;
+            }
+
+            float distanceToTarget = math.distance(translation.Value, targetPos);
+
+            // Only start timeout when close enough that this unit is probably stuck/waiting its turn,
+            // not while it is still traveling across the map.
+            float startWaitingTimerDistance = attack.Range * WaitingTimerExtraDistance;
+
+            if (distanceToTarget <= startWaitingTimerDistance)
+            {
+                // First frame near the fight area
+
+
+                if (attack.timeRemaingingToSetAsWaiting <= 0f)
+                {
+                    TransitionToWaiting(ref combatState, ref attack);
+                    return;
+                }
             }
             else
             {
-                // Still seeking - walk toward target
-                animation.AnimationType = EntitySpawner.AnimationType.Walk;
+                // Still actually traveling, so don't burn the waiting timeout yet.
+                attack.timeRemaingingToSetAsWaiting = -1f;
             }
 
-            // Timeout safety
-            if (combatState.StateTimer > 10f)
-            {
-                TransitionToIdle(ref combatState, ref animation);
-            }
+            animation.AnimationType = EntitySpawner.AnimationType.Walk;
+
+
         }
 
         private void HandleDefendingState(
@@ -349,7 +386,7 @@ public partial class CombatSystem : SystemBase
             // Start defend timer ONCE when we enter Defending
             if (combatState.PreviousState != CombatState.State.Defending)
             {
-                combatState.DefendCooldownTimer = 1f; // how long you want to “turtle up”
+                combatState.DefendCooldownTimer = 5f; // how long you want to “turtle up”
             }
 
             // Tick it down
@@ -362,12 +399,12 @@ public partial class CombatSystem : SystemBase
             {
                 combatState.CurrentState = CombatState.State.Attacking;
                 combatState.StateTimer = 0f;
-                // animation.AnimationType = EntitySpawner.AnimationType.Idle; // optional
+                // attack.AnimationType = EntitySpawner.AnimationType.Idle; // optional
             }
             else
             {
                 combatState.CurrentState = CombatState.State.Defending;
-                // animation.AnimationType = EntitySpawner.AnimationType.Defend; // if you have it
+                // attack.AnimationType = EntitySpawner.AnimationType.Defend; // if you have it
             }
         }
 
@@ -412,6 +449,11 @@ public partial class CombatSystem : SystemBase
             combatState.TargetEntity = Entity.Null;
             combatState.StateTimer = 0f;
             animation.AnimationType = EntitySpawner.AnimationType.Idle;
+        }
+        private void TransitionToWaiting(ref CombatState combatState, ref AttackComponent attack)
+        {
+            combatState.CurrentState = CombatState.State.Waiting;
+            attack.timeRemaingingToSetAsWaiting = -1f;
         }
     }
 }

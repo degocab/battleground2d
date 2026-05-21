@@ -69,6 +69,16 @@ public class FormationCollisionSystem : SystemBase
                 formationGroup.isColliding = isColliding;
                 groupCommandMap.TryAdd(entity, order);
 
+
+                if (order.CurrentOrder == OrderType.MoveDirectionalRange)
+                {
+                    // If colliding, switch to MoveTo with current anchor as target
+                    if (isColliding)
+                    {
+                        order.CurrentOrder = OrderType.Attack;
+                    }
+                }
+
             }).Run();
 
         // 3. PROPAGATE TO UNITS

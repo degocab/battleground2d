@@ -18,16 +18,16 @@ public class UpdateTargetPositionSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var targetTranslationLookup = GetComponentDataFromEntity<Translation>(true);
+        //var targetTranslationLookup = GetComponentDataFromEntity<Translation>(true);
 
-        var job = new UpdateTargetPositionJob
-        {
-            TargetTranslationLookup = targetTranslationLookup,
-            FormationSlotGoalTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(false),
-            EntityTypeHandle = GetEntityTypeHandle()
-        };
+        //var job = new UpdateTargetPositionJob
+        //{
+        //    TargetTranslationLookup = targetTranslationLookup,
+        //    FormationSlotGoalTypeHandle = GetComponentTypeHandle<FormationSlotGoal>(false),
+        //    EntityTypeHandle = GetEntityTypeHandle()
+        //};
 
-        Dependency = job.ScheduleParallel(_query, Dependency);
+        //Dependency = job.ScheduleParallel(_query, Dependency);
     }
 
     [BurstCompile]

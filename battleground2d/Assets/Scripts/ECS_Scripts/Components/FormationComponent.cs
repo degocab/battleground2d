@@ -70,6 +70,8 @@ public struct FormationGroupComponent : IComponentData
     public bool AnchorLocked;
 
     public FormationType FormationType;
+
+    public float AnchorResetTimer;
 }
 
 public struct FormationDebugComponent : IComponentData

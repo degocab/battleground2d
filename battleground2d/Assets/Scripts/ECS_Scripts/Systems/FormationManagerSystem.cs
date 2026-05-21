@@ -133,7 +133,7 @@ public partial class FormationManagerSystem : SystemBase
     {
         var groupToUnitsMapRO = _groupToUnitsMap;
         var translationsRO = translations;
-
+        float deltaTime = Time.DeltaTime;
         Entities
             .WithReadOnly(groupToUnitsMapRO)
             .WithReadOnly(translationsRO)
@@ -144,8 +144,23 @@ public partial class FormationManagerSystem : SystemBase
                     groupToUnitsMapRO,
                     translationsRO
                 );
+                if (formationGroup.AnchorResetTimer == 0)
+                {
+                    formationGroup.AnchorPosition = avg;
+                    formationGroup.CurrentUnitAveragePosition = avg;
+                    formationGroup.AnchorResetTimer = deltaTime;
+                }
+                else if (formationGroup.AnchorResetTimer < 10f)
+                {
+                    formationGroup.AnchorResetTimer += deltaTime;
+                }
+                else
+                {
+                    formationGroup.AnchorPosition = avg;
+                    formationGroup.CurrentUnitAveragePosition = avg;
+                    formationGroup.AnchorResetTimer = 0f;
+                }
 
-                formationGroup.CurrentUnitAveragePosition = avg;
                 formationDebug.Status = formationGroup.CurrentOrder;
                 formationDebug.WorldPosition = avg;
 
@@ -246,7 +261,7 @@ public partial class FormationManagerSystem : SystemBase
 
                 // Always propagate the group's current command down to the unit
                 order.CurrentOrder = formationGroup.CurrentOrder;
-                
+
 
                 // Optional: number of units in this group for slot layout
                 groupToUnitCountMap.TryGetValue(formationComponent.FormationGroupEntity.Value, out var unitCountInGroup);
