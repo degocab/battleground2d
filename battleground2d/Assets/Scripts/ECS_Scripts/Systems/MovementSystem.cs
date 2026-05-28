@@ -81,6 +81,11 @@ public class MovementSystem : SystemBase
               {
                   Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)entity.Index);
                   movementSpeedComponent.randomSpeed = 1.25f;//random.NextFloat(minRange, maxRange);
+
+                  if (movementSpeedComponent.isPlayerControlled)
+                  {
+                      movementSpeedComponent.randomSpeed = 3f;
+                  }
               }
               else
               {
@@ -153,9 +158,22 @@ public class MovementSystem : SystemBase
     }
     private static void ProcessMovement(ref MovementSpeedComponent playerInput, Vector2 movementInput, bool isRunning)
     {
-        playerInput.velocity.x = movementInput.x;
-        playerInput.velocity.y = movementInput.y;
+
         playerInput.isRunnning = isRunning;
+
+        if (isRunning)
+        {
+            float3 vel = new float3(playerInput.velocity.x, playerInput.velocity.y, 0) * 3f;
+            vel.z = 0;
+            playerInput.velocity = vel;
+        }
+        else
+        {
+            playerInput.velocity.x = movementInput.x;
+            playerInput.velocity.y = movementInput.y;
+
+        }
+
     }
     private static Vector2 GetMovementInput()
     {

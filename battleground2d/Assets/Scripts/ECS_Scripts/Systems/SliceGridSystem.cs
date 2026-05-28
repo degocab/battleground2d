@@ -19,7 +19,17 @@ public enum SliceTacticalState : byte
     EnemyAdvantage = 3 // enemies have the upper hand here
 }
 
-
+public enum FormationCaptainState : byte
+{
+    Idle = 0,
+    Holding = 1,
+    Pressured = 2,
+    Winning = 3,
+    Collapsing = 4,
+    Broken = 5,
+    SlightEdge = 6,
+    Unknown = 7
+}
 public struct SliceStateData
 {
     // Smoothed values (decision-ready)
@@ -163,6 +173,10 @@ public partial class SliceGridSystem : SystemBase
         // Start fresh every frame (you can change to “every 0.25s” later).
         SliceMap.Clear();
 
+        var groupCaptainLookup = GetComponentDataFromEntity<FormationCaptainComponent>(false);
+
+
+
         // ============================
         // 1) ACCUMULATE SLICE DATA
         // ============================
@@ -173,7 +187,7 @@ public partial class SliceGridSystem : SystemBase
         Entities
             .WithName("SliceAccumulate_AABBOverlap")
             .WithNone<DeadTagComponent>()
-            .ForEach((in FormationGroupComponent group) =>
+            .ForEach((Entity entity, ref FormationCaptainComponent formationCaptainComponent, in FormationGroupComponent group) =>
             {
                 // This formation group’s bounds in world space:
                 float2 aMin = group.BoundsMin;
@@ -191,6 +205,13 @@ public partial class SliceGridSystem : SystemBase
                 // strength = unitCount * formationTypeFactor * morale
                 //float strength = 1f;
                 float strength = math.max(0f, group.CurrentUnitCount) * (group.FormationType == FormationType.Phalanx ? 1.25f : 1.0f);
+                formationCaptainComponent.FormationPosition = (aMin + aMax) * 0.5f; // Update captain's formation position for later use
+                formationCaptainComponent.SlicePressureStatus = strength; // Update slice pressure status for later use
+                formationCaptainComponent.CurrentSlice = 0f; // Reset current slice for now (you can implement slice assignment logic later)
+
+
+
+
 
                 // ----------------------------
                 // IS THIS ALLY OR ENEMY?
@@ -259,7 +280,7 @@ public partial class SliceGridSystem : SystemBase
         // DebugDrawActiveSlices(SliceMap, _origin, 0.12f);
 
         // Smoothed draw (recommended once you add SliceState):
-        DebugDrawSliceStates(SliceStateMap, _origin, 0.12f);
+        //DebugDrawSliceStates(SliceStateMap, _origin, 0.12f);
     }
 
     private void UpdatePersistentSliceState(double now)

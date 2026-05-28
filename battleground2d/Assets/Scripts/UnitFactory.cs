@@ -38,6 +38,10 @@ public class UnitFactory
             UnitType = unitType,
             FormationType = formationType
         };
+        var formationCaptain = new FormationCaptainComponent
+        {
+            
+        };
         List<float2> positions = new List<float2>();
         switch (formationType)
         {
@@ -61,6 +65,7 @@ public class UnitFactory
             entityManager.AddComponentData(groupEntity, new AllyTag { }); 
         }
         entityManager.AddComponentData(groupEntity, formationGroup);
+        entityManager.AddComponentData(groupEntity, formationCaptain);
         entityManager.AddComponentData(groupEntity, initialCommand);
         entityManager.AddComponentData(groupEntity, new FormationStatus());
         entityManager.AddComponentData(groupEntity, new FormationOrderIntent());
@@ -79,7 +84,7 @@ public class UnitFactory
             Debug.Log("null group entity ref");
         }
 
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);//, formationID, formationOffset);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 200f);//, formationID, formationOffset);
         entityManager.AddComponentData(unit, new FormationComponent
         {
             FormationID = formationID,
@@ -107,16 +112,7 @@ public class UnitFactory
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
     }
-    private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, float2? spawnPosition = null)
-    {
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);
 
-        // Use provided command or create default move command
-        OrderData order = initialCommand ?? OrderFactory.CreateMoveOrder(spawnPosition);
-        entityManager.SetComponentData(unit, order);
-
-        return unit;
-    }
 
     // Overload for specific command types
     //private Entity SpawnUnit(float2 position, UnitType unitType, Direction unitDirection, int rank, CommandData? initialCommand, CommandType commandType)
@@ -187,7 +183,7 @@ public class UnitFactory
     private void SetPhysicsComponents(Entity entity)
     {
         entityManager.SetComponentData(entity, new QuadrantEntity { typeEnum = QuadrantEntity.TypeEnum.Unit });
-        entityManager.SetComponentData(entity, new ECS_CircleCollider2DAuthoring { Radius = 0.1375f });
+        entityManager.SetComponentData(entity, new ECS_CircleCollider2DAuthoring { Radius = 0.2f/*0.1375f*/ });
         entityManager.SetComponentData(entity, new ECS_PhysicsBody2DAuthoring
         {
             initialVelocity = new float2(0, 0),
@@ -283,7 +279,7 @@ public class UnitArchetypeFactory
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
             typeof(ECS_CircleCollider2DAuthoring), typeof(ECS_PhysicsBody2DAuthoring),
             typeof(ECS_Velocity2D), typeof(CollidableTag), typeof(DefenseComponent), typeof(AttackPhasesComponent)
-            ,typeof(MovementGoal),typeof(MovementStatus)
+            ,typeof(MovementGoal),typeof(MovementStatus), typeof(CommandPerception)
         //, typeof(TargetComponent)
         );
     }

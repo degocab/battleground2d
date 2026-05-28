@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 public class EntitySpawner : MonoBehaviour
@@ -148,6 +149,9 @@ public class EntitySpawner : MonoBehaviour
         {
             FactionType = UnitType.Enemy,
             CommandID = 0
+        });        entityManager.AddComponentData(cmd, new Translation
+        {
+            Value = new float3(0, 0, 0)
         });
 
         entityManager.AddComponentData(cmd, new CommandPerception

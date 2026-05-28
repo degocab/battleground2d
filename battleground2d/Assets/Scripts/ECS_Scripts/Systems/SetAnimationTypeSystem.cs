@@ -74,6 +74,8 @@ public partial class SetAnimationTypeSystem : SystemBase
                 if (combatState.CurrentState == CombatState.State.Attacking && cooldown.attackCoolTimeRemaining > 0f)
                 {
                     animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
+                    animationComponent.finishAnimation = true;
+
                 }
                 else if (combatState.CurrentState == CombatState.State.Attacking)
                 {

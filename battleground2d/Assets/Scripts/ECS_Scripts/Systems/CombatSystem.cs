@@ -255,7 +255,7 @@ public partial class CombatSystem : SystemBase
             {
                 // Perform attack
                 attack.AttackRateRemaining = attack.AttackRate;
-                animation.finishAnimation = true;
+                //animation.finishAnimation = true;
                 cooldown.attackCoolTimeRemaining = cooldown.attackCoolDownDuration;
 
                 ECB.AddComponent(chunkIndex, entity, new AttackEventComponent
@@ -280,21 +280,22 @@ public partial class CombatSystem : SystemBase
                 if (ShouldDefend(ref attack, animation))
                 {
                     // Choose to defend - become invulnerable but can't attack
-                    combatState.CurrentState = CombatState.State.Defending;
-                    //attack.AnimationType = EntitySpawner.AnimationType.Defend;
-                    attack.DefendCooldownRemaining = attack.DefendDuration;
+                    //combatState.CurrentState = CombatState.State.Defending;
+                    ////attack.AnimationType = EntitySpawner.AnimationType.Defend;
+                    //attack.DefendCooldownRemaining = attack.DefendDuration;
+                    TransitionToDefending(ref combatState, ref attack);
                 }
                 else
                 {
                     // Choose NOT to defend - stay in attacking state but vulnerable
                     // This allows the enemy to hit you while you're waiting for attack cooldown
-                    animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                    //animation.AnimationType = EntitySpawner.AnimationType.Idle;
                 }
             }
             else
             {
                 // Waiting for attack cooldown but can still attack soon
-                animation.AnimationType = EntitySpawner.AnimationType.Idle;
+                //animation.AnimationType = EntitySpawner.AnimationType.Idle;
             }
 
             // Timeout safety
@@ -303,6 +304,14 @@ public partial class CombatSystem : SystemBase
                 TransitionToSeeking(ref combatState);
             }
         }
+
+        private void TransitionToDefending(ref CombatState combatState, ref AttackComponent attack)
+        {
+            combatState.CurrentState = CombatState.State.Defending;
+            combatState.StateTimer = 0f;
+            attack.DefendCooldownRemaining = 5f;// attack.DefendDuration;
+        }
+
         const float SeekingTimeout = 3f;
         const float WaitingTimerExtraDistance = 2f; // tune this
         private void HandleSeekingState(
@@ -362,14 +371,14 @@ public partial class CombatSystem : SystemBase
                 return;
             }
 
-            // Start defend timer ONCE when we enter Defending
-            if (combatState.PreviousState != CombatState.State.Defending)
-            {
-                combatState.DefendCooldownTimer = 5f; // how long you want to “turtle up”
-            }
+            //// Start defend timer ONCE when we enter Defending
+            //if (combatState.PreviousState != CombatState.State.Defending)
+            //{
+            //    combatState.DefendCooldownTimer = 5f; // how long you want to “turtle up”
+            //}
 
-            // Tick it down
-            combatState.DefendCooldownTimer = math.max(0f, combatState.DefendCooldownTimer - deltaTime);
+            //// Tick it down
+            //combatState.DefendCooldownTimer = math.max(0f, combatState.DefendCooldownTimer - deltaTime);
 
             // When defend window is over AND attack cooldown is done -> attack again
             bool readyToAttack = (attack.AttackRateRemaining <= 0f) && (combatState.DefendCooldownTimer <= 0f);
@@ -382,7 +391,9 @@ public partial class CombatSystem : SystemBase
             }
             else
             {
-                combatState.CurrentState = CombatState.State.Defending;
+                //combatState.CurrentState = CombatState.State.Defending;
+                TransitionToDefending(ref combatState, ref attack);
+
                 // attack.AnimationType = EntitySpawner.AnimationType.Defend; // if you have it
             }
         }
@@ -447,7 +458,7 @@ public partial class CombatSystem : SystemBase
 
             attack.LastSeekingDistance = distanceToTarget;
 
-            return attack.StuckTimer >= 1.0f;
+            return attack.StuckTimer >= 2.0f;
         }
         private void TransitionToSeeking(ref CombatState combatState)
         {

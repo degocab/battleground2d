@@ -79,3 +79,19 @@ public struct FormationDebugComponent : IComponentData
     public OrderType Status;
     public float2 WorldPosition;
 }
+
+public struct FormationCaptainComponent : IComponentData
+{
+    public float2 FormationPosition;
+    public float CurrentSlice;// Used for wedge formation to determine position in the wedge?
+    public float SlicePressureStatus; // Used to determine if the slice is under pressure and needs to adjust position
+    public float LastUpdatedTime;
+    public bool IsValid;
+
+    public FormationCaptainState State;
+    public float Control;
+    public float Intensity01;
+    public float Momentum;
+    public int PrimarySliceKey;
+    public int SliceCount;
+}

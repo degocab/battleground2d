@@ -19,24 +19,25 @@ public class FormationDebugDrawer : MonoBehaviour
         var em = world.EntityManager;
 
         var query = em.CreateEntityQuery(
-            ComponentType.ReadOnly<FormationDebugComponent>()
+            ComponentType.ReadOnly<FormationCaptainComponent>(),
+            ComponentType.ReadOnly<FormationGroupComponent>()
         );
 
-        var entities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
-        var debugData = query.ToComponentDataArray<FormationDebugComponent>(Unity.Collections.Allocator.Temp);
+        var captains = query.ToComponentDataArray<FormationCaptainComponent>(Unity.Collections.Allocator.Temp);
+        var groups = query.ToComponentDataArray<FormationGroupComponent>(Unity.Collections.Allocator.Temp);
 
         // Base label style
         var style = new GUIStyle(EditorStyles.boldLabel)
         {
-            fontSize = 14,                 // 🔹 bigger text
+            fontSize = 14,
             alignment = TextAnchor.MiddleCenter,
-            normal = { textColor = Color.white } // 🔹 main color
+            normal = { textColor = Color.white }
         };
 
-        // Outline style (thickness effect)
+        // Outline
         var outlineStyle = new GUIStyle(style)
         {
-            normal = { textColor = Color.black } // outline color
+            normal = { textColor = Color.black }
         };
 
         Vector3[] outlineOffsets =
@@ -47,23 +48,48 @@ public class FormationDebugDrawer : MonoBehaviour
         new Vector3( 0f, -0.03f, 0f),
     };
 
-        for (int i = 0; i < entities.Length; i++)
+        for (int i = 0; i < captains.Length; i++)
         {
-            var d = debugData[i];
-            Vector3 pos = new Vector3(d.WorldPosition.x, 0f, d.WorldPosition.y)
-                          + Vector3.up * 1.5f;
+            var captain = captains[i];
+            var group = groups[i];
 
-            string text = d.Status.ToString();
+            // formation center
+            float2 center = (group.BoundsMin + group.BoundsMax) * 0.5f;
 
-            // 🔸 Draw outline (fake thickness)
-            foreach (var offset in outlineOffsets)
+            Vector3 pos = new Vector3(center.x, center.y, 2f);
+                          //+ Vector3.up * 2f;
+
+            string text =
+                $"P:{captain.State}\n"+
+                $"C:{captain.Control}\n"+
+                $"I:{captain.Intensity01}";
+
+            // outline
+            //foreach (var offset in outlineOffsets)
+            //{
+            //    Handles.Label(pos + offset, text, outlineStyle);
+            //}
+
+            if (group.UnitType == EntitySpawner.UnitType.Ally)
             {
-                Handles.Label(pos + offset, text, outlineStyle);
+                //style = new GUIStyle(EditorStyles.boldLabel)
+                //{
+                //    fontSize = 14,
+                //    alignment = TextAnchor.MiddleCenter,
+                //    normal = { textColor = Color.white }
+                //};
+                style.normal.textColor = Color.green;
             }
-
-            // 🔹 Draw main label
+            else
+            {
+                style.normal.textColor = Color.red;
+            }
+            // main text
             Handles.Label(pos, text, style);
         }
+
+        captains.Dispose();
+        groups.Dispose();
     }
 }
 #endif

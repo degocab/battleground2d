@@ -27,7 +27,8 @@ public class CollisionResolutionSystem : SystemBase
                     ref ECS_Velocity2D velocity,
                     in ECS_PhysicsBody2DAuthoring body,
                     in ECS_CircleCollider2DAuthoring collider,
-                    in DynamicBuffer<CollisionEvent2D> collisions) =>
+                    in DynamicBuffer<CollisionEvent2D> collisions
+                    ) =>
           {
               if (body.isStatic || collisions.Length == 0)
                   return;
@@ -36,9 +37,15 @@ public class CollisionResolutionSystem : SystemBase
               float myWeight = 1f;
               bool isAnchored = false;
 
+
+              float stiffness = 0.08525f;
+
+
               if (formationData.HasComponent(entity))
               {
                   var myFormation = formationData[entity];
+                  if (myFormation.FormationType == FormationType.Phalanx)
+                      stiffness = .175f; // Slightly exaggerate position correction for phalanx units to help them "stick" together better
                   myWeight = myFormation.FormationWeight;
 
                   // Only consider "anchored" if this unit actually has an OrderData component
@@ -56,7 +63,8 @@ public class CollisionResolutionSystem : SystemBase
 
               // --- Tunables ---
               const int iterations = 2;
-              float stiffness = 0.35f;
+
+
               float slop = 0.005f;
               float maxPenPerPair = 0.06f;
 
