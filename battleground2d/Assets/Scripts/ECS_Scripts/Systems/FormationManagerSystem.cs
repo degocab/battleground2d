@@ -477,7 +477,7 @@ public partial class FormationManagerSystem : SystemBase
 
                 if (groupToUnitCountMap.TryGetValue(groupEntity, out var groupValueCount))
                 {
-                    formationGroup.CurrentUnitCount = groupValueCount;
+                    formationGroup.AliveUnitCount = groupValueCount;
                 }
             }).WithoutBurst().Run();
 

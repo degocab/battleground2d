@@ -66,6 +66,7 @@ public class UnitFactory
         }
         entityManager.AddComponentData(groupEntity, formationGroup);
         entityManager.AddComponentData(groupEntity, formationCaptain);
+        entityManager.AddComponentData(groupEntity, new FormationBehaviorComponent());
         entityManager.AddComponentData(groupEntity, initialCommand);
         entityManager.AddComponentData(groupEntity, new FormationStatus());
         entityManager.AddComponentData(groupEntity, new FormationOrderIntent());

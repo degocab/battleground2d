@@ -19,17 +19,17 @@ public enum SliceTacticalState : byte
     EnemyAdvantage = 3 // enemies have the upper hand here
 }
 
-public enum FormationCaptainState : byte
-{
-    Idle = 0,
-    Holding = 1,
-    Pressured = 2,
-    Winning = 3,
-    Collapsing = 4,
-    Broken = 5,
-    SlightEdge = 6,
-    Unknown = 7
-}
+//public enum FormationCaptainState : byte
+//{
+//    Idle = 0,
+//    Holding = 1,
+//    Pressured = 2,
+//    Winning = 3,
+//    Collapsing = 4,
+//    Broken = 5,
+//    SlightEdge = 6,
+//    Unknown = 7
+//}
 public struct SliceStateData
 {
     // Smoothed values (decision-ready)
@@ -204,7 +204,7 @@ public partial class SliceGridSystem : SystemBase
                 // Replace this later with:
                 // strength = unitCount * formationTypeFactor * morale
                 //float strength = 1f;
-                float strength = math.max(0f, group.CurrentUnitCount) * (group.FormationType == FormationType.Phalanx ? 1.25f : 1.0f);
+                float strength = math.max(0f, group.AliveUnitCount) * (group.FormationType == FormationType.Phalanx ? 1.25f : 1.0f);
                 formationCaptainComponent.FormationPosition = (aMin + aMax) * 0.5f; // Update captain's formation position for later use
                 formationCaptainComponent.SlicePressureStatus = strength; // Update slice pressure status for later use
                 formationCaptainComponent.CurrentSlice = 0f; // Reset current slice for now (you can implement slice assignment logic later)

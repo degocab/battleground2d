@@ -47,17 +47,17 @@ public class FormationCollisionSystem : SystemBase
         {
             groupCollisionMap.TryAdd(groupEntities[i], groupCollisions[i]);
 
-            // Debug visualization
-            if (groupCollisions[i])
-            {
-                DrawAABB(groupComponents[i].BoundsMin, groupComponents[i].BoundsMax, Color.red);
-            }
-            else
-            {
-                DrawAABB(groupComponents[i].BoundsMin, groupComponents[i].BoundsMax, Color.green);
-            }
+            //// Debug visualization
+            //if (groupCollisions[i])
+            //{
+            //    DrawAABB(groupComponents[i].BoundsMin, groupComponents[i].BoundsMax, Color.red);
+            //}
+            //else
+            //{
+            //    DrawAABB(groupComponents[i].BoundsMin, groupComponents[i].BoundsMax, Color.green);
+            //}
 
-            DrawAnchorPoint(groupComponents[i].AnchorPosition, Color.green, .25f);
+            //DrawAnchorPoint(groupComponents[i].AnchorPosition, Color.green, .25f);
         }
         var groupCommandMap = new NativeHashMap<Entity, OrderData>(groupEntities.Length, Allocator.Temp);
 

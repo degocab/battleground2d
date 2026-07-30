@@ -316,7 +316,7 @@ public partial class FormationCaptainReportSystem : SystemBase
                     }
                 }
 
-                float finalControl = controlSum / sliceCount;//> 0f ? controlSum / weightSum : 0f;
+                float finalControl = controlSum;/// sliceCount;//> 0f ? controlSum / weightSum : 0f;
                 //if (isAlly && group.FormationID == 1)
                 //{
                 //    Debug.Log(FormatControlEnum(finalControl));
@@ -338,7 +338,7 @@ public partial class FormationCaptainReportSystem : SystemBase
                 captain.FormationPosition = (aMin + aMax) * 0.5f;
                 captain.State = state;
                 captain.Control = finalControl;
-                captain.Intensity01 = intensityAvg; //avg intensity
+                captain.Intensity = intensityAvg; //avg intensity
                 captain.PrimarySliceKey = primarySliceKey;
                 captain.SliceCount = sliceCount;
             })

@@ -60,7 +60,7 @@ public struct FormationGroupComponent : IComponentData
     public Entity FormationGroupEntity;
 
     public float2 CurrentUnitAveragePosition;
-    public int CurrentUnitCount;
+    public int AliveUnitCount;
     public int PriorGroupCount;
     public bool ReIndexSlots;
 
@@ -90,8 +90,9 @@ public struct FormationCaptainComponent : IComponentData
 
     public FormationCaptainState State;
     public float Control;
-    public float Intensity01;
+    public float Intensity;
     public float Momentum;
     public int PrimarySliceKey;
     public int SliceCount;
+    public float Morale;
 }
