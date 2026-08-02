@@ -127,7 +127,7 @@ public class EntitySpawner : MonoBehaviour
     private Entity SpawnAllyPhalanxRows(UnitFactory factory, int unitsPerFormation, float[] rowsY)
     {
         // X positions for ally phalanx columns
-        float[] allyXs = { -12f  -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f};
+        float[] allyXs = { -12f,  -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f};
         Entity cmd = _entityManager.CreateEntity();
         _entityManager.AddComponentData(cmd, new CommandComponent
         {
@@ -177,7 +177,7 @@ public class EntitySpawner : MonoBehaviour
 
     private void SpawnEnemyHordeRows(UnitFactory factory, int unitsPerFormation, float enemyMoveRange, float[] rowsY)
     {
-        float[] colsX = { -12f -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f };
+        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f };
 
         Entity cmd = _entityManager.CreateEntity();
 
