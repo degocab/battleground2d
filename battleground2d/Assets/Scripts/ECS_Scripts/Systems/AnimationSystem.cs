@@ -19,7 +19,7 @@ public class AnimationSystem : SystemBase
 
     //protected override void OnStartRunning()
     //{
-    //    entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
+    //    entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().Instance;
     //}
     protected override void OnUpdate()
     {

@@ -19,11 +19,11 @@ using UnityEngine;
 
 public class RenderSystem : SystemBase
 {
-    public static EntitySpawner entitySpawner;
+    //public static EntitySpawner entitySpawner;
     private MaterialReferences materialRefs;
     protected override void OnStartRunning()
     {
-        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
+        //entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().Instance;
     }
     private struct RenderData
     {
@@ -248,7 +248,7 @@ public class RenderSystem : SystemBase
         uvInstancedArray = new Vector4[DRAW_MESH_INSTANCED_SLICE_COUNT];
         materialPropertyBlock = new MaterialPropertyBlock();
         shaderMainTexUVid = Shader.PropertyToID("_MainTex_UV");
-        mesh = entitySpawner.quadMesh;
+        mesh = EntitySpawner.Instance.quadMesh;
         material = materialRefs.WalkingSpriteSheetMaterial;
 
         tintColorInstancedArray = new Vector4[DRAW_MESH_INSTANCED_SLICE_COUNT]; // RED TINT FOR DEAD UNITS

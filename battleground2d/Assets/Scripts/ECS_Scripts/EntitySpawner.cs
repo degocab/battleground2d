@@ -7,8 +7,11 @@ using UnityEngine;
 
 public class EntitySpawner : MonoBehaviour
 {
+    [Header("Debug")]
+    public bool EnableDebugDrawing = true;
+    private Entity _debugSettingsEntity;
 
-    private EntityManager entityManager;
+    private EntityManager _entityManager;
     private EntityArchetype unitArchetype;
 
     private Entity commanderEntity;
@@ -28,7 +31,7 @@ public class EntitySpawner : MonoBehaviour
     [Range(1, 10000)]
     public int UnitCountToSpawn = 256;
 
-    public EntitySpawner instance;
+    public static EntitySpawner Instance { get; set; }
     public Mesh quadMesh;      // Assign your quad mesh here
     public UnityEngine.Material walkingSpriteSheetMaterial;
 
@@ -48,27 +51,55 @@ public class EntitySpawner : MonoBehaviour
     // Update is called once per frame
     // Now you can use this anywhere!
     private bool hasSpawnedUnits = false;
+    private void Awake()
+    {
+        Instance = this;
+    }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
     private void Start()
     {
-        //entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        //unitFactory = new UnitFactory(entityManager);
+        //_entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        //unitFactory = new UnitFactory(_entityManager);
 
         //unitFactory.SpawnCommander();
         //unitFactory.SpawnUnits(spawnConfig.UnitCountToSpawn);
+        World world = World.DefaultGameObjectInjectionWorld;
+        _entityManager = world.EntityManager;
+
+        _debugSettingsEntity = _entityManager.CreateEntity(typeof(DebugSettings));
+
+        UpdateDebugSettings();
+    }
+
+    private void UpdateDebugSettings()
+    {
+        if (!_entityManager.Exists(_debugSettingsEntity))
+            return;
+
+        _entityManager.SetComponentData(
+            _debugSettingsEntity,
+            new DebugSettings
+            {
+                EnableDebug = EnableDebugDrawing
+            });
     }
 
     private void Update()
     {
         if (hasSpawnedUnits) return; 
 
-        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-        if (entityManager.TryGetSingleton<GameStateComponent>(out var gameState))
+        if (_entityManager.TryGetSingleton<GameStateComponent>(out var gameState))
         {
             if (gameState.CurrentState == GameState.Playing)
             {
-                unitFactory = new UnitFactory(entityManager);
+                unitFactory = new UnitFactory(_entityManager);
                 int entitiesToSpawn = math.clamp(spawnConfig.UnitCountToSpawn, 1, 256);
 
                 // --- ALLIES ---
@@ -94,13 +125,13 @@ public class EntitySpawner : MonoBehaviour
     {
         // X positions for ally phalanx columns
         float[] allyXs = { -12f };//, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f};
-        Entity cmd = entityManager.CreateEntity();
-        entityManager.AddComponentData(cmd, new CommandComponent
+        Entity cmd = _entityManager.CreateEntity();
+        _entityManager.AddComponentData(cmd, new CommandComponent
         {
             FactionType = UnitType.Ally,
             CommandID = 0 // Left
         });
-        entityManager.AddComponentData(cmd, new CommandPerception
+        _entityManager.AddComponentData(cmd, new CommandPerception
         {
             IntelVersion = 0,
             Control = 0f,
@@ -110,7 +141,7 @@ public class EntitySpawner : MonoBehaviour
             Pressure = CommandPressureState.Stable
         });
 
-        entityManager.AddBuffer<OwnedFormationGroup>(cmd);
+        _entityManager.AddBuffer<OwnedFormationGroup>(cmd);
         // Collect first (safe across structural changes)
         var spawnedGroups = new List<Entity>(rowsY.Length * allyXs.Length);
 
@@ -134,7 +165,7 @@ public class EntitySpawner : MonoBehaviour
         }
 
         // Now get the buffer AFTER spawns (no structural changes after this point)
-        var buffer = entityManager.GetBuffer<OwnedFormationGroup>(cmd);
+        var buffer = _entityManager.GetBuffer<OwnedFormationGroup>(cmd);
         for (int i = 0; i < spawnedGroups.Count; i++)
             buffer.Add(new OwnedFormationGroup { Value = spawnedGroups[i] });
     }
@@ -143,18 +174,18 @@ public class EntitySpawner : MonoBehaviour
     {
         float[] colsX = { -12f };//, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f };
 
-        Entity cmd = entityManager.CreateEntity();
+        Entity cmd = _entityManager.CreateEntity();
 
-        entityManager.AddComponentData(cmd, new CommandComponent
+        _entityManager.AddComponentData(cmd, new CommandComponent
         {
             FactionType = UnitType.Enemy,
             CommandID = 0
-        });        entityManager.AddComponentData(cmd, new Translation
+        });        _entityManager.AddComponentData(cmd, new Translation
         {
             Value = new float3(0, 0, 0)
         });
 
-        entityManager.AddComponentData(cmd, new CommandPerception
+        _entityManager.AddComponentData(cmd, new CommandPerception
         {
             IntelVersion = 0,
             Control = 0f,
@@ -164,7 +195,7 @@ public class EntitySpawner : MonoBehaviour
             Pressure = CommandPressureState.Stable
         });
 
-        entityManager.AddBuffer<OwnedFormationGroup>(cmd);
+        _entityManager.AddBuffer<OwnedFormationGroup>(cmd);
 
         var spawnedGroups = new List<Entity>(rowsY.Length * colsX.Length);
 
@@ -190,7 +221,7 @@ public class EntitySpawner : MonoBehaviour
             }
         }
 
-        var buffer = entityManager.GetBuffer<OwnedFormationGroup>(cmd);
+        var buffer = _entityManager.GetBuffer<OwnedFormationGroup>(cmd);
         for (int i = 0; i < spawnedGroups.Count; i++)
             buffer.Add(new OwnedFormationGroup { Value = spawnedGroups[i] });
     }

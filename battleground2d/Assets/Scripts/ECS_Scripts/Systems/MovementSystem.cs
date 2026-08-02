@@ -18,11 +18,9 @@ using UnityEngine.UIElements;
 [BurstCompile]
 public class MovementSystem : SystemBase
 {
-    public static EntitySpawner entitySpawner;
 
     protected override void OnStartRunning()
     {
-        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
     }
 
     protected override void OnUpdate()

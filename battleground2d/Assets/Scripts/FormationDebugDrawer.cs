@@ -16,6 +16,13 @@ public class FormationDebugDrawer : MonoBehaviour
         if (world == null)
             return;
 
+        if (EntitySpawner.Instance == null)
+            return;
+
+        if (!EntitySpawner.Instance.EnableDebugDrawing)
+            return;
+
+
         var em = world.EntityManager;
 
         var query = em.CreateEntityQuery(

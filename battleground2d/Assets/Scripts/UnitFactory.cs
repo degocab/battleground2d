@@ -96,7 +96,7 @@ public class UnitFactory
         });
         OrderData order = initialCommand ?? OrderFactory.CreateMoveOrder(position);
         entityManager.SetComponentData(unit, order);
-        //entityManager.AddSharedComponentData(unit, formationGroup.Value);
+        //_entityManager.AddSharedComponentData(unit, formationGroup.Value);
 
         return unit;
     }

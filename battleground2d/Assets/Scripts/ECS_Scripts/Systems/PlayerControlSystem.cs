@@ -21,11 +21,9 @@ public class PlayerControlSystem : SystemBase
 
 
     public Transform cameraMain;
-    public static EntitySpawner entitySpawner;
     private Vector3 cameraVelocity = Vector3.zero;
     protected override void OnStartRunning()
     {
-        entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().instance;
         if (cameraMain == null)
             cameraMain = Camera.main.transform;
     }

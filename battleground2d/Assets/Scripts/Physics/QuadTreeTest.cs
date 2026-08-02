@@ -8,12 +8,12 @@
 //{
 //    public GameObject entityPrefab; // Converted GameObject prefab with ConvertToEntity
 //    private Entity prefabEntity;
-//    private EntityManager entityManager;
+//    private EntityManager _entityManager;
 //    private QuadTree quadTree;
 
 //    void Start()
 //    {
-//        entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+//        _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 //        prefabEntity = GameObjectConversionUtility.ConvertGameObjectHierarchy(entityPrefab, GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, null));
 
 //        quadTree.Initialize(new float2(500f, 500f), new float2(500f, 500f));
@@ -21,10 +21,10 @@
 //        for (int i = 0; i < 10; i++)
 //        {
 //            float2 pos = new float2(UnityEngine.Random.Range(0, 1000f), UnityEngine.Random.Range(0, 1000f));
-//            Entity entity = entityManager.Instantiate(prefabEntity);
+//            Entity entity = _entityManager.Instantiate(prefabEntity);
 
 //            // Setting position (replace LocalTransform)
-//            entityManager.SetComponentData(entity, new Translation
+//            _entityManager.SetComponentData(entity, new Translation
 //            {
 //                Value = new float3(pos.x, pos.y, 0f)
 //            });
@@ -50,7 +50,7 @@
 
 //        foreach (var e in results)
 //        {
-//            float3 pos = entityManager.GetComponentData<Translation>(e).Value;
+//            float3 pos = _entityManager.GetComponentData<Translation>(e).Value;
 //            Debug.Log($"Entity at: {pos}");
 //        }
 

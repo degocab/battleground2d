@@ -201,7 +201,7 @@ ComponentType.Exclude<CommanderComponent>());
             AnimationTypeHandle = GetComponentTypeHandle<AnimationComponent>(true),
             FormationOrderIntentTypeHandle = GetComponentTypeHandle<FormationOrderIntent>(false),
             ECB = _ecbSystem.CreateCommandBuffer().AsParallelWriter()
-            //,entityManager = EntityManager
+            //,_entityManager = EntityManager
         };
 
         var handle = job.ScheduleParallel(_query, inputDeps);
