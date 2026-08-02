@@ -107,11 +107,12 @@ public class UnitFactory
     }
 
     //TODO: add bool for setting AI commander component
-    public void SpawnCommander()
+    public Entity SpawnCommander()
     {
         var commander = CreateUnitBase(new float2(4, 0), UnitType.Ally, 7, Direction.Right, 100000f);
         entityManager.AddComponent<CommanderComponent>(commander);
         entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
+        return commander;
     }
 
 
