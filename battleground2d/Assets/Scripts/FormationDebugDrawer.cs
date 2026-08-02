@@ -140,6 +140,89 @@ public class FormationDebugDrawer : MonoBehaviour
 
         captains.Dispose();
         groups.Dispose();
+
+        DrawCommandAwareness(em, style);
+    }
+
+    private static void DrawCommandAwareness(EntityManager em, GUIStyle labelStyle)
+    {
+        var query = em.CreateEntityQuery(
+            ComponentType.ReadOnly<CommandComponent>(),
+            ComponentType.ReadOnly<CommandAwarenessConfig>(),
+            ComponentType.ReadOnly<CommandAwareness>(),
+            ComponentType.ReadOnly<CommandKnownSlice>(),
+            ComponentType.ReadOnly<CommandKnownFormation>());
+
+        var commandEntities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+        var commands = query.ToComponentDataArray<CommandComponent>(Unity.Collections.Allocator.Temp);
+        var configs = query.ToComponentDataArray<CommandAwarenessConfig>(Unity.Collections.Allocator.Temp);
+
+        for (int i = 0; i < commandEntities.Length; i++)
+        {
+            CommandComponent command = commands[i];
+            if (command.AwarenessOrigin == Entity.Null || !em.HasComponent<Translation>(command.AwarenessOrigin))
+                continue;
+
+            float2 origin = em.GetComponentData<Translation>(command.AwarenessOrigin).Value.xy;
+            Vector3 origin3 = new Vector3(origin.x, origin.y, 0f);
+
+            Handles.color = Color.cyan;
+            Handles.DrawWireDisc(origin3, Vector3.forward, configs[i].ObservationRadius);
+
+            DynamicBuffer<CommandKnownSlice> slices = em.GetBuffer<CommandKnownSlice>(commandEntities[i]);
+            for (int sliceIndex = 0; sliceIndex < slices.Length; sliceIndex++)
+            {
+                CommandKnownSlice slice = slices[sliceIndex];
+                int2 cell = SliceGridUtil.DecodeKey(slice.SliceKey);
+                SliceGridUtil.CellBounds(cell, new float2(-32f, -16f), out float2 min, out float2 max);
+                Color color = slice.Source == AwarenessSource.DirectObservation
+                    ? new Color(0f, 1f, 1f, 0.9f)
+                    : new Color(0.4f, 0.7f, 0.7f, math.max(0.15f, slice.Confidence));
+                DrawAabb(min, max, color);
+            }
+
+            DynamicBuffer<CommandKnownFormation> formations = em.GetBuffer<CommandKnownFormation>(commandEntities[i]);
+            for (int formationIndex = 0; formationIndex < formations.Length; formationIndex++)
+            {
+                CommandKnownFormation formation = formations[formationIndex];
+                Color color = formation.Faction == command.FactionType ? Color.green : Color.red;
+                if (formation.Source == AwarenessSource.Memory)
+                    color = new Color(color.r, color.g, color.b, math.max(0.15f, formation.Confidence));
+
+                DrawAabb(formation.BoundsMin, formation.BoundsMax, color);
+                float2 formationCenter = (formation.BoundsMin + formation.BoundsMax) * 0.5f;
+                Gizmos.color = color;
+                Gizmos.DrawLine(origin3, new Vector3(formationCenter.x, formationCenter.y, 0f));
+            }
+
+            CommandAwareness awareness = em.GetComponentData<CommandAwareness>(commandEntities[i]);
+            labelStyle.normal.textColor = Color.cyan;
+            Handles.Label(
+                origin3 + Vector3.up,
+                $"Awareness R:{configs[i].ObservationRadius:F0}\n" +
+                $"Slices:{awareness.KnownSliceCount} Friendly:{awareness.FriendlyFormationCount} Enemy:{awareness.EnemyFormationCount}\n" +
+                $"Pressure:{awareness.Pressure} C:{awareness.Control:F2} I:{awareness.Intensity:F2}",
+                labelStyle);
+        }
+
+        Handles.color = Color.white;
+        configs.Dispose();
+        commands.Dispose();
+        commandEntities.Dispose();
+    }
+
+    private static void DrawAabb(float2 min, float2 max, Color color)
+    {
+        Vector3 bottomLeft = new Vector3(min.x, min.y, 0f);
+        Vector3 bottomRight = new Vector3(max.x, min.y, 0f);
+        Vector3 topRight = new Vector3(max.x, max.y, 0f);
+        Vector3 topLeft = new Vector3(min.x, max.y, 0f);
+
+        Gizmos.color = color;
+        Gizmos.DrawLine(bottomLeft, bottomRight);
+        Gizmos.DrawLine(bottomRight, topRight);
+        Gizmos.DrawLine(topRight, topLeft);
+        Gizmos.DrawLine(topLeft, bottomLeft);
     }
 }
 #endif
