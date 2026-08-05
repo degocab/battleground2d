@@ -72,6 +72,7 @@ public partial class CommandAwarenessSystem : SystemBase
     {
         _commandQuery = GetEntityQuery(
             ComponentType.ReadOnly<CommandComponent>(),
+            ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<CommandAwarenessConfig>(),
             ComponentType.ReadWrite<CommandAwareness>(),
             ComponentType.ReadWrite<CommandPerception>(),
@@ -93,7 +94,6 @@ public partial class CommandAwarenessSystem : SystemBase
         var captains = GetComponentDataFromEntity<FormationCaptainComponent>(true);
 
         var commandEntities = _commandQuery.ToEntityArray(Allocator.TempJob);
-        var commands = _commandQuery.ToComponentDataArray<CommandComponent>(Allocator.TempJob);
         var configs = _commandQuery.ToComponentDataArray<CommandAwarenessConfig>(Allocator.TempJob);
         var formationEntities = _formationQuery.ToEntityArray(Allocator.TempJob);
         var formations = _formationQuery.ToComponentDataArray<FormationGroupComponent>(Allocator.TempJob);
@@ -102,13 +102,10 @@ public partial class CommandAwarenessSystem : SystemBase
         for (int commandIndex = 0; commandIndex < commandEntities.Length; commandIndex++)
         {
             Entity commandEntity = commandEntities[commandIndex];
-            CommandComponent command = commands[commandIndex];
+            CommandComponent command = EntityManager.GetComponentData<CommandComponent>(commandEntity);
             CommandAwarenessConfig config = configs[commandIndex];
 
-            if (command.AwarenessOrigin == Entity.Null || !translations.HasComponent(command.AwarenessOrigin))
-                continue;
-
-            float2 origin = translations[command.AwarenessOrigin].Value.xy;
+            float2 origin = translations[commandEntity].Value.xy;
             float radius = math.max(0f, config.ObservationRadius);
             float memoryDuration = math.max(0.01f, config.MemoryDuration);
 
@@ -195,7 +192,6 @@ public partial class CommandAwarenessSystem : SystemBase
         formations.Dispose();
         formationEntities.Dispose();
         configs.Dispose();
-        commands.Dispose();
         commandEntities.Dispose();
     }
 

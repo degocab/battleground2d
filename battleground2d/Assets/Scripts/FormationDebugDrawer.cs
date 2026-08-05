@@ -148,22 +148,19 @@ public class FormationDebugDrawer : MonoBehaviour
     {
         var query = em.CreateEntityQuery(
             ComponentType.ReadOnly<CommandComponent>(),
+            ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<CommandAwarenessConfig>(),
             ComponentType.ReadOnly<CommandAwareness>(),
             ComponentType.ReadOnly<CommandKnownSlice>(),
             ComponentType.ReadOnly<CommandKnownFormation>());
 
         var commandEntities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
-        var commands = query.ToComponentDataArray<CommandComponent>(Unity.Collections.Allocator.Temp);
         var configs = query.ToComponentDataArray<CommandAwarenessConfig>(Unity.Collections.Allocator.Temp);
 
         for (int i = 0; i < commandEntities.Length; i++)
         {
-            CommandComponent command = commands[i];
-            if (command.AwarenessOrigin == Entity.Null || !em.HasComponent<Translation>(command.AwarenessOrigin))
-                continue;
-
-            float2 origin = em.GetComponentData<Translation>(command.AwarenessOrigin).Value.xy;
+            CommandComponent command = em.GetComponentData<CommandComponent>(commandEntities[i]);
+            float2 origin = em.GetComponentData<Translation>(commandEntities[i]).Value.xy;
             Vector3 origin3 = new Vector3(origin.x, origin.y, 0f);
 
             Handles.color = Color.cyan;
@@ -207,7 +204,6 @@ public class FormationDebugDrawer : MonoBehaviour
 
         Handles.color = Color.white;
         configs.Dispose();
-        commands.Dispose();
         commandEntities.Dispose();
     }
 

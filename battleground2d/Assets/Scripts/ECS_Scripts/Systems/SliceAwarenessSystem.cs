@@ -226,7 +226,6 @@ public struct CommandComponent : IComponentData
 {
     public UnitType FactionType;
     public int CommandID;          // Left / Center / Right (or enum later)
-    public Entity AwarenessOrigin; // Physical commander used for local observation
 }
 public struct OwnedFormationGroup : IBufferElementData
 {

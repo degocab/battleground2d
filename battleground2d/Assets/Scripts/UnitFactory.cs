@@ -107,11 +107,11 @@ public class UnitFactory
     }
 
     //TODO: add bool for setting AI commander component
-    public Entity SpawnCommander()
+    public Entity SpawnCommander(UnitType unitType, float2 spawnLocation, float health, bool isPlayerControlled)
     {
-        var commander = CreateUnitBase(new float2(4, 0), UnitType.Ally, 7, Direction.Right, 100000f);
+        var commander = CreateUnitBase(spawnLocation, unitType, 7, Direction.Right, health);
         entityManager.AddComponent<CommanderComponent>(commander);
-        entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = true });
+        entityManager.SetComponentData(commander, new CommanderComponent { isPlayerControlled = isPlayerControlled });
         return commander;
     }
 
@@ -275,7 +275,7 @@ public class UnitArchetypeFactory
     private EntityArchetype CreateCommanderArchetype()
     {
         return entityManager.CreateArchetype(
-            typeof(CommanderComponent), typeof(PlayerInputComponent),
+            typeof(CommanderComponent),
             typeof(PositionComponent), typeof(Translation), typeof(MovementSpeedComponent),
             typeof(HealthComponent), typeof(AttackComponent), typeof(AttackCooldownComponent),
             typeof(CombatState), typeof(AnimationComponent), typeof(Unit), typeof(QuadrantEntity),
