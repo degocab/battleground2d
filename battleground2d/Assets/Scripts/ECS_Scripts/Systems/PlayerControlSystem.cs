@@ -41,7 +41,7 @@ public class PlayerControlSystem : SystemBase
 
 
         // Check if we have a commander
-        if (!HasSingleton<CommanderComponent>())
+        if (!HasSingleton<PlayerInputComponent>())
             return;
 
         float moveX = 0f;
@@ -137,8 +137,22 @@ public class PlayerControlSystem : SystemBase
 
         //var ecb = _ecbSystem.CreateCommandBuffer();
         var parallelEcb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
-        var commanderEntity = GetSingletonEntity<CommanderComponent>();
-        var commanderTranslation = GetComponent<Translation>(commanderEntity);
+        Translation commanderTranslation = new Translation();
+
+        Entities
+            .WithName("GetPlayerCommanderPosition")
+            .WithAll<PlayerInputComponent>()
+            .ForEach((
+                in CommanderComponent commander,
+                in Translation translation) =>
+            {
+                if (!commander.isPlayerControlled)
+                    return;
+
+                commanderTranslation = translation;
+            })
+            .WithoutBurst()
+            .Run();
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
