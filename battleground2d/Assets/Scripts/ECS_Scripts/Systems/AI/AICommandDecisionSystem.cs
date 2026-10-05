@@ -120,11 +120,18 @@ public partial class AICommandDecisionSystem : SystemBase
       $"State={strugglingFormation.CaptainState}, " +
       $"confidence={strugglingFormation.Confidence}");
 
+       
+        float2 strugglingPosition = GetKnownPosition(strugglingFormation);
+        
+        CommandKnownFormation selectedHelper = default;
+        bool foundSuitableHelper = false;
+        float closestDistanceSq = float.MaxValue;
 
         int suitableHelperCount = 0;
         for (int  ownedIndex = 0;  ownedIndex < ownedFormations.Length;  ownedIndex++)
         {
             Entity ownedFormationEntity = ownedFormations[ownedIndex].Value;
+
             for (int knownIndex = 0;
      knownIndex < knownFormations.Length;
      knownIndex++)
@@ -135,15 +142,26 @@ public partial class AICommandDecisionSystem : SystemBase
                 if (knownHelper.Formation != ownedFormationEntity)
                     continue;
 
-                if (IsSuitableHelper(
+                if (!IsSuitableHelper(
                     knownHelper,
                     strugglingFormation,
                     command.FactionType))
                 {
-                    suitableHelperCount++;
+                    break;
                 }
 
-                // One known entry per formation entity.
+                float2 helperPosition = GetKnownPosition(knownHelper);
+
+                float distanceSq = math.distancesq(helperPosition, strugglingPosition);
+
+                if (!foundSuitableHelper || distanceSq < closestDistanceSq)
+                {
+                    selectedHelper = knownHelper;
+                    
+                    foundSuitableHelper = true;
+                }
+
+                // there should be only one known formation for this entity.
                 break;
             }
 
@@ -151,12 +169,29 @@ public partial class AICommandDecisionSystem : SystemBase
         }
 
 
-        Debug.Log(
-    $"Formation {strugglingFormation.Formation} is struggling; " +
-    $"{suitableHelperCount} known owned formations can help.");
+        if (!foundSuitableHelper)
+        {
+            Debug.Log(
+                $"Formation {strugglingFormation.Formation} is struggling, " +
+                $"but no suitable known owned helper was found.");
 
+            return false;
+        }
+
+        Debug.Log(
+    $"Closest helper for {strugglingFormation.Formation} is " +
+    $"{selectedHelper.Formation}; remembered distance=" +
+    $"{math.sqrt(closestDistanceSq)}.");
+
+        // We found the correct entities, but have not returned
+        // a complete decision yet.
 
         return false;
+    }
+
+    private static float2 GetKnownPosition(CommandKnownFormation formation)
+    {
+        return (formation.BoundsMin + formation.BoundsMax) * 0.5f;  
     }
 
     /// <summary>
