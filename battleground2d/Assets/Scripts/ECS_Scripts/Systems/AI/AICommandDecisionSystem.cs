@@ -2,8 +2,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEditor.Build.Pipeline.WriteTypes;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.Profiling;
 using static EntitySpawner;
 
@@ -17,6 +17,7 @@ public partial class AICommandDecisionSystem : SystemBase
 
     private const float EvaluationInterval = 1f;
     private const float MinimumConfidence = 0.35f;
+    private const float ReactionDelay = 0.5f;
 
     protected override void OnStartRunning()
     {
@@ -66,7 +67,7 @@ public partial class AICommandDecisionSystem : SystemBase
                 // Decision timing will go here next.
                 decisionState.NextEvaluationTime = now + EvaluationInterval;
 
-                bool createdDecision = TryCreateDecision(command, awareness, ownedFormations, knownFormations, out AICommandDecision decision);
+                bool createdDecision = TryCreateDecision(command, ownedFormations, knownFormations, out AICommandDecision decision);
 
                 Debug.Log(
                     $"AI Command{commanderEntity} " + 
@@ -75,7 +76,13 @@ public partial class AICommandDecisionSystem : SystemBase
                     $"pressure={awareness.Pressure} " + 
                     $"decision={createdDecision}");
 
+                decisionState.HasPendingDecision = createdDecision;
+                if (createdDecision)
+                {
+                    decisionState.PendingDecision = decision;
 
+                    decisionState.ExecuteAfterTime = now + ReactionDelay; 
+                }
             })
             .WithoutBurst()
             .Run();
@@ -90,7 +97,7 @@ public partial class AICommandDecisionSystem : SystemBase
     /// <param name="knownFormations"></param>
     /// <param name="decision"></param>
     /// <returns></returns>
-    private static bool TryCreateDecision(CommandComponent command, CommandAwareness awareness, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    private static bool TryCreateDecision(CommandComponent command,  DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
         decision = default;
 
@@ -127,7 +134,6 @@ public partial class AICommandDecisionSystem : SystemBase
         bool foundSuitableHelper = false;
         float closestDistanceSq = float.MaxValue;
 
-        int suitableHelperCount = 0;
         for (int  ownedIndex = 0;  ownedIndex < ownedFormations.Length;  ownedIndex++)
         {
             Entity ownedFormationEntity = ownedFormations[ownedIndex].Value;
@@ -157,7 +163,7 @@ public partial class AICommandDecisionSystem : SystemBase
                 if (!foundSuitableHelper || distanceSq < closestDistanceSq)
                 {
                     selectedHelper = knownHelper;
-                    
+                    closestDistanceSq = distanceSq;
                     foundSuitableHelper = true;
                 }
 
@@ -186,7 +192,15 @@ public partial class AICommandDecisionSystem : SystemBase
         // We found the correct entities, but have not returned
         // a complete decision yet.
 
-        return false;
+
+        decision = new AICommandDecision
+        {
+            Type = AICommandDecisionType.Reinforce,
+            OrderedFormation = selectedHelper.Formation,
+            RelatedFormation = strugglingFormation.Formation,
+            TargetPosition = strugglingPosition
+        };
+        return true;
     }
 
     private static float2 GetKnownPosition(CommandKnownFormation formation)
@@ -202,18 +216,17 @@ public partial class AICommandDecisionSystem : SystemBase
     /// <returns></returns>
     private static bool IsStruggling(CommandKnownFormation formation, UnitType commandFaction)
     {
-        if (formation.Faction == commandFaction)
+        if (formation.Faction != commandFaction)
             return false;
 
         if(formation.AliveUnitCount <= 0)
             return false;
 
         if (formation.Confidence < MinimumConfidence)
-            return true;    
+            return false;
 
         return formation.CaptainState == FormationCaptainState.Pressured
-            || formation.CaptainState == FormationCaptainState.Collapsing
-            || formation.CaptainState == FormationCaptainState.Broken;
+            || formation.CaptainState == FormationCaptainState.Collapsing;
     }
 
     private static bool IsSuitableHelper(CommandKnownFormation helper, CommandKnownFormation struggling,
