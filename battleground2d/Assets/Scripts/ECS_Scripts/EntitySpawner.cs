@@ -191,6 +191,14 @@ public class EntitySpawner : MonoBehaviour
             Pressure = CommandPressureState.Stable
         });
 
+        _entityManager.AddComponentData(commanderEntity, new AICommandDecisionState
+        {
+            PendingDecision = default,
+            NextEvaluationTime = 0,
+            ExecuteAfterTime = 0,
+            HasPendingDecision = false
+        });
+
         _entityManager.AddBuffer<OwnedFormationGroup>(commanderEntity);
         AddCommandAwarenessComponents(commanderEntity);
 

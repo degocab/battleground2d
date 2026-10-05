@@ -58,6 +58,8 @@ public struct CommandAwareness : IComponentData
     public int FriendlyFormationCount;
     public int EnemyFormationCount;
     public double LastUpdatedTime;
+
+    public OrderData CurrentOrder;
 }
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
