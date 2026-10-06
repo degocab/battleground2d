@@ -375,7 +375,10 @@ public partial class FormationManagerSystem : SystemBase
                 if (unitCountInGroup > 0)
                 {
                     // During engagement, slot around the measured center (not commanded anchor)
-                    float2 slotAnchor = formationGroup.CurrentUnitAveragePosition;
+                    float2 slotAnchor =
+    formationGroup.CurrentOrder == OrderType.MoveTo
+        ? formationGroup.AnchorPosition
+        : formationGroup.CurrentUnitAveragePosition;
 
                     formationSlotGoal.TargetPosition = CalculatePhalanxPosition(
                         formationComponent.SlotIndex,
