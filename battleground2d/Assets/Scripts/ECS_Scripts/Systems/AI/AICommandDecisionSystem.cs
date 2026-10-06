@@ -18,6 +18,7 @@ public partial class AICommandDecisionSystem : SystemBase
     private const float EvaluationInterval = 1f;
     private const float MinimumConfidence = 0.35f;
     private const float ReactionDelay = 0.5f;
+    private const float DecisionCooldown = 3f;
 
     protected override void OnStartRunning()
     {
@@ -40,7 +41,8 @@ public partial class AICommandDecisionSystem : SystemBase
 
         double now = Time.ElapsedTime;
 
-
+        ComponentDataFromEntity<OrderData> formationOrders =
+            GetComponentDataFromEntity<OrderData>(false);
 
         Entities
             .WithName("ProcessAICommanders")
@@ -59,7 +61,34 @@ public partial class AICommandDecisionSystem : SystemBase
             {
 
                 if (decisionState.HasPendingDecision)
+                {
+
+                    if (now < decisionState.ExecuteAfterTime)
+                        return;
+
+                    bool executed = ExecuteDecision(decisionState.PendingDecision, formationOrders);
+
+                    if (executed)
+                    {
+                        Debug.Log(
+                            $"AI issued {decisionState.PendingDecision.Type} " +
+                            $"to formation " +
+                            $"{decisionState.PendingDecision.OrderedFormation}.");
+                    }
+                    else
+                    {
+                        Debug.Log(
+    $"AI cancelled {decisionState.PendingDecision.Type}.");
+                    }
+
+                    decisionState.PendingDecision = default;
+                    decisionState.HasPendingDecision = false;
+                    decisionState.ExecuteAfterTime = 0;
+                    decisionState.NextEvaluationTime =
+                        now + DecisionCooldown;
+
                     return;
+                }
 
                 if (now < decisionState.NextEvaluationTime)
                     return;
@@ -70,10 +99,10 @@ public partial class AICommandDecisionSystem : SystemBase
                 bool createdDecision = TryCreateDecision(command, ownedFormations, knownFormations, out AICommandDecision decision);
 
                 Debug.Log(
-                    $"AI Command{commanderEntity} " + 
-                    $"owned={ownedFormations.Length} " + 
-                    $"known={knownFormations.Length} " + 
-                    $"pressure={awareness.Pressure} " + 
+                    $"AI Command{commanderEntity} " +
+                    $"owned={ownedFormations.Length} " +
+                    $"known={knownFormations.Length} " +
+                    $"pressure={awareness.Pressure} " +
                     $"decision={createdDecision}");
 
                 decisionState.HasPendingDecision = createdDecision;
@@ -81,11 +110,31 @@ public partial class AICommandDecisionSystem : SystemBase
                 {
                     decisionState.PendingDecision = decision;
 
-                    decisionState.ExecuteAfterTime = now + ReactionDelay; 
+                    decisionState.ExecuteAfterTime = now + ReactionDelay;
                 }
             })
             .WithoutBurst()
             .Run();
+    }
+
+    private static bool ExecuteDecision(AICommandDecision pendingDecision, ComponentDataFromEntity<OrderData> formationOrders)
+    {
+        if (pendingDecision.Type != AICommandDecisionType.Reinforce)
+            return false;
+        if (pendingDecision.OrderedFormation == Entity.Null)
+            return false;
+        if (!formationOrders.HasComponent(pendingDecision.OrderedFormation))
+            return false;
+
+
+        OrderData order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
+        formationOrders[pendingDecision.OrderedFormation] = order;
+        Debug.Log(
+            $"AI ordered formation {pendingDecision.OrderedFormation} " +
+            $"to move to {pendingDecision.TargetPosition} " +
+            $"to reinforce {pendingDecision.RelatedFormation}.");
+
+        return true;
     }
 
     /// <summary>
@@ -97,7 +146,7 @@ public partial class AICommandDecisionSystem : SystemBase
     /// <param name="knownFormations"></param>
     /// <param name="decision"></param>
     /// <returns></returns>
-    private static bool TryCreateDecision(CommandComponent command,  DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    private static bool TryCreateDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
         decision = default;
 
@@ -118,7 +167,7 @@ public partial class AICommandDecisionSystem : SystemBase
             break;
         }
 
-        if (!foundStrugglingFormation)  
+        if (!foundStrugglingFormation)
             return false;
 
         Debug.Log(
@@ -127,14 +176,14 @@ public partial class AICommandDecisionSystem : SystemBase
       $"State={strugglingFormation.CaptainState}, " +
       $"confidence={strugglingFormation.Confidence}");
 
-       
+
         float2 strugglingPosition = GetKnownPosition(strugglingFormation);
-        
+
         CommandKnownFormation selectedHelper = default;
         bool foundSuitableHelper = false;
         float closestDistanceSq = float.MaxValue;
 
-        for (int  ownedIndex = 0;  ownedIndex < ownedFormations.Length;  ownedIndex++)
+        for (int ownedIndex = 0; ownedIndex < ownedFormations.Length; ownedIndex++)
         {
             Entity ownedFormationEntity = ownedFormations[ownedIndex].Value;
 
@@ -205,7 +254,7 @@ public partial class AICommandDecisionSystem : SystemBase
 
     private static float2 GetKnownPosition(CommandKnownFormation formation)
     {
-        return (formation.BoundsMin + formation.BoundsMax) * 0.5f;  
+        return (formation.BoundsMin + formation.BoundsMax) * 0.5f;
     }
 
     /// <summary>
@@ -219,7 +268,7 @@ public partial class AICommandDecisionSystem : SystemBase
         if (formation.Faction != commandFaction)
             return false;
 
-        if(formation.AliveUnitCount <= 0)
+        if (formation.AliveUnitCount <= 0)
             return false;
 
         if (formation.Confidence < MinimumConfidence)
@@ -232,9 +281,9 @@ public partial class AICommandDecisionSystem : SystemBase
     private static bool IsSuitableHelper(CommandKnownFormation helper, CommandKnownFormation struggling,
        UnitType commandFaction)
     {
-        if ( helper.Formation == Entity.Null)
+        if (helper.Formation == Entity.Null)
             return false;
-        if ( helper.Formation == struggling.Formation)
+        if (helper.Formation == struggling.Formation)
             return false;
         if (helper.Faction != commandFaction)
             return false;
@@ -323,7 +372,7 @@ public struct AICommandDecision
     public float2 TargetPosition;
 }
 
-public struct  AICommandDecisionState : IComponentData
+public struct AICommandDecisionState : IComponentData
 {
     public AICommandDecision PendingDecision;
 
