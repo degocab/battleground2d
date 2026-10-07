@@ -274,8 +274,8 @@ public partial class AICommandDecisionSystem : SystemBase
         if (formation.Confidence < MinimumConfidence)
             return false;
 
-        return formation.CaptainState == FormationCaptainState.Pressured
-            || formation.CaptainState == FormationCaptainState.Collapsing;
+        return //formation.CaptainState == FormationCaptainState.Pressured || 
+            formation.CaptainState == FormationCaptainState.Collapsing;
     }
 
     private static bool IsSuitableHelper(CommandKnownFormation helper, CommandKnownFormation struggling,

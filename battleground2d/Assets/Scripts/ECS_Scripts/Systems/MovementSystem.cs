@@ -97,6 +97,92 @@ public class MovementSystem : SystemBase
               movementSpeedComponent.velocity = vel;
           }).ScheduleParallel(Dependency);
 
+        var formationGroupLookup =
+    GetComponentDataFromEntity<FormationGroupComponent>(true);
+
+        var animationLookup =
+            GetComponentDataFromEntity<AnimationComponent>(true);
+        var blockedMovementJobHandle = Entities
+            .WithName("StopMovementWhenBlockedAhead")
+            .WithReadOnly(formationGroupLookup)
+            .WithReadOnly(animationLookup)
+            .WithNone<PlayerInputComponent, DeadTagComponent>()
+    .ForEach((
+        ref MovementSpeedComponent movementSpeed,
+        in Translation translation,
+        in ECS_CircleCollider2DAuthoring collider,
+        in DynamicBuffer<CollisionEvent2D> collisions,
+        in FormationComponent formation,
+in AnimationComponent myAnimation
+        ) =>
+    {
+
+
+        if (!formation.FormationGroupEntity.HasValue)
+            return;
+
+        Entity groupEntity = formation.FormationGroupEntity.Value;
+
+        if (!formationGroupLookup.HasComponent(groupEntity))
+            return;
+
+        FormationGroupComponent group =
+            formationGroupLookup[groupEntity];
+
+        if (group.FormationGroupStatus != FormationStatusEnum.Engaged)
+            return;
+
+
+        // Check only for another unit directly ahead.
+        // Set movementSpeed.velocity to zero when blocked.
+        float2 desiredVelocity = movementSpeed.velocity.xy;
+        float2 moveDirection = math.normalizesafe(desiredVelocity);
+
+        bool blockedAhead = false;
+        for (int i = 0; i < collisions.Length; i++)
+        {
+            CollisionEvent2D collision = collisions[i];
+            Entity otherEntity = collision.OtherEntity;
+
+            if (!animationLookup.HasComponent(otherEntity))
+                continue;
+
+            AnimationComponent otherAnimation =
+                animationLookup[otherEntity];
+
+            //// Only queue behind units from our own faction.
+            //if (otherAnimation.UnitType != myAnimation.UnitType)
+            //    continue;
+
+            float2 toOther =
+                collision.OtherTranslation.Value.xy -
+                translation.Value.xy;
+
+            float distance = math.length(toOther);
+            float2 directionToOther = math.normalizesafe(toOther);
+
+            float forwardAmount =
+                math.dot(moveDirection, directionToOther);
+
+            bool isInFront = forwardAmount > 0.9f;
+            bool isCloseEnough =
+                distance <= .125f + collision.OtherCollider.Radius + .125f;
+
+            if (isInFront && isCloseEnough)
+            {
+                blockedAhead = true;
+                break;
+            }
+        }
+
+        if (blockedAhead)
+            movementSpeed.velocity.xy = float2.zero;
+
+    }).ScheduleParallel(speedJobHandle);
+
+
+
+
         var animationJobHandle = Entities
      .WithName("UpdateAnimationFromVelocity")
    .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
@@ -122,7 +208,7 @@ public class MovementSystem : SystemBase
 
 
        animationComponent.prevDirection = animationComponent.Direction;
-   }).ScheduleParallel(speedJobHandle);
+   }).ScheduleParallel(blockedMovementJobHandle);
 
         var restrictMovemenJobHandle = Entities
                 .WithName("RestrictMovementByStates")

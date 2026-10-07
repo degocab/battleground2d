@@ -181,17 +181,13 @@ public partial class CombatSystem : SystemBase
 
                         if (defense.BlockDuration <= 0f)
                         {
-                            // Transition back to appropriate state after blocking ends
-                            if (combatTarget.TargetEntity != Entity.Null &&
-                                CombatUtils.IsTargetValid(combatTarget.TargetEntity, TranslationFromEntity))
+                            if (combatState.WantsToDefend)
                             {
-                                // Still have valid target - go back to attacking
-                                combatState.CurrentState = CombatState.State.Attacking;
+                                TransitionToDefending(ref combatState, ref attack);
                             }
                             else
                             {
-                                // No valid target - go to idle
-                                combatState.CurrentState = CombatState.State.Idle;
+                                combatState.CurrentState = CombatState.State.Attacking;
                             }
                         }
                         else
@@ -277,7 +273,7 @@ public partial class CombatSystem : SystemBase
             else if (waitingOnAttackRateCD && inRange)
             {
                 // On attack cooldown but still in range - decide whether to defend or stay vulnerable
-                if (ShouldDefend(ref attack, animation))
+                if (combatState.WantsToDefend || ShouldDefend(ref attack, animation))
                 {
                     // Choose to defend - become invulnerable but can't attack
                     //combatState.CurrentState = CombatState.State.Defending;
@@ -309,7 +305,8 @@ public partial class CombatSystem : SystemBase
         {
             combatState.CurrentState = CombatState.State.Defending;
             combatState.StateTimer = 0f;
-            attack.DefendCooldownRemaining = 5f;// attack.DefendDuration;
+            attack.DefendCooldownRemaining =
+               combatState.WantsToDefend ? 2f : attack.DefendDuration;
         }
 
         const float SeekingTimeout = 3f;
@@ -381,8 +378,9 @@ public partial class CombatSystem : SystemBase
             //combatState.DefendCooldownTimer = math.max(0f, combatState.DefendCooldownTimer - deltaTime);
 
             // When defend window is over AND attack cooldown is done -> attack again
-            bool readyToAttack = (attack.AttackRateRemaining <= 0f) && (combatState.DefendCooldownTimer <= 0f);
-
+            bool readyToAttack =
+                attack.AttackRateRemaining <= 0f &&
+                attack.DefendCooldownRemaining <= 0f;
             if (readyToAttack)
             {
                 combatState.CurrentState = CombatState.State.Attacking;
@@ -392,7 +390,7 @@ public partial class CombatSystem : SystemBase
             else
             {
                 //combatState.CurrentState = CombatState.State.Defending;
-                TransitionToDefending(ref combatState, ref attack);
+                combatState.CurrentState = CombatState.State.Defending;
 
                 // attack.AnimationType = EntitySpawner.AnimationType.Defend; // if you have it
             }

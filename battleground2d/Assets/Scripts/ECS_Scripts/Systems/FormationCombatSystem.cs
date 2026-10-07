@@ -334,6 +334,7 @@ public partial class FormationCombatSystem : SystemBase
                 var formationGroup = formationGroups[i];
                 //float2 translation2d = translations[i].Value.xy;
                 float2 translation2d = formationGroup.AnchorPosition;
+                //float2 translation2d = formationGroup.CurrentUnitAveragePosition;
 
                 int hashMapKey = GetPositionHashMapKey(translation2d);
                 quadrantMultiHashMap.Add(hashMapKey, new QuadrantData
@@ -377,6 +378,7 @@ public partial class FormationCombatSystem : SystemBase
                 //if (formationGroup.CurrentCommand != CommandType.FindTarget)
                 //    continue;
                 float2 unitPosition = formationGroup.AnchorPosition;
+                //float2 unitPosition = formationGroup.CurrentUnitAveragePosition;
 
                 int hashKey = GetPositionHashMapKey(unitPosition);
 

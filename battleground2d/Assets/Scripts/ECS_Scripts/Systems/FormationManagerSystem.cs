@@ -146,7 +146,7 @@ public partial class FormationManagerSystem : SystemBase
                 );
                 if (formationGroup.AnchorResetTimer == 0)
                 {
-                    formationGroup.AnchorPosition = avg;
+                    //formationGroup.AnchorPosition = avg;
                     formationGroup.CurrentUnitAveragePosition = avg;
                     formationGroup.AnchorResetTimer = deltaTime;
                 }
@@ -156,7 +156,7 @@ public partial class FormationManagerSystem : SystemBase
                 }
                 else
                 {
-                    formationGroup.AnchorPosition = avg;
+                    //formationGroup.AnchorPosition = avg;
                     formationGroup.CurrentUnitAveragePosition = avg;
                     formationGroup.AnchorResetTimer = 0f;
                 }
@@ -376,7 +376,7 @@ public partial class FormationManagerSystem : SystemBase
                 {
                     // During engagement, slot around the measured center (not commanded anchor)
                     float2 slotAnchor =
-    formationGroup.CurrentOrder == OrderType.MoveTo
+    formationGroup.CurrentOrder == OrderType.MoveTo || formationGroup.CurrentOrder == OrderType.Defend
         ? formationGroup.AnchorPosition
         : formationGroup.CurrentUnitAveragePosition;
 

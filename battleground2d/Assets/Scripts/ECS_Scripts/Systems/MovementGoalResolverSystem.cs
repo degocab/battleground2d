@@ -39,7 +39,7 @@ public partial class MovementGoalResolverSystem : SystemBase
                 //  go to target
                 //if there is a hastarget
                 ////  go to this second
-                if (orderData.CurrentOrder == OrderType.Defend || orderData.CurrentOrder == OrderType.MoveTo)
+                if (orderData.CurrentOrder == OrderType.Defend || orderData.CurrentOrder == OrderType.MoveTo || orderData.CurrentOrder == OrderType.MoveDirectionalRange)
                 {
                     movementGoal.Position = formationSlotGoal.TargetPosition;
                 }

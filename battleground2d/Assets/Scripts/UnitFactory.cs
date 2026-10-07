@@ -73,19 +73,19 @@ public class UnitFactory
         for (int i = 0; i < positions.Count; i++)
         {
             //SpawnUnit(positions[i], unitType, unitDirection, GetRank(i), initialCommand, spawnPosition);
-            SpawnUnit(i, positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, groupEntity);
+            SpawnUnit(i, positions[i], unitType, unitDirection, GetRank(i), initialCommand, formationID, positions[i] - spawnPosition, groupEntity, formationType);
         }
         return groupEntity;
     }
 
-    private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null)
+    private Entity SpawnUnit(int i, float2 position, UnitType unitType, Direction unitDirection, int rank, OrderData? initialCommand = null, int formationID = 0, float2 formationOffset = default, Entity? formationGroupEntity = null, FormationType formationType = FormationType.Horde)
     {
         if (formationGroupEntity == null || formationGroupEntity == Entity.Null)
         {
             Debug.Log("null group entity ref");
         }
 
-        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 200f);//, formationID, formationOffset);
+        var unit = CreateUnitBase(position, unitType, rank, unitDirection, 100f);//, formationID, formationOffset);
         entityManager.AddComponentData(unit, new FormationComponent
         {
             FormationID = formationID,
@@ -93,6 +93,7 @@ public class UnitFactory
             FormationPosition = position
             ,FormationGroupEntity = formationGroupEntity,
             SlotIndex = i,
+            FormationType = formationType
         });
         OrderData order = initialCommand ?? OrderFactory.CreateMoveOrder(position);
         entityManager.SetComponentData(unit, order);
@@ -170,6 +171,7 @@ public class UnitFactory
         entityManager.SetComponentData(entity, new DefenseComponent
         {
             IsBlocking = false,
+            BlockChance = 0.9f
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {

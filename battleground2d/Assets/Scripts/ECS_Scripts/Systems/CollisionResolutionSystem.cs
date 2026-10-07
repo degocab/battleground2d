@@ -38,14 +38,15 @@ public class CollisionResolutionSystem : SystemBase
               bool isAnchored = false;
 
 
+              //float stiffness = 1f;// 0.08525f;
               float stiffness = 0.08525f;
 
 
               if (formationData.HasComponent(entity))
               {
                   var myFormation = formationData[entity];
-                  if (myFormation.FormationType == FormationType.Phalanx)
-                      stiffness = .175f; // Slightly exaggerate position correction for phalanx units to help them "stick" together better
+                  //if (myFormation.FormationType == FormationType.Phalanx)
+                  //    stiffness = .175f; // Slightly exaggerate position correction for phalanx units to help them "stick" together better
                   myWeight = myFormation.FormationWeight;
 
                   // Only consider "anchored" if this unit actually has an OrderData component

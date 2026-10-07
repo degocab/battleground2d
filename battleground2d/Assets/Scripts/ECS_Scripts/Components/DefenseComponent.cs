@@ -8,4 +8,5 @@ public struct DefenseComponent : IComponentData
     public float BlockDamageReduction;
 
     public float BlockDuration;
+    public float BlockChance;
 }

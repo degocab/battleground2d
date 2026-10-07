@@ -44,6 +44,7 @@ public partial class AttackResolutionSystem : SystemBase
                      in AttackEventComponent attackEvent,
                      in Translation translation
                      ,in AnimationComponent animationComponent
+                     , in DefenseComponent defenseComponent
                      ) =>
             {
                 // Check if target still exists and is in range
@@ -72,21 +73,43 @@ public partial class AttackResolutionSystem : SystemBase
                     bool isTargetDefending = combatStateDataFromEntity[attackEvent.TargetEntity].CurrentState == CombatState.State.Defending;
 
                         var defenderAnimation = animationFromEntity[attackEvent.TargetEntity];
+                        var defenderDefense = defenseFromEntity[attackEvent.TargetEntity];
 
-                        if (!isTargetDefending)
+                        uint seed = math.hash(new uint3(
+                            (uint)attackEvent.SourceEntity.Index + 1u,
+                            (uint)attackEvent.TargetEntity.Index + 1u,
+                            (uint)(attackEvent.AttackTime * 1000f) + 1u
+                        ));
+
+                        if (seed == 0)
+                            seed = 1;
+
+                        var random = new Unity.Mathematics.Random(seed);
+
+                        float blockRoll = random.NextFloat(0f, 1f);
+                        float blockChance = math.saturate(defenderDefense.BlockChance);
+
+                        bool blocked =
+    isTargetDefending &&
+    IsDefendingInHemicircleDirection(
+        attackEvent.AttackerDirection,
+        defenderAnimation.Direction) &&
+    blockRoll < blockChance;
+
+                        if (blocked)
                         {
-                            ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
-                            ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
-                            {
-                                Attacker = attackEvent.SourceEntity,
-                                Damage = attackEvent.Damage,
-                                DamageType = 0
-                            });
-                        }
-                        else if (isTargetDefending && IsDefendingInHemicircleDirection(
-                            attackEvent.AttackerDirection
-                            , defenderAnimation.Direction))
-                        {
+                        //    ecb.AddBuffer<AttackEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
+                        //    ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new AttackEventBuffer
+                        //    {
+                        //        Attacker = attackEvent.SourceEntity,
+                        //        Damage = attackEvent.Damage,
+                        //        DamageType = 0
+                        //    });
+                        //}
+                        //else if (isTargetDefending && IsDefendingInHemicircleDirection(
+                        //    attackEvent.AttackerDirection
+                        //    , defenderAnimation.Direction))
+                        //{
                             ecb.AddBuffer<DefendEventBuffer>(entityInQueryIndex, attackEvent.TargetEntity);
                             ecb.AppendToBuffer(entityInQueryIndex, attackEvent.TargetEntity, new DefendEventBuffer
                             {

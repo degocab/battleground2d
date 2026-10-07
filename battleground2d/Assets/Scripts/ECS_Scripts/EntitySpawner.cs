@@ -104,7 +104,7 @@ public class EntitySpawner : MonoBehaviour
 
                 // --- ALLIES ---
                 // Add more rows here whenever you want (e.g., new[] {0f, -8f, -16f})
-                float[] allyRowsY = { -2f/*, -5f */};
+                float[] allyRowsY = { -3f/*, -5f */};
                 Entity playerCommander = unitFactory.SpawnCommander(UnitType.Ally, new float2(4, 0), 100000f, true);
                 _entityManager.AddComponent<PlayerInputComponent>(playerCommander);
                 SpawnAllyPhalanxRows(unitFactory, playerCommander, entitiesToSpawn, allyRowsY);
