@@ -129,9 +129,13 @@ in AnimationComponent myAnimation
         FormationGroupComponent group =
             formationGroupLookup[groupEntity];
 
-        if (group.FormationGroupStatus != FormationStatusEnum.Engaged)
-            return;
+        //temp fix for units that are engaged or finding target to queue behind other units
+        bool shouldQueue =
+    group.FormationGroupStatus == FormationStatusEnum.Engaged ||
+    group.CurrentOrder == OrderType.FindTarget;
 
+        if (!shouldQueue)
+            return;
 
         // Check only for another unit directly ahead.
         // Set movementSpeed.velocity to zero when blocked.
@@ -151,8 +155,8 @@ in AnimationComponent myAnimation
                 animationLookup[otherEntity];
 
             //// Only queue behind units from our own faction.
-            //if (otherAnimation.UnitType != myAnimation.UnitType)
-            //    continue;
+            if (otherAnimation.UnitType != myAnimation.UnitType)
+                continue;
 
             float2 toOther =
                 collision.OtherTranslation.Value.xy -

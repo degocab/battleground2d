@@ -44,6 +44,8 @@ public struct CommandKnownFormation : IBufferElementData
     public double LastObservedTime;
     public float Confidence;
     public AwarenessSource Source;
+
+    public OrderType CurrentOrder;
 }
 
 public struct CommandAwareness : IComponentData
@@ -163,6 +165,7 @@ public partial class CommandAwarenessSystem : SystemBase
                     BoundsMin = min,
                     BoundsMax = max,
                     Status = group.FormationGroupStatus,
+                    CurrentOrder = group.CurrentOrder,
                     CaptainState = captain.State,
                     CaptainControl = captain.Control,
                     CaptainIntensity = captain.Intensity,

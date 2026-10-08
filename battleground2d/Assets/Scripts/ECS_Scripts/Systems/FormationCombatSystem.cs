@@ -471,10 +471,10 @@ public partial class FormationCombatSystem : SystemBase
                 // transition to engaged ONCE when we first make contact
                 if (isAdvancing && closest.DistanceSq <= engagementRadiusSq)
                 {
-                    group.CurrentOrder = OrderType.FindTarget;
+                    //group.CurrentOrder = OrderType.FindTarget;
                     group.FormationGroupStatus = FormationStatusEnum.Engaged;
 
-                    order.CurrentOrder = OrderType.FindTarget;
+                    //order.CurrentOrder = OrderType.FindTarget;
 
                     formationGroups[i] = group;
                     orders[i] = order;

@@ -112,7 +112,7 @@ public class EntitySpawner : MonoBehaviour
                 // --- ENEMIES ---
                 float enemyMoveRange = 50f;
                 // Add more rows by just appending values
-                float[] enemyRowsY = { 10f/*, 15f, 20f, 25f*/ };
+                float[] enemyRowsY = { 10f, 12f/*, 15f, 20f, 25f*/ };
                 Entity enemyCommander = unitFactory.SpawnCommander(UnitType.Enemy, new float2(4, 2), 100000f, false);
                 SpawnEnemyHordeRows(unitFactory, enemyCommander, entitiesToSpawn, enemyMoveRange, enemyRowsY);
 
@@ -125,7 +125,7 @@ public class EntitySpawner : MonoBehaviour
     private void SpawnAllyPhalanxRows(UnitFactory factory, Entity commanderEntity, int unitsPerFormation, float[] rowsY)
     {
         // X positions for ally phalanx columns
-        float[] allyXs = { -12f,  -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f};
+        float[] allyXs = { -12f,  -6f, 0f, 6f, 12f, 18f, 24f, 30f};
         _entityManager.AddComponentData(commanderEntity, new CommandComponent
         {
             FactionType = UnitType.Ally,
@@ -173,7 +173,7 @@ public class EntitySpawner : MonoBehaviour
 
     private void SpawnEnemyHordeRows(UnitFactory factory, Entity commanderEntity, int unitsPerFormation, float enemyMoveRange, float[] rowsY)
     {
-        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f, 36f, 42f, 48f, 54f, 60f, 66f };
+        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f };
 
         _entityManager.AddComponentData(commanderEntity, new CommandComponent
         {
@@ -208,21 +208,44 @@ public class EntitySpawner : MonoBehaviour
         {
             foreach (var x in colsX)
             {
-                var position2D = new float2(x, rowY);
-                var moveOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
-                    OrderType.MoveDirectionalRange,
-                    enemyMoveRange,
-                    Direction.Down);
+               
+                if (rowY != 12f)
+                {
+                    var position2D = new float2(x, rowY);
+                    var moveOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
+                OrderType.MoveDirectionalRange,
+                enemyMoveRange,
+                Direction.Down);
 
-                var formationGroupEntity = factory.SpawnUnits(
-                    unitsPerFormation,
-                    UnitType.Enemy,
-                    Direction.Right,
-                    moveOrder,
-                    position2D,
-                    FormationType.Horde);
+                    var formationGroupEntity = factory.SpawnUnits(
+                        unitsPerFormation,
+                        UnitType.Enemy,
+                        Direction.Right,
+                        moveOrder,
+                        position2D,
+                        FormationType.Horde);
+                    spawnedGroups.Add(formationGroupEntity);
 
-                spawnedGroups.Add(formationGroupEntity);
+                }
+                else
+                {
+                    if (Mathf.Abs(x) % 12f == 0)
+                    {
+                        var position2D = new float2(x, rowY - 8f);
+                        var moveOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY - 8f, 0));
+
+                        var formationGroupEntity = factory.SpawnUnits(
+                            unitsPerFormation,
+                            UnitType.Enemy,
+                            Direction.Right,
+                            moveOrder,
+                            position2D,
+                            FormationType.Horde);
+                        spawnedGroups.Add(formationGroupEntity); 
+                    }
+
+                }
+
             }
         }
 
@@ -235,7 +258,7 @@ public class EntitySpawner : MonoBehaviour
     {
         _entityManager.AddComponentData(command, new CommandAwarenessConfig
         {
-            ObservationRadius = 14f,
+            ObservationRadius = 16f,
             MemoryDuration = 10f
         });
         _entityManager.AddComponentData(command, new CommandAwareness());

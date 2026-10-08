@@ -15,10 +15,10 @@ public partial class AICommandDecisionSystem : SystemBase
     private float lastOrderTime = 0f;
     private const float COMMAND_DISPLAY_DURATION = 1.5f;
 
-    private const float EvaluationInterval = 1f;
+    private const float EvaluationInterval = 4f;
     private const float MinimumConfidence = 0.35f;
     private const float ReactionDelay = 0.5f;
-    private const float DecisionCooldown = 3f;
+    private const float DecisionCooldown = 4f;
 
     protected override void OnStartRunning()
     {
@@ -178,6 +178,7 @@ public partial class AICommandDecisionSystem : SystemBase
 
 
         float2 strugglingPosition = GetKnownPosition(strugglingFormation);
+        float2 selectedTargetPosition = default;
 
         CommandKnownFormation selectedHelper = default;
         bool foundSuitableHelper = false;
@@ -207,11 +208,25 @@ public partial class AICommandDecisionSystem : SystemBase
 
                 float2 helperPosition = GetKnownPosition(knownHelper);
 
-                float distanceSq = math.distancesq(helperPosition, strugglingPosition);
+                float2 candidateTargetPosition =
+                    GetReinforcementPosition(strugglingFormation, knownHelper);
+
+                if (!IsReinforcementRouteClear(
+                    knownHelper,
+                    strugglingFormation,
+                    candidateTargetPosition,
+                    knownFormations))
+                {
+                    break;
+                }
+
+                float distanceSq =
+                    math.distancesq(helperPosition, candidateTargetPosition);
 
                 if (!foundSuitableHelper || distanceSq < closestDistanceSq)
                 {
                     selectedHelper = knownHelper;
+                    selectedTargetPosition = candidateTargetPosition;
                     closestDistanceSq = distanceSq;
                     foundSuitableHelper = true;
                 }
@@ -242,14 +257,51 @@ public partial class AICommandDecisionSystem : SystemBase
         // a complete decision yet.
 
 
+        //find struggling formatoin bounds closest to helper formation position
+        //float2 strugglingTargetPosition = GetReinforcementPosition(strugglingFormation, selectedHelper);
+
+
+
         decision = new AICommandDecision
         {
             Type = AICommandDecisionType.Reinforce,
             OrderedFormation = selectedHelper.Formation,
             RelatedFormation = strugglingFormation.Formation,
-            TargetPosition = strugglingPosition
+            TargetPosition = selectedTargetPosition
         };
         return true;
+    }
+
+    private static float2 GetReinforcementPosition(
+        CommandKnownFormation struggling,
+        CommandKnownFormation helper)
+    {
+        float2 helperCenter = GetKnownPosition(helper);
+
+        // Closest point inside/on the struggling formation's bounds.
+        float2 closestPoint = math.clamp(
+            helperCenter,
+            struggling.BoundsMin,
+            struggling.BoundsMax);
+
+        // Keep the helper outside instead of overlapping the formation.
+        float2 strugglingCenter = GetKnownPosition(struggling);
+
+        float2 centerDirection = math.normalizesafe(
+            helperCenter - strugglingCenter,
+            new float2(0f, 1f));
+
+        float2 outwardDirection = math.normalizesafe(
+            helperCenter - closestPoint,
+            centerDirection);
+
+        float2 helperHalfSize =
+            (helper.BoundsMax - helper.BoundsMin) * 0.5f;
+
+        float clearance =
+            math.dot(math.abs(outwardDirection), helperHalfSize);// + 1f;
+
+        return closestPoint + outwardDirection * clearance;
     }
 
     private static float2 GetKnownPosition(CommandKnownFormation formation)
@@ -274,10 +326,75 @@ public partial class AICommandDecisionSystem : SystemBase
         if (formation.Confidence < MinimumConfidence)
             return false;
 
-        return //formation.CaptainState == FormationCaptainState.Pressured || 
+        return formation.CaptainState == FormationCaptainState.Pressured || 
             formation.CaptainState == FormationCaptainState.Collapsing;
     }
+    private static bool IsReinforcementRouteClear(
+    CommandKnownFormation helper,
+    CommandKnownFormation struggling,
+    float2 targetPosition,
+    DynamicBuffer<CommandKnownFormation> knownFormations)
+    {
+        float2 start = GetKnownPosition(helper);
+        float2 padding = new float2(0.5f);
 
+        for (int i = 0; i < knownFormations.Length; i++)
+        {
+            CommandKnownFormation obstacle = knownFormations[i];
+
+            if (obstacle.Formation == helper.Formation ||
+                obstacle.Formation == struggling.Formation)
+                continue;
+
+            if (obstacle.Faction != helper.Faction ||
+                obstacle.AliveUnitCount <= 0 ||
+                obstacle.Confidence < MinimumConfidence)
+                continue;
+
+            if (SegmentIntersectsBounds(
+                start,
+                targetPosition,
+                obstacle.BoundsMin - padding,
+                obstacle.BoundsMax + padding))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool SegmentIntersectsBounds(
+        float2 start,
+        float2 end,
+        float2 boundsMin,
+        float2 boundsMax)
+    {
+        float2 direction = end - start;
+
+        bool parallelX = math.abs(direction.x) < 0.0001f;
+        bool parallelY = math.abs(direction.y) < 0.0001f;
+
+        if (parallelX &&
+            (start.x < boundsMin.x || start.x > boundsMax.x))
+            return false;
+
+        if (parallelY &&
+            (start.y < boundsMin.y || start.y > boundsMax.y))
+            return false;
+
+        float2 safeDirection = new float2(
+            parallelX ? 0.0001f : direction.x,
+            parallelY ? 0.0001f : direction.y);
+
+        float2 first = (boundsMin - start) / safeDirection;
+        float2 second = (boundsMax - start) / safeDirection;
+
+        float enterTime = math.cmax(math.min(first, second));
+        float exitTime = math.cmin(math.max(first, second));
+
+        return enterTime <= exitTime &&
+               exitTime >= 0f &&
+               enterTime <= 1f;
+    }
     private static bool IsSuitableHelper(CommandKnownFormation helper, CommandKnownFormation struggling,
        UnitType commandFaction)
     {
@@ -291,6 +408,9 @@ public partial class AICommandDecisionSystem : SystemBase
             return false;
 
         if (helper.Confidence < MinimumConfidence)
+            return false;
+        //temp fix for now
+        if (helper.CurrentOrder != OrderType.Defend)
             return false;
 
         if (helper.Status == FormationStatusEnum.Broken)

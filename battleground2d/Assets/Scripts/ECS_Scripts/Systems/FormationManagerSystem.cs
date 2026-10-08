@@ -376,7 +376,7 @@ public partial class FormationManagerSystem : SystemBase
                 {
                     // During engagement, slot around the measured center (not commanded anchor)
                     float2 slotAnchor =
-    formationGroup.CurrentOrder == OrderType.MoveTo || formationGroup.CurrentOrder == OrderType.Defend
+    formationGroup.CurrentOrder == OrderType.MoveTo || formationGroup.CurrentOrder == OrderType.Defend || formationGroup.CurrentOrder == OrderType.MoveDirectionalRange
         ? formationGroup.AnchorPosition
         : formationGroup.CurrentUnitAveragePosition;
 
