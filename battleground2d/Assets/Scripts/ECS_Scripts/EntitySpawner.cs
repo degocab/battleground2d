@@ -231,8 +231,8 @@ public class EntitySpawner : MonoBehaviour
                 {
                     if (Mathf.Abs(x) % 12f == 0)
                     {
-                        var position2D = new float2(x, rowY - 8f);
-                        var moveOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY - 8f, 0));
+                        var position2D = new float2(x, rowY - 5f);
+                        var moveOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY - 5f, 0));
 
                         var formationGroupEntity = factory.SpawnUnits(
                             unitsPerFormation,

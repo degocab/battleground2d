@@ -43,6 +43,8 @@ public partial class AICommandDecisionSystem : SystemBase
 
         ComponentDataFromEntity<OrderData> formationOrders =
             GetComponentDataFromEntity<OrderData>(false);
+        ComponentDataFromEntity<Translation> formationPositions =
+            GetComponentDataFromEntity<Translation>(false);
 
         Entities
             .WithName("ProcessAICommanders")
@@ -60,6 +62,43 @@ public partial class AICommandDecisionSystem : SystemBase
                 in DynamicBuffer<CommandKnownFormation> knownFormations) =>
             {
 
+                if (decisionState.HasActiveDecision)
+                {
+                    // Currently executing a decision, so skip evaluation.
+                    //for reinforce only
+                    // check if arrived to reinforce location
+                    if (decisionState.ActiveDecision.Type == AICommandDecisionType.Reinforce)
+                    {
+                        if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation))
+                        {
+                            OrderData order = formationOrders[decisionState.ActiveDecision.OrderedFormation];
+
+                            // TODO: if this returns false what do we do the the active decision? cancel it? wait longer?
+                            if (!TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
+                                return;
+
+                            float2 currentPosition = GetKnownPosition(activeFormation);
+                            float distanceSq = math.distancesq(currentPosition, decisionState.ActiveDecision.TargetPosition);
+                            if (distanceSq < 1f)
+                            {
+                                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} has arrived to reinforce {decisionState.ActiveDecision.RelatedFormation}.");
+
+
+                                OrderData findTargetOrder = OrderFactory.CreateFindTargetOrder();
+                                formationOrders[decisionState.ActiveDecision.OrderedFormation] = findTargetOrder;
+                                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} issued find target order!");
+
+                                decisionState.HasActiveDecision = false;
+                                decisionState.ActiveDecision = default;
+                                decisionState.NextEvaluationTime = now + DecisionCooldown;
+
+
+                            }
+                        }
+                    }
+                    return;
+                }
+
                 if (decisionState.HasPendingDecision)
                 {
 
@@ -74,6 +113,8 @@ public partial class AICommandDecisionSystem : SystemBase
                             $"AI issued {decisionState.PendingDecision.Type} " +
                             $"to formation " +
                             $"{decisionState.PendingDecision.OrderedFormation}.");
+                        decisionState.HasActiveDecision = true;
+                        decisionState.ActiveDecision = decisionState.PendingDecision;
                     }
                     else
                     {
@@ -298,8 +339,10 @@ public partial class AICommandDecisionSystem : SystemBase
         float2 helperHalfSize =
             (helper.BoundsMax - helper.BoundsMin) * 0.5f;
 
-        float clearance =
-            math.dot(math.abs(outwardDirection), helperHalfSize);// + 1f;
+        float fullClearance =
+            math.dot(math.abs(outwardDirection), helperHalfSize);
+
+        float clearance = math.min(fullClearance, 2f);
 
         return closestPoint + outwardDirection * clearance;
     }
@@ -336,7 +379,7 @@ public partial class AICommandDecisionSystem : SystemBase
     DynamicBuffer<CommandKnownFormation> knownFormations)
     {
         float2 start = GetKnownPosition(helper);
-        float2 padding = new float2(0.5f);
+        float2 padding = new float2(0.0f);
 
         for (int i = 0; i < knownFormations.Length; i++)
         {
@@ -391,9 +434,24 @@ public partial class AICommandDecisionSystem : SystemBase
         float enterTime = math.cmax(math.min(first, second));
         float exitTime = math.cmin(math.max(first, second));
 
-        return enterTime <= exitTime &&
-               exitTime >= 0f &&
-               enterTime <= 1f;
+        float routeEntry = math.max(enterTime, 0f);
+        float routeExit = math.min(exitTime, 1f);
+
+        if (routeEntry > routeExit)
+            return false;
+
+        float overlapFraction = routeExit - routeEntry;
+
+        float overlapDistanceSq =
+            overlapFraction *
+            overlapFraction *
+            math.lengthsq(direction);
+
+        const float allowedOverlapDistance = 1f;
+
+        return overlapDistanceSq >
+               allowedOverlapDistance *
+               allowedOverlapDistance;
     }
     private static bool IsSuitableHelper(CommandKnownFormation helper, CommandKnownFormation struggling,
        UnitType commandFaction)
@@ -462,7 +520,20 @@ public partial class AICommandDecisionSystem : SystemBase
         return order;
     }
 
+    private static bool TryGetKnownFormation(Entity formationEntity, DynamicBuffer<CommandKnownFormation> knownFormations, out CommandKnownFormation knownFormation)
+    {
+        for (int i = 0; i < knownFormations.Length; i++)
+        {
+            if (knownFormations[i].Formation != formationEntity)
+                continue;
 
+            knownFormation = knownFormations[i];
+            return true;
+        }
+
+        knownFormation = default;
+        return false;
+    }
 
 
 }
@@ -501,5 +572,6 @@ public struct AICommandDecisionState : IComponentData
 
     public bool HasPendingDecision;
 
+    public bool HasActiveDecision;
+    public AICommandDecision ActiveDecision;
 }
-

@@ -460,6 +460,10 @@ public class PlayerControlSystem : SystemBase
         Vector3 targetPosition = playerPosition;
         targetPosition.z = -13f;
 
+        //TODO: Add camera offset based on player facing direction or mouse position
+        if (Input.GetKey(KeyCode.Tab))
+            targetPosition.y = playerPosition.y + 5f; 
+
         Vector3 smoothedPosition = Vector3.SmoothDamp(
             Camera.main.transform.position,
             targetPosition,
