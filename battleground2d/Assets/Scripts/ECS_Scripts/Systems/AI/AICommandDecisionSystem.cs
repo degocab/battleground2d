@@ -69,6 +69,26 @@ public partial class AICommandDecisionSystem : SystemBase
                     // check if arrived to reinforce location
                     if (decisionState.ActiveDecision.Type == AICommandDecisionType.Reinforce)
                     {
+
+                        if (now >= decisionState.DecisionTimeOut)
+                        {
+                            Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} acive decision resets!");
+                            if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation) && TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
+                            {
+                                OrderData findTargetOrder = OrderFactory.CreateDefendOrder(new float3(GetKnownPosition(activeFormation), 0));
+                                formationOrders[decisionState.ActiveDecision.OrderedFormation] = findTargetOrder;
+                            }
+
+
+                            decisionState.HasActiveDecision = false;
+                            decisionState.ActiveDecision = default;
+                            decisionState.NextEvaluationTime = now + DecisionCooldown;
+                            decisionState.DecisionTimeOut = default;
+
+                            return;
+                        }
+
+
                         if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation))
                         {
                             OrderData order = formationOrders[decisionState.ActiveDecision.OrderedFormation];
@@ -91,6 +111,7 @@ public partial class AICommandDecisionSystem : SystemBase
                                 decisionState.HasActiveDecision = false;
                                 decisionState.ActiveDecision = default;
                                 decisionState.NextEvaluationTime = now + DecisionCooldown;
+                                decisionState.DecisionTimeOut = default;
 
 
                             }
@@ -115,6 +136,7 @@ public partial class AICommandDecisionSystem : SystemBase
                             $"{decisionState.PendingDecision.OrderedFormation}.");
                         decisionState.HasActiveDecision = true;
                         decisionState.ActiveDecision = decisionState.PendingDecision;
+                        decisionState.DecisionTimeOut = now + 15f;
                     }
                     else
                     {
@@ -574,4 +596,6 @@ public struct AICommandDecisionState : IComponentData
 
     public bool HasActiveDecision;
     public AICommandDecision ActiveDecision;
+
+    public double DecisionTimeOut;
 }

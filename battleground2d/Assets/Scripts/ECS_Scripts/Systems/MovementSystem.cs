@@ -132,7 +132,8 @@ in AnimationComponent myAnimation
         //temp fix for units that are engaged or finding target to queue behind other units
         bool shouldQueue =
     group.FormationGroupStatus == FormationStatusEnum.Engaged ||
-    group.CurrentOrder == OrderType.FindTarget;
+    group.CurrentOrder == OrderType.FindTarget || 
+    group.CurrentOrder == OrderType.Defend;
 
         if (!shouldQueue)
             return;
