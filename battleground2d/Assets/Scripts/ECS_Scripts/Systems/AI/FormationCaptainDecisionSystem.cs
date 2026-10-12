@@ -16,7 +16,6 @@ public partial class FormationCaptainDecisionSystem : SystemBase
 
     protected override void OnCreate()
     {
-        Debug.Log("FormationCaptainDecisionSystem created");
     }
 
     protected override void OnDestroy()
@@ -60,7 +59,7 @@ public partial class FormationCaptainDecisionSystem : SystemBase
                 behaviorComponent.RequestSupport =
                     behavior.RequestSupport;
 
-                if (debugLogging)
+                if (true/*debugLogging*/)
                 {
                     Debug.Log(
                         $"FormationID: {formation.FormationID}" +

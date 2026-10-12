@@ -64,92 +64,13 @@ public partial class AICommandDecisionSystem : SystemBase
 
                 if (decisionState.HasActiveDecision)
                 {
-                    // Currently executing a decision, so skip evaluation.
-                    //for reinforce only
-                    // check if arrived to reinforce location
-                    if (decisionState.ActiveDecision.Type == AICommandDecisionType.Reinforce)
-                    {
-
-                        if (now >= decisionState.DecisionTimeOut)
-                        {
-                            Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} acive decision resets!");
-                            if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation) && TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
-                            {
-                                OrderData findTargetOrder = OrderFactory.CreateDefendOrder(new float3(GetKnownPosition(activeFormation), 0));
-                                formationOrders[decisionState.ActiveDecision.OrderedFormation] = findTargetOrder;
-                            }
-
-
-                            decisionState.HasActiveDecision = false;
-                            decisionState.ActiveDecision = default;
-                            decisionState.NextEvaluationTime = now + DecisionCooldown;
-                            decisionState.DecisionTimeOut = default;
-
-                            return;
-                        }
-
-
-                        if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation))
-                        {
-                            OrderData order = formationOrders[decisionState.ActiveDecision.OrderedFormation];
-
-                            // TODO: if this returns false what do we do the the active decision? cancel it? wait longer?
-                            if (!TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
-                                return;
-
-                            float2 currentPosition = GetKnownPosition(activeFormation);
-                            float distanceSq = math.distancesq(currentPosition, decisionState.ActiveDecision.TargetPosition);
-                            if (distanceSq < 1f)
-                            {
-                                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} has arrived to reinforce {decisionState.ActiveDecision.RelatedFormation}.");
-
-
-                                OrderData findTargetOrder = OrderFactory.CreateFindTargetOrder();
-                                formationOrders[decisionState.ActiveDecision.OrderedFormation] = findTargetOrder;
-                                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} issued find target order!");
-
-                                decisionState.HasActiveDecision = false;
-                                decisionState.ActiveDecision = default;
-                                decisionState.NextEvaluationTime = now + DecisionCooldown;
-                                decisionState.DecisionTimeOut = default;
-
-
-                            }
-                        }
-                    }
+                    UpdateActiveDecision(ref decisionState, now, formationOrders, knownFormations);
                     return;
                 }
 
                 if (decisionState.HasPendingDecision)
                 {
-
-                    if (now < decisionState.ExecuteAfterTime)
-                        return;
-
-                    bool executed = ExecuteDecision(decisionState.PendingDecision, formationOrders);
-
-                    if (executed)
-                    {
-                        Debug.Log(
-                            $"AI issued {decisionState.PendingDecision.Type} " +
-                            $"to formation " +
-                            $"{decisionState.PendingDecision.OrderedFormation}.");
-                        decisionState.HasActiveDecision = true;
-                        decisionState.ActiveDecision = decisionState.PendingDecision;
-                        decisionState.DecisionTimeOut = now + 15f;
-                    }
-                    else
-                    {
-                        Debug.Log(
-    $"AI cancelled {decisionState.PendingDecision.Type}.");
-                    }
-
-                    decisionState.PendingDecision = default;
-                    decisionState.HasPendingDecision = false;
-                    decisionState.ExecuteAfterTime = 0;
-                    decisionState.NextEvaluationTime =
-                        now + DecisionCooldown;
-
+                    UpdatePendingDecision(ref decisionState, now, formationOrders);
                     return;
                 }
 
@@ -178,6 +99,100 @@ public partial class AICommandDecisionSystem : SystemBase
             })
             .WithoutBurst()
             .Run();
+    }
+
+    private static void UpdatePendingDecision(ref AICommandDecisionState decisionState, double now, ComponentDataFromEntity<OrderData> formationOrders)
+    {
+        if (now < decisionState.ExecuteAfterTime)
+            return;
+
+        bool executed = ExecuteDecision(decisionState.PendingDecision, formationOrders);
+
+        if (executed)
+        {
+            Debug.Log(
+                $"AI issued {decisionState.PendingDecision.Type} " +
+                $"to formation " +
+                $"{decisionState.PendingDecision.OrderedFormation}.");
+            decisionState.HasActiveDecision = true;
+            decisionState.ActiveDecision = decisionState.PendingDecision;
+            decisionState.DecisionTimeOut = now + 15f;
+        }
+        else
+        {
+            Debug.Log(
+$"AI cancelled {decisionState.PendingDecision.Type}.");
+        }
+
+        decisionState.PendingDecision = default;
+        decisionState.HasPendingDecision = false;
+        decisionState.ExecuteAfterTime = 0;
+        decisionState.NextEvaluationTime =
+            now + DecisionCooldown;
+    }
+
+    private static void UpdateActiveDecision(
+    ref AICommandDecisionState decisionState,
+    double now,
+    ComponentDataFromEntity<OrderData> formationOrders,
+    DynamicBuffer<CommandKnownFormation> knownFormations)
+    {
+        // Currently executing a decision, so skip evaluation.
+        //for reinforce only
+        // check if arrived to reinforce location
+        if (decisionState.ActiveDecision.Type == AICommandDecisionType.Reinforce)
+        {
+            if (formationOrders.HasComponent(decisionState.ActiveDecision.OrderedFormation))
+            {
+                OrderData order = formationOrders[decisionState.ActiveDecision.OrderedFormation];
+                if (order.CurrentOrder != OrderType.MoveTo)
+                {
+                    ClearActiveDecision(ref decisionState, now);
+                    return;
+                }
+            }
+            else
+            {
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+            if (now >= decisionState.DecisionTimeOut)
+            {
+                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} acive decision resets!");
+                if (TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation2))
+                {
+                    OrderData defendOrder = OrderFactory.CreateDefendOrder(new float3(GetKnownPosition(activeFormation2), 0));
+                    formationOrders[decisionState.ActiveDecision.OrderedFormation] = defendOrder;
+                }
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+            if (!TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
+                return;
+
+            float2 currentPosition = GetKnownPosition(activeFormation);
+            float distanceSq = math.distancesq(currentPosition, decisionState.ActiveDecision.TargetPosition);
+            if (distanceSq < 1f)
+            {
+                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} has arrived to reinforce {decisionState.ActiveDecision.RelatedFormation}.");
+
+
+                OrderData findTargetOrder = OrderFactory.CreateFindTargetOrder();
+                formationOrders[decisionState.ActiveDecision.OrderedFormation] = findTargetOrder;
+                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} issued find target order!");
+                ClearActiveDecision(ref decisionState, now);
+            }
+        }
+    }
+
+    private static void ClearActiveDecision(ref AICommandDecisionState decisionState, double now)
+    {
+        decisionState.HasActiveDecision = false;
+        decisionState.ActiveDecision = default;
+        decisionState.NextEvaluationTime = now + DecisionCooldown;
+        decisionState.DecisionTimeOut = default;
     }
 
     private static bool ExecuteDecision(AICommandDecision pendingDecision, ComponentDataFromEntity<OrderData> formationOrders)
@@ -391,7 +406,7 @@ public partial class AICommandDecisionSystem : SystemBase
         if (formation.Confidence < MinimumConfidence)
             return false;
 
-        return formation.CaptainState == FormationCaptainState.Pressured || 
+        return formation.CaptainState == FormationCaptainState.Pressured ||
             formation.CaptainState == FormationCaptainState.Collapsing;
     }
     private static bool IsReinforcementRouteClear(
@@ -502,44 +517,6 @@ public partial class AICommandDecisionSystem : SystemBase
             return false;
 
         return true;
-    }
-
-    private OrderData CreateOrderFromDecision(CommandAwareness commandAwareness)
-    {
-        OrderData order = new OrderData();
-        switch (commandAwareness.Pressure)
-        {
-            case CommandPressureState.Stable:
-                // Continue current orders.
-                //order = AICommandDecisionType.Hold;
-                order = OrderFactory.CreateOrder(OrderType.Defend);
-
-                break;
-
-            case CommandPressureState.Pressured:
-                // Find a struggling friendly formation
-                // and send an available formation to help.
-                //order = AICommandDecisionType.Reinforce;
-                order = OrderFactory.CreateOrder(OrderType.MoveTo);
-                break;
-
-            case CommandPressureState.Collapsing:
-                // Pull endangered formations away from the fight.
-                //order = AICommandDecisionType.Retreat;
-                order = OrderFactory.CreateOrder(OrderType.MoveTo);
-                break;
-
-            case CommandPressureState.Broken:
-                // Order a wider withdrawal.
-                //order = AICommandDecisionType.FullRetreat;
-                order = OrderFactory.CreateOrder(OrderType.MoveTo);
-                break;
-        }
-        Debug.Log("Order#" + order.CurrentOrder.ToString());
-        OrderDebugUI.Text = $"Order: {order.CurrentOrder.ToString()}";
-        OrderDebugUI.TimeRemaining = 1.5f;
-
-        return order;
     }
 
     private static bool TryGetKnownFormation(Entity formationEntity, DynamicBuffer<CommandKnownFormation> knownFormations, out CommandKnownFormation knownFormation)

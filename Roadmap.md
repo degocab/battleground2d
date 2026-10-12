@@ -134,11 +134,9 @@ PHASE 3 — BATTLE LOOP & GLOBAL FRONTLINE (UPDATED)
 		- real communication layer
 		- not MVP
 
-[ ] Global awareness: optional coarse “Left/Center/Right” pressure summary (delayed/stale)
-	- aggregated slice pressure
-	- intentionally not exact
 
-[ ] AI Command awareness: formations-local slice reads + reaction delay (no omniscient instant flips)
+
+[x] AI Command awareness: formations-local slice reads + reaction delay (no omniscient instant flips)
 	- AI reads CommandAwareness, not raw slices
 	- nearby/local owned info only
 	- delay before reacting
@@ -234,6 +232,9 @@ PHASE 5 — UNIT VARIETY & AI COMMANDER
 
 [ ] Add unit type enum (infantry, cavalry, archer, etc.)
 [ ] Create AI Commander system
+[ ] Global awareness: optional coarse “Left/Center/Right” pressure summary (delayed/stale)
+	- aggregated slice pressure
+	- intentionally not exact
 [ ] Reinforce weak sectors
 [ ] Initiate pushes
 [ ] Retreat collapsing sectors
