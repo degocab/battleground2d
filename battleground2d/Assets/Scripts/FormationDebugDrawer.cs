@@ -69,26 +69,31 @@ public class FormationDebugDrawer : MonoBehaviour
 
         for (int i = 0; i < captains.Length; i++)
         {
+
+
             var captain = captains[i];
             var group = groups[i];
             var behavior = behaviors[i];
             var order = orders[i];
 
-            // formation center
-            float2 center = (group.BoundsMin + group.BoundsMax) * 0.5f;
+            if (!((captain.State == FormationCaptainState.Pressured || captain.State == FormationCaptainState.Collapsing)))
+                continue;
+
+
+                // formation center
+                float2 center = (group.BoundsMin + group.BoundsMax) * 0.5f;
 
             Vector3 pos = new Vector3(center.x, center.y, 2f);
             //+ Vector3.up * 2f;
 
             string text =
-                $"P:{captain.State}\n" +
-                $"C:{captain.Control:F2}\n" +
-                $"I:{captain.Intensity:F2}\n" +
-                $"M:{captain.Morale:F2}\n" +
-                $"Behavior:{behavior.Type}\n" +
-                $"Order:{order.CurrentOrder}\n" +
-                $"State From FCD:{behavior.State}\n" +
-                $"State From Captain:{captain.State}\n";
+                $"ORDER: {order.CurrentOrder}\n" +
+                $"ACTION: {behavior.Type}\n" +
+                $"Pursuit: {(behavior.AllowPursuit ? "Allowed" : "Stopped")}\n\n" +
+                $"Captain:  {captain.State}\n" +
+                $"Decision: {behavior.State}\n\n" +
+                $"Control: {captain.Control:F2}  Intensity: {captain.Intensity:F2}\n" +
+                $"Morale: {captain.Morale:F2}";
             // outline
             //foreach (var offset in outlineOffsets)
             //{

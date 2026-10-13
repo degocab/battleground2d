@@ -13,7 +13,7 @@
                 Aggression = 1f,
                 MoveSpeedMultiplier = 1f,
                 MaintainFormation = true,
-                AllowPursuit = false,
+                AllowPursuit = true,
                 RequestSupport = false
             };
         }
@@ -182,7 +182,7 @@
                 Aggression = 0.3f,
                 MoveSpeedMultiplier = 0.9f,
                 MaintainFormation = true,
-                AllowPursuit = false,
+                AllowPursuit = true,
                 RequestSupport = false
             };
         }

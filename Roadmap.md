@@ -144,9 +144,8 @@ PHASE 3 — BATTLE LOOP & GLOBAL FRONTLINE (UPDATED)
 ----------------------------------------
 3C — FORMATIONS REGISTER + SLICE-INFLUENCED BEHAVIOR
 ----------------------------------------
-[ ] Register formations into slices (area-of-operations window, not just nearest point)
-[ ] Formation behaviors react to SliceState (stable/pressured/collapsing/broken)
-[ ] Player presence modifier (nearby slice stabilizes faster / reduces rout chance)
+[X] Register formations into slices (area-of-operations window, not just nearest point)
+[X] Formation behaviors react to SliceState (stable/pressured/collapsing/broken)
 
 ----------------------------------------
 3D — ORDERS AS INTENT (MVP VERSION)
@@ -235,6 +234,7 @@ PHASE 5 — UNIT VARIETY & AI COMMANDER
 [ ] Global awareness: optional coarse “Left/Center/Right” pressure summary (delayed/stale)
 	- aggregated slice pressure
 	- intentionally not exact
+[ ] Player presence modifier (nearby slice stabilizes faster / reduces rout chance)
 [ ] Reinforce weak sectors
 [ ] Initiate pushes
 [ ] Retreat collapsing sectors

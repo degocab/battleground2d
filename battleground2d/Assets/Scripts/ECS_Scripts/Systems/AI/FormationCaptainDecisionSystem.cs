@@ -33,12 +33,7 @@ public partial class FormationCaptainDecisionSystem : SystemBase
                 in FormationGroupComponent formation,
                 in OrderData currentOrder) =>
             {
-                FormationCaptainState state =
-                    CaptainStateFactory.DetermineState(
-                        captain.Control,
-                        captain.Intensity,
-                        captain.Morale,
-                        formation.AliveUnitCount);
+                FormationCaptainState state = captain.State;
 
                 FormationBehavior behavior =
                     TacticalDecisionFactory.Process(

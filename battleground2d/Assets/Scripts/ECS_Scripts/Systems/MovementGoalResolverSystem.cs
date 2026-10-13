@@ -24,16 +24,27 @@ public partial class MovementGoalResolverSystem : SystemBase
             return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
+
+        var behaviors =
+    GetComponentDataFromEntity<FormationBehaviorComponent>(true);
         Entities
             .WithName("MovementGoalResolverJob")
             .WithAll<FormationSlotGoal>()
             .WithAll<CombatTarget>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
-            .ForEach((ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran
+            .WithReadOnly(behaviors)
+            .ForEach((ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran,in FormationComponent formation
             ) =>
             {
+                bool allowPursuit = true;
+                if (formation.FormationGroupEntity.HasValue)
+                {
+                    Entity group = formation.FormationGroupEntity.Value;
 
+                    if (behaviors.HasComponent(group))
+                        allowPursuit = behaviors[group].AllowPursuit;
+                }
                 //decide which movement goal to use for final movement calc in unitmovetostarget system
                 //if there a combat target 
                 //  go to target
@@ -51,7 +62,14 @@ public partial class MovementGoalResolverSystem : SystemBase
                 {
                     //if (combatState.CurrentState == CombatState.State.SeekingTarget) //follow combat target first
                     //{
-                    movementGoal.Position = combatTarget.TargetPosition;
+                    if (allowPursuit)
+                    {
+                        movementGoal.Position = combatTarget.TargetPosition;
+                    }
+                    else
+                    {
+                        movementGoal.Position = tran.Value.xy;
+                    }
                     //}
                     //else
                     //{

@@ -318,23 +318,15 @@ public partial class FormationCaptainReportSystem : SystemBase
                 }
 
                 float finalControl = controlSum;/// sliceCount;//> 0f ? controlSum / weightSum : 0f;
-                //if (isAlly && group.FormationID == 1)
-                //{
-                //    Debug.Log(FormatControlEnum(finalControl));
-                //}
-                FormationCaptainState state = captain.State;
-                var intensityAvg = intensitySum / sliceCount;
-                state = FormatControlEnum(finalControl, intensityAvg, captain.SliceCount);
-                //if (sliceCount == 0)
-                //    state = FormationCaptainState.Idle;
-                //else if (finalControl > 0.25f)
-                //    state = FormationCaptainState.Winning;
-                //else if (finalControl < -0.15f)
-                //    state = FormationCaptainState.Collapsing;
-                //else if (finalControl == 0f)
-                //    state = FormationCaptainState.Pressured;
-                //else
-                //    state = FormationCaptainState.Holding;
+                //FormationCaptainState state = captain.State;
+                //var intensityAvg = intensitySum / sliceCount;
+                //state = FormatControlEnum(finalControl, intensityAvg, captain.SliceCount);
+
+                float intensityAvg = sliceCount > 0 ? intensitySum / sliceCount : 0f;
+
+                FormationCaptainState state = CaptainStateFactory.DetermineState(
+                    finalControl, intensityAvg, captain.Morale, group.AliveUnitCount);
+
 
                 captain.FormationPosition = (aMin + aMax) * 0.5f;
                 captain.State = state;
@@ -348,16 +340,6 @@ public partial class FormationCaptainReportSystem : SystemBase
         }
 
 
-    }
-    private static string FormatControl(float control)
-    {
-        if (control >= 0.75f) return "Dominating";
-        if (control >= 0.35f) return "Winning";
-        if (control >= 0.10f) return "Slight Edge";
-        if (control > -0.10f) return "Even";
-        if (control > -0.35f) return "Pressured";
-        if (control > -0.75f) return "Collapsing";
-        return "Broken";
     }
     private static FormationCaptainState FormatControlEnum(
         float control,
@@ -388,13 +370,5 @@ public partial class FormationCaptainReportSystem : SystemBase
             return FormationCaptainState.Collapsing;
 
         return FormationCaptainState.Pressured;
-    }
-    private static FormationCaptainState GetCaptainState(float control, float intensity)
-    {
-        if (intensity < 0.05f) return FormationCaptainState.Idle;
-        if (control >= 0.35f) return FormationCaptainState.Winning;
-        if (control <= -0.50f) return FormationCaptainState.Collapsing;
-        if (control <= -0.15f) return FormationCaptainState.Pressured;
-        return FormationCaptainState.Holding;
     }
 }
