@@ -226,6 +226,11 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
     /// <returns></returns>
     private static bool TryCreateDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
+        return TryCreateReinforceDecision(command, ownedFormations, knownFormations, out decision);
+    }
+
+    private static bool TryCreateReinforceDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    {
         decision = default;
 
 
@@ -348,6 +353,24 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
             TargetPosition = selectedTargetPosition
         };
         return true;
+    }
+
+    private static bool TryCreateHoldDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+
+        decision = default;
+        return false;
+    }
+
+    private static bool TryCreateChargeDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+
+        decision = default;
+        return false;
+    }
+
+    private static bool TryCreateRetreatDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+
+        decision = default;
+        return false;
     }
 
     private static float2 GetReinforcementPosition(
@@ -534,7 +557,6 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         return false;
     }
 
-
 }
 
 public enum AICommandDecisionType : byte
@@ -543,7 +565,8 @@ public enum AICommandDecisionType : byte
     Hold,
     Reinforce,
     Retreat,
-    FullRetreat
+    FullRetreat,
+    Charge
 }
 
 public struct AICommandDecision
