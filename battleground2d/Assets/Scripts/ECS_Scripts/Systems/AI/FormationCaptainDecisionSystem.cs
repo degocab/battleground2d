@@ -54,7 +54,7 @@ public partial class FormationCaptainDecisionSystem : SystemBase
                 behaviorComponent.RequestSupport =
                     behavior.RequestSupport;
 
-                if (true/*debugLogging*/)
+                if (debugLogging)
                 {
                     Debug.Log(
                         $"FormationID: {formation.FormationID}" +

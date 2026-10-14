@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Security.AccessControl;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.Profiling;
 using static EntitySpawner;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(CommandAwarenessSystem))]
@@ -18,17 +18,13 @@ public partial class AICommandDecisionSystem : SystemBase
     private const float EvaluationInterval = 4f;
     private const float MinimumConfidence = 0.35f;
     private const float ReactionDelay = 0.5f;
-    private const float DecisionCooldown = 4f;
 
     protected override void OnStartRunning()
     {
     }
 
-    private EndSimulationEntityCommandBufferSystem _ecbSystem;
-
     protected override void OnCreate()
     {
-        _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
     protected override void OnUpdate()
     {
@@ -46,59 +42,105 @@ public partial class AICommandDecisionSystem : SystemBase
         ComponentDataFromEntity<Translation> formationPositions =
             GetComponentDataFromEntity<Translation>(false);
 
+
         Entities
             .WithName("ProcessAICommanders")
             .WithAll<CommanderComponent>()
-            .WithAll<CommandComponent,
+            .WithAll<
                 OwnedFormationGroup,
                 CommandKnownFormation>()
             .WithNone<PlayerInputComponent>()
             .ForEach((
                 Entity commanderEntity,
-                ref AICommandDecisionState decisionState,
-                in CommandComponent command,
+                DynamicBuffer<AICommandDecisionState> decisions,
+                ref CommandComponent command,
                 in CommandAwareness awareness,
                 in DynamicBuffer<OwnedFormationGroup> ownedFormations,
                 in DynamicBuffer<CommandKnownFormation> knownFormations) =>
             {
 
-                if (decisionState.HasActiveDecision)
+                for (int i = decisions.Length - 1; i >= 0; i--)
                 {
-                    UpdateActiveDecision(ref decisionState, now, formationOrders, knownFormations);
-                    return;
+                    AICommandDecisionState decisionState = decisions[i];
+                    if (decisionState.HasActiveDecision)
+                    {
+                        UpdateActiveDecision(ref decisionState, now, formationOrders, knownFormations);
+                    }
+                    else if (decisionState.HasPendingDecision)
+                    {
+                        UpdatePendingDecision(ref decisionState, now, formationOrders);
+                    }
+
+                    if (!decisionState.HasActiveDecision &&
+                        !decisionState.HasPendingDecision)
+                    {
+                        decisions.RemoveAt(i);
+                    }
+                    else
+                    {
+                        decisions[i] = decisionState;
+                    }
                 }
 
-                if (decisionState.HasPendingDecision)
-                {
-                    UpdatePendingDecision(ref decisionState, now, formationOrders);
-                    return;
-                }
 
-                if (now < decisionState.NextEvaluationTime)
+                if (now < command.NextEvaluationTime)
                     return;
-
                 // Decision timing will go here next.
-                decisionState.NextEvaluationTime = now + EvaluationInterval;
-
-                bool createdDecision = TryCreateDecision(command, ownedFormations, knownFormations, out AICommandDecision decision);
-
-                Debug.Log(
-                    $"AI Command{commanderEntity} " +
-                    $"owned={ownedFormations.Length} " +
-                    $"known={knownFormations.Length} " +
-                    $"pressure={awareness.Pressure} " +
-                    $"decision={createdDecision}");
-
-                decisionState.HasPendingDecision = createdDecision;
-                if (createdDecision)
+                command.NextEvaluationTime = now + EvaluationInterval;
+                for (int i = 0; i < knownFormations.Length; i++)
                 {
-                    decisionState.PendingDecision = decision;
+                    AICommandDecisionState decisionState = default;
 
-                    decisionState.ExecuteAfterTime = now + ReactionDelay;
+                    var knownFormation = knownFormations[i];
+
+                    bool alreadyAssigned = HasDecision(ref decisions, knownFormation);
+
+                    if (alreadyAssigned)
+                        continue;
+
+                    bool createdDecision = TryCreateDecision(command, knownFormation, ownedFormations, knownFormations, ref decisions, out AICommandDecision decision);
+
+                    Debug.Log(
+                        $"AI Command{commanderEntity} " +
+                        $"owned={ownedFormations.Length} " +
+                        $"known={knownFormations.Length} " +
+                        $"pressure={awareness.Pressure} " +
+                        $"decision={createdDecision}");
+
+                    decisionState.HasPendingDecision = createdDecision;
+                    if (createdDecision)
+                    {
+                        decisionState.PendingDecision = decision;
+
+                        decisionState.ExecuteAfterTime = now + ReactionDelay;
+                        decisions.Add(decisionState);
+
+                    }
+
                 }
             })
             .WithoutBurst()
             .Run();
+    }
+
+    private static bool HasDecision(ref DynamicBuffer<AICommandDecisionState> decisions, CommandKnownFormation knownFormation)
+    {
+        bool alreadyAssigned = false;
+        for (int j = 0; j < decisions.Length; j++)
+        {
+            var state = decisions[j];
+
+            if ((state.HasPendingDecision &&
+                 state.PendingDecision.OrderedFormation == knownFormation.Formation) ||
+                (state.HasActiveDecision &&
+                 state.ActiveDecision.OrderedFormation == knownFormation.Formation))
+            {
+                alreadyAssigned = true;
+                break;
+            }
+        }
+
+        return alreadyAssigned;
     }
 
     private static void UpdatePendingDecision(ref AICommandDecisionState decisionState, double now, ComponentDataFromEntity<OrderData> formationOrders)
@@ -127,8 +169,6 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         decisionState.PendingDecision = default;
         decisionState.HasPendingDecision = false;
         decisionState.ExecuteAfterTime = 0;
-        decisionState.NextEvaluationTime =
-            now + DecisionCooldown;
     }
 
     private static void UpdateActiveDecision(
@@ -191,7 +231,6 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
     {
         decisionState.HasActiveDecision = false;
         decisionState.ActiveDecision = default;
-        decisionState.NextEvaluationTime = now + DecisionCooldown;
         decisionState.DecisionTimeOut = default;
     }
 
@@ -224,34 +263,67 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
     /// <param name="knownFormations"></param>
     /// <param name="decision"></param>
     /// <returns></returns>
-    private static bool TryCreateDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    private static bool TryCreateDecision(CommandComponent command, CommandKnownFormation knownFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, ref DynamicBuffer<AICommandDecisionState> decisions, out AICommandDecision decision)
     {
-        return TryCreateReinforceDecision(command, ownedFormations, knownFormations, out decision);
+        //loop through ownde formations and check if any of them are struggling, if so, try to find a suitable helper formation to reinforce it
+
+        if (IsStruggling(knownFormation, command.FactionType) && TryCreateReinforceDecision(command, knownFormation, ownedFormations, knownFormations, ref decisions, out decision))
+            return true;
+        if (IsAbleToCharge(knownFormation, command.FactionType) && TryCreateChargeDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
+            return true;
+        if (IsHolding(knownFormation, command.FactionType) && TryCreateHoldDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
+            return true;
+        if (IsInNeedOfRetreat(knownFormation, command.FactionType) && TryCreateRetreatDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
+            return true;
+        decision = default;
+        return false;
+
     }
 
-    private static bool TryCreateReinforceDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    private static bool IsInNeedOfRetreat(CommandKnownFormation formation, UnitType commandFaction)
+    {
+        if (formation.Faction != commandFaction)
+            return false;
+        //TODO: pass in the formation size and check if the formation is too small to continue fighting, if so, return true
+        //if (formation.AliveUnitCount > 25)
+        //    return false;
+
+        //if (formation.Confidence < MinimumConfidence)
+        //    return false;
+
+        return
+            formation.CaptainState == FormationCaptainState.Broken;
+    }
+
+    private static bool IsHolding(CommandKnownFormation formation, UnitType commandFaction)
+    {
+        return false;
+    }
+
+    private static bool IsAbleToCharge(CommandKnownFormation formation, UnitType commandFaction)
+    {
+        return false;
+    }
+
+    private static bool TryCreateReinforceDecision(CommandComponent command, CommandKnownFormation strugglingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, ref DynamicBuffer<AICommandDecisionState> decisions, out AICommandDecision decision)
     {
         decision = default;
 
-
-        CommandKnownFormation strugglingFormation = default;
-        bool foundStrugglingFormation = false;
-
-        for (int i = 0; i < knownFormations.Length; i++)
+        for (int i = 0; i < decisions.Length; i++)
         {
-            CommandKnownFormation knownFormation = knownFormations[i];
+            var state = decisions[i];
 
-            if (!IsStruggling(knownFormation, command.FactionType))
-                continue;
-
-            strugglingFormation = knownFormation;
-
-            foundStrugglingFormation = true;
-            break;
+            if ((state.HasPendingDecision &&
+                 state.PendingDecision.Type == AICommandDecisionType.Reinforce &&
+                 state.PendingDecision.RelatedFormation == strugglingFormation.Formation) ||
+                (state.HasActiveDecision &&
+                 state.ActiveDecision.Type == AICommandDecisionType.Reinforce &&
+                 state.ActiveDecision.RelatedFormation == strugglingFormation.Formation))
+            {
+                return false; // This formation already has help assigned.
+            }
         }
 
-        if (!foundStrugglingFormation)
-            return false;
 
         Debug.Log(
       $"AI knows formation " +
@@ -281,10 +353,12 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
                 if (knownHelper.Formation != ownedFormationEntity)
                     continue;
 
+                bool hasDecision = HasDecision(ref decisions, knownHelper);
+
                 if (!IsSuitableHelper(
                     knownHelper,
                     strugglingFormation,
-                    command.FactionType))
+                    command.FactionType) || hasDecision)
                 {
                     break;
                 }
@@ -355,19 +429,22 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         return true;
     }
 
-    private static bool TryCreateHoldDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+    private static bool TryCreateHoldDecision(CommandComponent command, CommandKnownFormation holdingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    {
 
         decision = default;
         return false;
     }
 
-    private static bool TryCreateChargeDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+    private static bool TryCreateChargeDecision(CommandComponent command, CommandKnownFormation chargingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    {
 
         decision = default;
         return false;
     }
 
-    private static bool TryCreateRetreatDecision(CommandComponent command, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision) {
+    private static bool TryCreateRetreatDecision(CommandComponent command, CommandKnownFormation retreatingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    {
 
         decision = default;
         return false;
@@ -585,11 +662,10 @@ public struct AICommandDecision
     public float2 TargetPosition;
 }
 
-public struct AICommandDecisionState : IComponentData
+public struct AICommandDecisionState : IBufferElementData
 {
     public AICommandDecision PendingDecision;
 
-    public double NextEvaluationTime;
     public double ExecuteAfterTime;
 
     public bool HasPendingDecision;

@@ -191,13 +191,7 @@ public class EntitySpawner : MonoBehaviour
             Pressure = CommandPressureState.Stable
         });
 
-        _entityManager.AddComponentData(commanderEntity, new AICommandDecisionState
-        {
-            PendingDecision = default,
-            NextEvaluationTime = 0,
-            ExecuteAfterTime = 0,
-            HasPendingDecision = false
-        });
+        _entityManager.AddBuffer<AICommandDecisionState>(commanderEntity);
 
         _entityManager.AddBuffer<OwnedFormationGroup>(commanderEntity);
         AddCommandAwarenessComponents(commanderEntity);
@@ -229,20 +223,20 @@ public class EntitySpawner : MonoBehaviour
                 }
                 else
                 {
-                    //if (Mathf.Abs(x) % 12f == 0)
-                    //{
-                    //    var position2D = new float2(x, rowY - 5f);
-                    //    var moveOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY - 5f, 0));
+                    if (Mathf.Abs(x) % 12f == 0)
+                    {
+                        var position2D = new float2(x, rowY - 5f);
+                        var moveOrder = OrderFactory.CreateDefendOrder(new float3(x, rowY - 5f, 0));
 
-                    //    var formationGroupEntity = factory.SpawnUnits(
-                    //        unitsPerFormation,
-                    //        UnitType.Enemy,
-                    //        Direction.Right,
-                    //        moveOrder,
-                    //        position2D,
-                    //        FormationType.Horde);
-                    //    spawnedGroups.Add(formationGroupEntity); 
-                    //}
+                        var formationGroupEntity = factory.SpawnUnits(
+                            unitsPerFormation,
+                            UnitType.Enemy,
+                            Direction.Right,
+                            moveOrder,
+                            position2D,
+                            FormationType.Horde);
+                        spawnedGroups.Add(formationGroupEntity);
+                    }
 
                 }
 
