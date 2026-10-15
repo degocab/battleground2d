@@ -236,15 +236,22 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
 
     private static bool ExecuteDecision(AICommandDecision pendingDecision, ComponentDataFromEntity<OrderData> formationOrders)
     {
-        if (pendingDecision.Type != AICommandDecisionType.Reinforce)
-            return false;
+        //if (pendingDecision.Type != AICommandDecisionType.Reinforce)
+        //    return false;
         if (pendingDecision.OrderedFormation == Entity.Null)
             return false;
         if (!formationOrders.HasComponent(pendingDecision.OrderedFormation))
             return false;
+        OrderData order = default;
 
-
-        OrderData order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
+        if (pendingDecision.Type == AICommandDecisionType.Reinforce)
+        {
+            order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
+        }
+        else if (pendingDecision.Type == AICommandDecisionType.Retreat)
+        {
+            order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
+        }
         formationOrders[pendingDecision.OrderedFormation] = order;
         Debug.Log(
             $"AI ordered formation {pendingDecision.OrderedFormation} " +
@@ -266,15 +273,19 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
     private static bool TryCreateDecision(CommandComponent command, CommandKnownFormation knownFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, ref DynamicBuffer<AICommandDecisionState> decisions, out AICommandDecision decision)
     {
         //loop through ownde formations and check if any of them are struggling, if so, try to find a suitable helper formation to reinforce it
+        bool retreat = IsInNeedOfRetreat(knownFormation, command.FactionType);
+        if(retreat)
+            Debug.Log($"AI formation {knownFormation.Formation} is in need of retreat!");
 
+        if (retreat && TryCreateRetreatDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
+            return true;
         if (IsStruggling(knownFormation, command.FactionType) && TryCreateReinforceDecision(command, knownFormation, ownedFormations, knownFormations, ref decisions, out decision))
             return true;
         if (IsAbleToCharge(knownFormation, command.FactionType) && TryCreateChargeDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
             return true;
         if (IsHolding(knownFormation, command.FactionType) && TryCreateHoldDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
             return true;
-        if (IsInNeedOfRetreat(knownFormation, command.FactionType) && TryCreateRetreatDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
-            return true;
+
         decision = default;
         return false;
 
@@ -282,11 +293,13 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
 
     private static bool IsInNeedOfRetreat(CommandKnownFormation formation, UnitType commandFaction)
     {
-        if (formation.Faction != commandFaction)
-            return false;
-        //TODO: pass in the formation size and check if the formation is too small to continue fighting, if so, return true
-        //if (formation.AliveUnitCount > 25)
+
+
+        //if (formation.Faction != commandFaction)
         //    return false;
+        //TODO: pass in the formation size and check if the formation is too small to continue fighting, if so, return true
+        if (formation.AliveUnitCount < 200)
+            return true;
 
         //if (formation.Confidence < MinimumConfidence)
         //    return false;
@@ -445,9 +458,17 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
 
     private static bool TryCreateRetreatDecision(CommandComponent command, CommandKnownFormation retreatingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
-
-        decision = default;
-        return false;
+        Debug.Log("ENEMY TryCreateRetreatDecision");
+        //decision = default;
+        //return false;.
+        decision = new AICommandDecision
+        {
+            Type = AICommandDecisionType.Reinforce,
+            OrderedFormation = retreatingFormation.Formation,
+            RelatedFormation = default,
+            TargetPosition = retreatingFormation.AnchorPosition - (retreatingFormation.Faction == UnitType.Enemy ? new float2(10f, 0f) : new float2(-10f, 0f))
+        };
+        return true;
     }
 
     private static float2 GetReinforcementPosition(

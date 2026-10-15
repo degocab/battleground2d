@@ -46,6 +46,8 @@ public struct CommandKnownFormation : IBufferElementData
     public AwarenessSource Source;
 
     public OrderType CurrentOrder;
+
+    public float2 AnchorPosition;
 }
 
 public struct CommandAwareness : IComponentData
@@ -164,6 +166,7 @@ public partial class CommandAwarenessSystem : SystemBase
                     Faction = group.UnitType,
                     BoundsMin = min,
                     BoundsMax = max,
+                    AnchorPosition = group.AnchorPosition,
                     Status = group.FormationGroupStatus,
                     CurrentOrder = group.CurrentOrder,
                     CaptainState = captain.State,
