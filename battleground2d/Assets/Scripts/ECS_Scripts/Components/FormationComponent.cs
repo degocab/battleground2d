@@ -72,6 +72,8 @@ public struct FormationGroupComponent : IComponentData
     public FormationType FormationType;
 
     public float AnchorResetTimer;
+
+    public int InitialUnitCount;
 }
 
 public struct FormationDebugComponent : IComponentData

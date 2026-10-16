@@ -93,6 +93,9 @@ public partial class AICommandDecisionSystem : SystemBase
 
                     var knownFormation = knownFormations[i];
 
+                    // Check if the known formation is owned by this command
+                    if (knownFormation.Faction != command.FactionType)
+                        continue;
                     bool alreadyAssigned = HasDecision(ref decisions, knownFormation);
 
                     if (alreadyAssigned)
@@ -254,9 +257,10 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         }
         formationOrders[pendingDecision.OrderedFormation] = order;
         Debug.Log(
-            $"AI ordered formation {pendingDecision.OrderedFormation} " +
-            $"to move to {pendingDecision.TargetPosition} " +
-            $"to reinforce {pendingDecision.RelatedFormation}.");
+            $"AI issued {pendingDecision.Type} to " +
+            $"{pendingDecision.OrderedFormation}, " +
+            $"destination={pendingDecision.TargetPosition}, " +
+            $"relatedFormation={pendingDecision.RelatedFormation}.");
 
         return true;
     }
@@ -297,8 +301,12 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
 
         //if (formation.Faction != commandFaction)
         //    return false;
-        //TODO: pass in the formation size and check if the formation is too small to continue fighting, if so, return true
-        if (formation.AliveUnitCount < 200)
+
+        float remainingRatio = formation.InitialUnitCount > 0
+    ? (float)formation.AliveUnitCount / formation.InitialUnitCount
+    : 0f;
+
+        if (remainingRatio < .25f)
             return true;
 
         //if (formation.Confidence < MinimumConfidence)
@@ -461,12 +469,14 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         Debug.Log("ENEMY TryCreateRetreatDecision");
         //decision = default;
         //return false;.
+
+        float distanceToRetreat = 100f;
         decision = new AICommandDecision
         {
-            Type = AICommandDecisionType.Reinforce,
+            Type = AICommandDecisionType.Retreat,
             OrderedFormation = retreatingFormation.Formation,
             RelatedFormation = default,
-            TargetPosition = retreatingFormation.AnchorPosition - (retreatingFormation.Faction == UnitType.Enemy ? new float2(10f, 0f) : new float2(-10f, 0f))
+            TargetPosition = (retreatingFormation.Faction == UnitType.Enemy ? retreatingFormation.AnchorPosition + new float2(0f, (distanceToRetreat)) : retreatingFormation.AnchorPosition - new float2(0f, (distanceToRetreat)))
         };
         return true;
     }

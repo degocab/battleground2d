@@ -36,7 +36,8 @@ public class UnitFactory
             FormationID = formationID,
             AnchorPosition = spawnPosition,
             UnitType = unitType,
-            FormationType = formationType
+            FormationType = formationType,
+            InitialUnitCount = count
         };
         var formationCaptain = new FormationCaptainComponent
         {

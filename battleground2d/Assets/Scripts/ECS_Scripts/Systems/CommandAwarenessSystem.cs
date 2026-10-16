@@ -48,6 +48,8 @@ public struct CommandKnownFormation : IBufferElementData
     public OrderType CurrentOrder;
 
     public float2 AnchorPosition;
+
+    public int InitialUnitCount;
 }
 
 public struct CommandAwareness : IComponentData
@@ -174,6 +176,7 @@ public partial class CommandAwarenessSystem : SystemBase
                     CaptainIntensity = captain.Intensity,
                     CaptainMomentum = captain.Momentum,
                     AliveUnitCount = group.AliveUnitCount,
+                    InitialUnitCount = group.InitialUnitCount,
                     HasCaptainReport = (byte)(hasCaptain ? 1 : 0),
                     LastObservedTime = now,
                     Confidence = 1f,
