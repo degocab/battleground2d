@@ -49,6 +49,12 @@ public partial class SetAnimationTypeSystem : SystemBase
                 //Debug.Log("attackComponent.isTakingDamage: " + attackComponent.isTakingDamage);
 
 
+                if(animationComponent.finishAnimation && !animationComponent.AnimationCompleted)
+                {
+                    return;
+                    //Debug.Log("finishAnimation set to false");
+                }
+
                 // 2. Handle death animation (highest priority)
                 //if (attackComponent.isTakingDamage)
                 if (combatState.CurrentState == CombatState.State.TakingDamage)
@@ -56,8 +62,9 @@ public partial class SetAnimationTypeSystem : SystemBase
                     if (cooldown.takingDmgTimeRemaining <= 0)
                     {
                         animationComponent.finishAnimation = false;
-                        //attackComponent.isTakingDamage = false;
-                        combatState.CurrentState = CombatState.State.Idle; //reset state
+                        combatState.CurrentState = CombatState.State.Idle;
+                        animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
+                        UpdatePreviousAnimationField(entity, ref animationComponent);
                         return; 
                     }
 
@@ -97,11 +104,8 @@ public partial class SetAnimationTypeSystem : SystemBase
                     //}
                     //
                     //if(attackComponent.isDefending)
-                    if(combatState.CurrentState == CombatState.State.Defending)
-                        animationComponent.AnimationType = EntitySpawner.AnimationType.Defend;
-                    //if(defenseComponent.IsBlocking)
-                    if(combatState.CurrentState == CombatState.State.Blocking)
-                        animationComponent.AnimationType = EntitySpawner.AnimationType.Block;
+                    animationComponent.AnimationType = EntitySpawner.AnimationType.Idle;
+                    animationComponent.finishAnimation = false;
                 }
 
                 else if (combatState.CurrentState == CombatState.State.Blocking)

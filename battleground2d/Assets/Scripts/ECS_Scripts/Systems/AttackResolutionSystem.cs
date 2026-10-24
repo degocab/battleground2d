@@ -47,6 +47,14 @@ public partial class AttackResolutionSystem : SystemBase
                      , in DefenseComponent defenseComponent
                      ) =>
             {
+
+                float elapsed = currentTime - attackEvent.AttackTime;
+
+            if (elapsed < attackEvent.AttackDuration)
+                    return; // Keep the event; the swing hasn't finished.
+
+
+
                 // Check if target still exists and is in range
                 if (translationFromEntity.HasComponent(attackEvent.TargetEntity))
                 {

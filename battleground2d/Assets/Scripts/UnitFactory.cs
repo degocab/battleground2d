@@ -176,7 +176,7 @@ public class UnitFactory
         });
         entityManager.SetComponentData(entity, new AttackCooldownComponent
         {
-            attackCoolDownDuration = .6f,
+            attackCoolDownDuration = .72f,
             attackCoolTimeRemaining = 0f,
             takeDamageCooldownDuration = .22f, // have to match for initial 
             takingDmgTimeRemaining = .22f // have to match for initial 

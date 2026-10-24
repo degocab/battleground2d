@@ -158,10 +158,11 @@ ComponentType.Exclude<CommanderComponent>());
                         break;
                     case OrderType.Attack:
 
-                        if (distance > 5f)
-                        {
+                        //if (distance > 5f)
+                        //{
                             //formationGroup.AnchorPosition = formationGroup.CurrentUnitAveragePosition;
-                        }
+                            formationGroup.AnchorPosition = order.TargetPosition;
+                        //}
                         break;
                     case OrderType.Defend:
                         formationGroup.FormationGroupStatus = FormationStatusEnum.Hold;
@@ -321,7 +322,8 @@ ComponentType.Exclude<CommanderComponent>());
                     break;
 
                 case OrderType.Attack:
-                    HandleAttackOrder(ref order/*, ref combatState*/, entity, chunkIndex, ecb, ref formation, ref formationOrderIntent);
+                    ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
+                    //HandleAttackOrder(ref order/*, ref combatState*/, entity, chunkIndex, ecb, ref formation, ref formationOrderIntent);
                     break;
 
                 case OrderType.Defend:
@@ -376,8 +378,8 @@ ComponentType.Exclude<CommanderComponent>());
             //    TargetPosition = targetPos
             //});
 
-            //movementSpeed.isRunnning = orderType == OrderType.Charge;
-            //combatState.CurrentState = orderType == OrderType.Charge ?
+            //movementSpeed.isRunnning = orderType == OrderType.Attack;
+            //combatState.CurrentState = orderType == OrderType.Attack ?
             //    CombatState.State.SeekingTarget : combatState.CurrentState;
         }
 
@@ -431,17 +433,17 @@ ComponentType.Exclude<CommanderComponent>());
             //    //});
             //    ecb.AddComponent<AttackOrderTag>(chunkIndex, entity);
             //}
-            ecb.AddComponent(chunkIndex, entity, new CombatTarget
-            {
-                //Type = FormationSlotGoal.TargetType.Position,
-                ////TargetPosition = targetPos,
-                ////TargetEntity = Entity.Null
-                isActive = true
-            });
+            //ecb.AddComponent(chunkIndex, entity, new CombatTarget
+            //{
+            //    //Type = FormationSlotGoal.TargetType.Position,
+            //    ////TargetPosition = targetPos,
+            //    ////TargetEntity = Entity.Null
+            //    isActive = true
+            //});
             order.TargetEntity = Entity.Null;
             order.TargetPosition = float2.zero;
-            ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
-            order.CurrentOrder = OrderType.Idle;
+            //ecb.AddComponent<FindTargetTag>(chunkIndex, entity);
+            //order.CurrentOrder = OrderType.Idle;
         }
 
     }

@@ -250,7 +250,16 @@ public partial class CombatSystem : SystemBase
             if (canAttack && inRange)
             {
                 // Perform attack
-                attack.AttackRateRemaining = attack.AttackRate;
+                uint seed = math.hash(new uint3(
+                    (uint)entity.Index,
+                    (uint)entity.Version,
+                    math.asuint(CurrentTime)));
+
+                var attackRandom =
+                    new Unity.Mathematics.Random(seed == 0 ? 1u : seed);
+
+                attack.AttackRateRemaining =
+                    attack.AttackRate * attackRandom.NextFloat(0.85f, 1.15f);
                 //animation.finishAnimation = true;
                 cooldown.attackCoolTimeRemaining = cooldown.attackCoolDownDuration;
 
@@ -260,12 +269,11 @@ public partial class CombatSystem : SystemBase
                     Damage = attack.Damage,
                     SourceEntity = entity,
                     AttackTime = CurrentTime,
-                    AttackDuration = 0.2f
-                    ,
+                    AttackDuration = .36f,//.72f,//animation.FrameTimerMax * animation.FrameCount,
                     AttackerDirection = animation.Direction
                 });
             }
-            else if (!inRange)
+            else if (!inRange && animationReady)
             {
                 // Target is out of range - go seek it
                 TransitionToSeeking(ref combatState);

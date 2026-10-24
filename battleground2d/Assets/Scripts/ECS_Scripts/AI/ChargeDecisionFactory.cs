@@ -1,7 +1,7 @@
     /// <summary>
-    /// Charge + Broken       -> Retreat
-    /// Charge + Collapsing   -> FightingWithdrawal
-    /// Charge + anything else -> NormalCharge
+    /// Attack + Broken       -> Retreat
+    /// Attack + Collapsing   -> FightingWithdrawal
+    /// Attack + anything else -> NormalCharge
     /// </summary>
     public static class ChargeDecisionFactory
     {

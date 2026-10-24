@@ -28,4 +28,6 @@ public struct AnimationComponent : IComponentData
     /// </summary>
     public bool finishAnimation;
     public bool isFrozen;
+
+    public bool AnimationCompleted;
 }

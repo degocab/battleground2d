@@ -16,7 +16,7 @@ public partial class ApplyDamageSystem : SystemBase
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
 
-    [BurstCompile]
+    //[BurstCompile]
     protected override void OnUpdate()
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
@@ -58,10 +58,15 @@ public partial class ApplyDamageSystem : SystemBase
 
                 for (int i = 0; i < attacks.Length; i++)
                 {
+                    Debug.Log(
+    $"Victim={entity}, Attacker={attacks[i].Attacker}, " +
+    $"Damage={attacks[i].Damage}");
                     totalDamage += attacks[i].Damage;
                 }
                 attacks.Clear(); // Clear buffer for reuse
-
+                Debug.Log(
+$"Victim={entity}, HP={health.Health}, " +
+$"Hits={attacks.Length}, TotalDamage={totalDamage}");
                 health.Health -= totalDamage;
                 if (health.Health <= 0)
                 {
@@ -72,15 +77,18 @@ public partial class ApplyDamageSystem : SystemBase
                     return;
                 }
 
-                //TODO: set to true if this doesnt trigger animation?
-                combatState.CurrentState = CombatState.State.TakingDamage;
-                //if ((order.CurrentOrder == OrderType.Idle 
-                //|| order.CurrentOrder == OrderType.Defend))
-                //{
-                //    order.CurrentOrder = OrderType.FindTarget;
-                //}
-                cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
 
+
+                bool midSwing =
+    combatState.CurrentState == CombatState.State.Attacking &&
+    cooldown.attackCoolTimeRemaining > 0f;
+
+                if (!midSwing &&
+                    combatState.CurrentState != CombatState.State.TakingDamage)
+                {
+                    combatState.CurrentState = CombatState.State.TakingDamage;
+                    cooldown.takingDmgTimeRemaining = cooldown.takeDamageCooldownDuration;
+                }
 
 
 
@@ -93,7 +101,7 @@ public partial class ApplyDamageSystem : SystemBase
                 //#endif
 
 
-            }).ScheduleParallel();
+            }).WithoutBurst().Run();//.ScheduleParallel();
 
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }

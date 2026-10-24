@@ -44,8 +44,17 @@ public class AnimationSystem : SystemBase
                 while (spriteSheetAnimationData.FrameTimer >= frameTimerMax)
                 {
                     spriteSheetAnimationData.FrameTimer -= frameTimerMax;
-                    spriteSheetAnimationData.CurrentFrame = (spriteSheetAnimationData.CurrentFrame + 1) % spriteSheetAnimationData.FrameCount;
+                    if (spriteSheetAnimationData.finishAnimation &&
+                        spriteSheetAnimationData.CurrentFrame ==
+                            spriteSheetAnimationData.FrameCount - 1)
+                    {
+                        spriteSheetAnimationData.AnimationCompleted = true;
+                        break; // Keep the last frame.
+                    }
 
+                    spriteSheetAnimationData.CurrentFrame =
+                        (spriteSheetAnimationData.CurrentFrame + 1) %
+                        spriteSheetAnimationData.FrameCount;
                     //float uvWidth = 1f / spriteSheetAnimationData.frameCount;
                     //float uvHeight = 1f;
                     var cellHeight = 1f / 24f;// => 24 is grid count of pixel art frames

@@ -228,6 +228,66 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
                 ClearActiveDecision(ref decisionState, now);
             }
         }
+        else if (decisionState.ActiveDecision.Type == AICommandDecisionType.Attack)
+        {
+            //order validation check
+            Entity attacker = decisionState.ActiveDecision.OrderedFormation;
+
+            if (!formationOrders.HasComponent(attacker))
+            {
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+            OrderData currentOrder = formationOrders[attacker];
+
+            if (currentOrder.CurrentOrder != OrderType.MoveTo)
+            {
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+
+
+
+            if (now >= decisionState.DecisionTimeOut)
+            {
+                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} acive decision resets!");
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+            else
+            {
+                //check if close enough, if so, issue find target order
+                if (!TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
+                {
+                    ClearActiveDecision(ref decisionState, now);
+                    return;
+                }
+                if (!TryGetKnownFormation(decisionState.ActiveDecision.RelatedFormation, knownFormations, out CommandKnownFormation target))
+                {
+                    ClearActiveDecision(ref decisionState, now);
+                    return;
+                }
+
+                float2 currentPosition = GetKnownPosition(target);
+                float2 gap = math.max(
+                    float2.zero,
+                    math.max(
+                        target.BoundsMin - activeFormation.BoundsMax,
+                        activeFormation.BoundsMin - target.BoundsMax));
+
+                const float attackDistance = 1f;
+
+                if (math.lengthsq(gap) <= attackDistance * attackDistance)
+                {
+                    formationOrders[activeFormation.Formation] =
+                        OrderFactory.CreateAttackCommand(GetKnownPosition(target));
+
+                    ClearActiveDecision(ref decisionState, now);
+                }
+            }
+        }
     }
 
     private static void ClearActiveDecision(ref AICommandDecisionState decisionState, double now)
@@ -255,6 +315,14 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         {
             order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
         }
+        else if (pendingDecision.Type == AICommandDecisionType.Attack)
+        {
+            //order = OrderFactory.CreateFindTargetOrder();
+            order = OrderFactory.CreateMoveOrder(pendingDecision.TargetPosition);
+
+        }
+
+
         formationOrders[pendingDecision.OrderedFormation] = order;
         Debug.Log(
             $"AI issued {pendingDecision.Type} to " +
@@ -285,7 +353,7 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
             return true;
         if (IsStruggling(knownFormation, command.FactionType) && TryCreateReinforceDecision(command, knownFormation, ownedFormations, knownFormations, ref decisions, out decision))
             return true;
-        if (IsAbleToCharge(knownFormation, command.FactionType) && TryCreateChargeDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
+        if (IsAbleToAttack(knownFormation, command.FactionType) && TryCreateAttackDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
             return true;
         if (IsHolding(knownFormation, command.FactionType) && TryCreateHoldDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
             return true;
@@ -321,9 +389,28 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         return false;
     }
 
-    private static bool IsAbleToCharge(CommandKnownFormation formation, UnitType commandFaction)
+    private static bool IsAbleToAttack(CommandKnownFormation formation, UnitType commandFaction)
     {
-        return false;
+        //if formation is not struggling and has more than 50% of its units alive, it can charge
+        if (formation.Faction != commandFaction)
+            return false;
+
+        if (formation.CurrentOrder == OrderType.Attack)
+            return false;
+
+        if (formation.AliveUnitCount <= 0)
+            return false;
+        if (formation.InitialUnitCount <= 0)
+            return false;
+        if ((float)formation.AliveUnitCount / formation.InitialUnitCount < 0.5f)
+            return false;
+
+        if (formation.CaptainState == FormationCaptainState.Pressured || 
+            formation.CaptainState == FormationCaptainState.Broken ||
+            formation.CaptainState == FormationCaptainState.Collapsing)
+            return false;
+
+        return true;
     }
 
     private static bool TryCreateReinforceDecision(CommandComponent command, CommandKnownFormation strugglingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, ref DynamicBuffer<AICommandDecisionState> decisions, out AICommandDecision decision)
@@ -457,8 +544,79 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         return false;
     }
 
-    private static bool TryCreateChargeDecision(CommandComponent command, CommandKnownFormation chargingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
+    private static bool TryCreateAttackDecision(CommandComponent command, CommandKnownFormation attackingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
+
+        bool isOwned = false;
+
+        for (int i = 0; i < ownedFormations.Length; i++)
+        {
+            if (ownedFormations[i].Value == attackingFormation.Formation)
+            {
+                isOwned = true;
+                break;
+            }
+        }
+
+        if (!isOwned)
+        {
+            decision = default;
+            return false;
+        }
+
+
+        //Find known enemy formations:
+        //    Ignore dead enemies
+        //    Ignore unreliable / stale information
+        //    Ignore enemies outside the objective's target area
+        //    Ignore enemies we cannot reasonably reach
+        var closestDistanceSq = float.MaxValue;
+        CommandKnownFormation targetEnemy = default;
+        for (int i = 0; i < knownFormations.Length; i++)
+        {
+            CommandKnownFormation knownEnemy = knownFormations[i];
+            if (knownEnemy.Faction == command.FactionType)
+                continue;
+            if (knownEnemy.AliveUnitCount <= 0)
+                continue;
+            if (knownEnemy.Confidence < MinimumConfidence)
+                continue;
+            if (knownEnemy.Status == FormationStatusEnum.Broken)
+                continue;
+            if (knownEnemy.CaptainState == FormationCaptainState.Broken ||
+                knownEnemy.CaptainState == FormationCaptainState.Collapsing ||
+                knownEnemy.CaptainState == FormationCaptainState.Pressured)
+                continue;
+
+            //Choose nearest suitable enemy
+            //    Prefer targets that aren't already adequately engaged
+            var chargingPosition = GetKnownPosition(attackingFormation);
+            var enemyPosition = GetKnownPosition(knownEnemy);
+            var distanceSq = math.distancesq(chargingPosition, enemyPosition);
+            if (distanceSq < closestDistanceSq)
+            {
+                closestDistanceSq = distanceSq;
+                targetEnemy = knownEnemy;
+            }
+        }
+        if (targetEnemy.Formation != Entity.Null)
+        {
+            decision = new AICommandDecision
+            {
+                Type = AICommandDecisionType.Attack,
+                OrderedFormation = attackingFormation.Formation,
+                RelatedFormation = targetEnemy.Formation,
+                TargetPosition = GetKnownPosition(targetEnemy)
+            };
+            return true;
+        }
+
+
+        //If target found:
+        //Create Attack decision:
+        //OrderedFormation = our formation
+        //TargetFormation = chosen enemy
+        //TargetPosition = enemy's last-known position
 
         decision = default;
         return false;
@@ -466,6 +624,23 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
 
     private static bool TryCreateRetreatDecision(CommandComponent command, CommandKnownFormation retreatingFormation, DynamicBuffer<OwnedFormationGroup> ownedFormations, DynamicBuffer<CommandKnownFormation> knownFormations, out AICommandDecision decision)
     {
+
+        bool isOwned = false;
+
+        for (int i = 0; i < ownedFormations.Length; i++)
+        {
+            if (ownedFormations[i].Value == retreatingFormation.Formation)
+            {
+                isOwned = true;
+                break;
+            }
+        }
+
+        if (!isOwned)
+        {
+            decision = default;
+            return false;
+        }
         Debug.Log("ENEMY TryCreateRetreatDecision");
         //decision = default;
         //return false;.
@@ -674,7 +849,7 @@ public enum AICommandDecisionType : byte
     Reinforce,
     Retreat,
     FullRetreat,
-    Charge
+    Attack
 }
 
 public struct AICommandDecision
