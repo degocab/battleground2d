@@ -140,13 +140,40 @@ public class FormationDebugDrawer : MonoBehaviour
                 style.normal.textColor = Color.red;
             }
             // main text
-            Handles.Label(pos, text, style);
+            //Handles.Label(pos, text, style);
         }
 
         captains.Dispose();
         groups.Dispose();
 
-        DrawCommandAwareness(em, style);
+        DrawUnitIds(em, style);
+
+        //DrawCommandAwareness(em, style);
+    }
+
+    private static void DrawUnitIds(EntityManager em, GUIStyle style)
+    {
+        var idStyle = new GUIStyle(style) { fontSize = 8 };
+        using (var query = em.CreateEntityQuery(
+            ComponentType.ReadOnly<Unit>(),
+            ComponentType.ReadOnly<Translation>(),
+            ComponentType.ReadOnly<AnimationComponent>()))
+        using (var entities =
+            query.ToEntityArray(Unity.Collections.Allocator.Temp))
+        {
+            foreach (var entity in entities)
+            {
+                var position = em.GetComponentData<Translation>(entity).Value - new float3(0, .4f, 0);
+                var animation = em.GetComponentData<AnimationComponent>(entity);
+                bool dead = em.HasComponent<DeadTagComponent>(entity);
+
+                idStyle.normal.textColor = dead ? Color.red : Color.white;
+
+                //Handles.Label(new Vector3(position.x, position.y + 0.2f, 0f),
+                //    entity.Index.ToString(),
+                //    idStyle);
+            }
+        }
     }
 
     private static void DrawCommandAwareness(EntityManager em, GUIStyle labelStyle)

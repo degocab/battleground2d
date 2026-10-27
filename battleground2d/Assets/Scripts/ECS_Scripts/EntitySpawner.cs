@@ -269,6 +269,8 @@ public class EntitySpawner : MonoBehaviour
 
         // Depending on the animationType, set the specific frame-related values
         animationComponent.AnimationCompleted = false;
+        animationComponent.finishAnimation = false;
+        animationComponent.isFrozen = false;
         switch (animationComponent.AnimationType)
         {
             case EntitySpawner.AnimationType.Attack:
@@ -337,6 +339,7 @@ public class EntitySpawner : MonoBehaviour
                 animationComponent.FrameTimerMax = 0.12f;
                 animationComponent.FrameTimer = 0f;
                 animationComponent.animationHeightOffset = 4;
+                animationComponent.finishAnimation = true;
                 //animationComponent.animationWidthOffset = horizontalMultiplier;
                 break;
                 // Add other cases as necessary

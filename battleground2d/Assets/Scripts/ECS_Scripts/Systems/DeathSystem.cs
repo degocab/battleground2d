@@ -8,7 +8,7 @@ using UnityEngine;
 public partial class DeathSystem : SystemBase
 {
     private BeginSimulationEntityCommandBufferSystem _ecbSystem;
-
+    private double _nextDeathSummary;
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
@@ -39,31 +39,27 @@ public partial class DeathSystem : SystemBase
 
 
                     //freeze the final frame after animation is done
-                    if (animation.FrameCount - 1 == animation.CurrentFrame && animation.AnimationType == EntitySpawner.AnimationType.Die)
+                    if (animation.AnimationType == EntitySpawner.AnimationType.Die &&
+                        animation.CurrentFrame == animation.FrameCount - 1)
                     {
+    //                    Debug.Log(
+    //$"CORPSE {entity}: frame={animation.CurrentFrame}, " +
+    //$"direction={animation.animationWidthOffset}, " +
+    //$"row={animation.animationHeightOffset}, uv={animation.uv}");
                         animation.isFrozen = true;
-
-                        //ecb.AddComponent<DeadTagComponent>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<CollidableTag>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<ECS_CircleCollider2DAuthoring>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<CollisionEvent2D>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<CommandData>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<AttackComponent>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<MovementSpeedComponent>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<FormationSlotGoal>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<TargetComponent>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<Unit>(entityInQueryIndex, entity);
-                        //ecb.RemoveComponent<QuadrantEntity>(entityInQueryIndex, entity);
                     }
 
-                    if (health.timeRemaining <= 0) //wait for death animation to finaish?
-                    {
-                        ecb.DestroyEntity(entityInQueryIndex, entity);
-                    }
+                    //if (health.timeRemaining <= 0) //wait for death animation to finaish?
+                    //{
+                    //    ecb.DestroyEntity(entityInQueryIndex, entity);
+                    //}
                 }
 
-            }).ScheduleParallel();
+            }).WithoutBurst().Run();//.ScheduleParallel();
+
+
+
+
 
         //clean up frozen animations
 

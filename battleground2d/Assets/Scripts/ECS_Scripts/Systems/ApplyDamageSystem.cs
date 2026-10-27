@@ -16,7 +16,7 @@ public partial class ApplyDamageSystem : SystemBase
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     protected override void OnUpdate()
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
@@ -58,18 +58,15 @@ public partial class ApplyDamageSystem : SystemBase
 
                 for (int i = 0; i < attacks.Length; i++)
                 {
-                    Debug.Log(
-    $"Victim={entity}, Attacker={attacks[i].Attacker}, " +
-    $"Damage={attacks[i].Damage}");
+
                     totalDamage += attacks[i].Damage;
                 }
                 attacks.Clear(); // Clear buffer for reuse
-                Debug.Log(
-$"Victim={entity}, HP={health.Health}, " +
-$"Hits={attacks.Length}, TotalDamage={totalDamage}");
                 health.Health -= totalDamage;
                 if (health.Health <= 0)
                 {
+                    ecb.RemoveComponent<AttackEventComponent>(
+    entityInQueryIndex, entity);
                     //health.isDying = true;
                     combatState.CurrentState = CombatState.State.Dying;
                     health.timeRemaining = health.deathAnimationDuration;
@@ -101,7 +98,7 @@ $"Hits={attacks.Length}, TotalDamage={totalDamage}");
                 //#endif
 
 
-            }).WithoutBurst().Run();//.ScheduleParallel();
+            }).ScheduleParallel();
 
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }

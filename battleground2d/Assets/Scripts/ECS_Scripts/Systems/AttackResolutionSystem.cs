@@ -287,6 +287,11 @@ public partial class DefenseSystem : SystemBase
     ref CombatState combatState,
              ref DynamicBuffer<DefendEventBuffer> defends) =>
     {
+        if (combatState.CurrentState == CombatState.State.Dying)
+        {
+            defends.Clear();
+            return;
+        }
         if (defends.Length == 0)
         {
             //attackComponent.isTakingDamage = false;

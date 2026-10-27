@@ -21,6 +21,8 @@ public class RenderSystem : SystemBase
 {
     //public static EntitySpawner entitySpawner;
     private MaterialReferences materialRefs;
+    private double _nextDeathSummary;
+
     protected override void OnStartRunning()
     {
         //entitySpawner = UnityEngine.GameObject.Find("GameManager").GetComponent<EntitySpawner>().Instance;
@@ -404,7 +406,7 @@ public class RenderSystem : SystemBase
         JobHandle cullJobHandle = cullAndSortNativeListJob.Schedule(this, Dependency);
         cullJobHandle.Complete();
 
-        int visibleEntityTotal = 0;
+    int visibleEntityTotal = 0;
         for (int i = 0; i < POSITION_SLICES; i++)
         {
             visibleEntityTotal += nativeListArray[i].Length;

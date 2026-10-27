@@ -49,7 +49,7 @@ public partial class SetAnimationTypeSystem : SystemBase
                 //Debug.Log("attackComponent.isTakingDamage: " + attackComponent.isTakingDamage);
 
 
-                if(animationComponent.finishAnimation && !animationComponent.AnimationCompleted)
+                if (animationComponent.finishAnimation && !animationComponent.AnimationCompleted)
                 {
                     return;
                     //Debug.Log("finishAnimation set to false");
@@ -130,7 +130,7 @@ public partial class SetAnimationTypeSystem : SystemBase
 
                 UpdatePreviousAnimationField(entity, ref animationComponent);
 
-            })//.WithoutBurst().Run();
+            })
             .ScheduleParallel();
 
 

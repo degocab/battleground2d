@@ -51,7 +51,6 @@ public class AnimationSystem : SystemBase
                         spriteSheetAnimationData.AnimationCompleted = true;
                         break; // Keep the last frame.
                     }
-
                     spriteSheetAnimationData.CurrentFrame =
                         (spriteSheetAnimationData.CurrentFrame + 1) %
                         spriteSheetAnimationData.FrameCount;

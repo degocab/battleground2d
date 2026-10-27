@@ -72,7 +72,9 @@ public class MovementSystem : SystemBase
               float2 targetPos = float2.zero;
               targetPos = movementGoal.Position;
               reachThreshold = 0.01f;// should reach position in formation
-              float2 direction = math.normalize(targetPos - translation.Value.xy);
+              //float2 direction = math.normalize(targetPos - translation.Value.xy);
+              float2 direction =
+    math.normalizesafe(targetPos - translation.Value.xy);
               movementSpeedComponent.velocity.xy = direction;
 
           if (movementSpeedComponent.isRunnning || movementStatus.isRunning)
@@ -190,7 +192,7 @@ in AnimationComponent myAnimation
 
         var animationJobHandle = Entities
      .WithName("UpdateAnimationFromVelocity")
-   .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState) =>
+   .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState, in CombatTarget targetPosition) =>
    {
        float2 velocity = movementSpeedComponent.velocity.xy;
        //update view direction
@@ -200,6 +202,15 @@ in AnimationComponent myAnimation
            {
                float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
                CombatUtils.SetAnimationDirection(ref animationComponent, viewDirection);
+           }
+           else
+           {
+               float2 viewDirection = targetPosition.TargetPosition - transform.Value.xy;
+
+               if (math.lengthsq(viewDirection) > 0.0001f)
+                   CombatUtils.SetAnimationDirection(
+                       ref animationComponent, viewDirection);
+
            }
        }
        else
@@ -219,10 +230,22 @@ in AnimationComponent myAnimation
                 .WithName("RestrictMovementByStates")
                 .ForEach((ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in AttackComponent attackComponent, in CombatState combatState, in MovementStatus movementStatus) =>
                 {
-                    if (animationComponent.AnimationType == EntitySpawner.AnimationType.Attack
-                    || animationComponent.AnimationType == EntitySpawner.AnimationType.TakeDamage
-                    || movementStatus.CurrentStatus == MovementStatus.Status.ReachedDestination)
+                    //if (animationComponent.AnimationType == EntitySpawner.AnimationType.Attack
+                    //|| animationComponent.AnimationType == EntitySpawner.AnimationType.TakeDamage
+                    //|| movementStatus.CurrentStatus == MovementStatus.Status.ReachedDestination)
+                    //    movementSpeedComponent.velocity = float3.zero;
+
+
+                    if (combatState.CurrentState == CombatState.State.Attacking ||
+    combatState.CurrentState == CombatState.State.Defending ||
+    combatState.CurrentState == CombatState.State.Blocking ||
+    combatState.CurrentState == CombatState.State.TakingDamage ||
+    combatState.CurrentState == CombatState.State.Dying ||
+    movementStatus.CurrentStatus == MovementStatus.Status.ReachedDestination)
+                    {
                         movementSpeedComponent.velocity = float3.zero;
+                    }
+
                     //switch (animationComponent.AnimationType)
                     //{
                     //    case EntitySpawner.AnimationType.Attack:
