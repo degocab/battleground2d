@@ -52,7 +52,6 @@ public class MovementSystem : SystemBase
     {
 
 
-
         movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
         movementSpeedComponent.isRunnning = isRunning;
         movementSpeedComponent.isPlayerControlled = true;
@@ -190,6 +189,23 @@ in AnimationComponent myAnimation
 
 
 
+        // Player direction
+        var playerJobHandle = Entities
+            .WithAll<PlayerInputComponent>()
+            .ForEach((ref AnimationComponent animation,
+                      in Translation position,
+                      in MovementSpeedComponent movement, in CombatState combatState) =>
+            {
+                if ((combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending))
+                {
+                    float2 direction = movement.aimDirection - position.Value.xy;
+                    CombatUtils.SetAnimationDirection(ref animation, direction);
+                }
+                else if (math.lengthsq(movement.velocity.xy) > 0.0001f )
+                    CombatUtils.SetAnimationDirection(ref animation, movement.velocity.xy);
+            }).Schedule(blockedMovementJobHandle);
+
+
         var animationJobHandle = Entities
      .WithName("UpdateAnimationFromVelocity")
    .ForEach((ref Translation transform, ref MovementSpeedComponent movementSpeedComponent, ref AnimationComponent animationComponent, in CombatState combatState, in CombatTarget targetPosition) =>
@@ -198,20 +214,13 @@ in AnimationComponent myAnimation
        //update view direction
        if (/* movementSpeedComponent.isPlayerControlled &&*/ (combatState.CurrentState == CombatState.State.Attacking || combatState.CurrentState == CombatState.State.Defending))
        {
-           if (movementSpeedComponent.isPlayerControlled)
-           {
-               float2 viewDirection = (movementSpeedComponent.aimDirection - transform.Value.xy);
-               CombatUtils.SetAnimationDirection(ref animationComponent, viewDirection);
-           }
-           else
-           {
+ 
                float2 viewDirection = targetPosition.TargetPosition - transform.Value.xy;
 
                if (math.lengthsq(viewDirection) > 0.0001f)
                    CombatUtils.SetAnimationDirection(
                        ref animationComponent, viewDirection);
 
-           }
        }
        else
        {
@@ -224,7 +233,7 @@ in AnimationComponent myAnimation
 
 
        animationComponent.prevDirection = animationComponent.Direction;
-   }).ScheduleParallel(blockedMovementJobHandle);
+   }).ScheduleParallel(playerJobHandle);
 
         var restrictMovemenJobHandle = Entities
                 .WithName("RestrictMovementByStates")
