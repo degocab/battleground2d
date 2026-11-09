@@ -38,7 +38,12 @@ public class MovementSystem : SystemBase
         if (Input.GetKey(KeyCode.S)) moveY = -1f;
         if (Input.GetKey(KeyCode.A)) moveX = -1f;
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
-        if (Input.GetKey(KeyCode.LeftShift)) isRunning = true;
+        //if (Input.GetKey(KeyCode.LeftShift)) isRunning = true;d
+
+        var playerControl = World.GetExistingSystem<PlayerControlSystem>();
+        bool overviewEnabled = playerControl != null && playerControl.IsOverviewEnabled;
+
+        isRunning = !overviewEnabled && Input.GetKey(KeyCode.LeftShift);
 
         // Get mouse position for aiming
         Vector3 mousePosition = Input.mousePosition;

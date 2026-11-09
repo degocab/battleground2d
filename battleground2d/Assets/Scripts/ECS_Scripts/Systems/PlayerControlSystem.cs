@@ -191,6 +191,10 @@ public class PlayerControlSystem : SystemBase
                 {
                     groupCenter /= groupCount; 
                 }
+                //privew destinations lookup for formation groups
+                var previewDestinations = new NativeHashMap<Entity, float2>(
+    math.max(1, groupCount), Allocator.Temp);
+
 
                 //update groups
                 Entities
@@ -210,25 +214,53 @@ public class PlayerControlSystem : SystemBase
                              float2 offset = formationGroup.CurrentUnitAveragePosition - groupCenter;
                              plannedOrder.TargetPosition = orderCopy.TargetPosition + offset;
 
-                             float2 shift = plannedOrder.TargetPosition - formationGroup.CurrentUnitAveragePosition;
-                             float2 min = formationGroup.BoundsMin + shift;
-                             float2 max = formationGroup.BoundsMax + shift;
-
-                             var bottomLeft = new Vector3(min.x, min.y, 0f);
-                             var bottomRight = new Vector3(max.x, min.y, 0f);
-                             var topRight = new Vector3(max.x, max.y, 0f);
-                             var topLeft = new Vector3(min.x, max.y, 0f);
-
-                             Debug.DrawLine(bottomLeft, bottomRight, Color.cyan, 0f);
-                             Debug.DrawLine(bottomRight, topRight, Color.cyan, 0f);
-                             Debug.DrawLine(topRight, topLeft, Color.cyan, 0f);
-                             Debug.DrawLine(topLeft, bottomLeft, Color.cyan, 0f);
+                             if (preview)
+                                 previewDestinations.TryAdd(entity, plannedOrder.TargetPosition);
                          }
 
                          if (issue)
                              order = plannedOrder;
 
                      }).WithoutBurst().Run();
+
+
+                if (preview)
+                {
+                    var groups = GetComponentDataFromEntity<FormationGroupComponent>(true);
+                    Entities.WithName("DrawMovePreviewSlots")
+                        .WithAll<Unit>()
+                        .WithNone<DeadTagComponent, CommanderComponent>()
+                        .WithReadOnly(groups)
+                        .WithReadOnly(previewDestinations)
+                        .ForEach((in FormationComponent unitFormation) => 
+                        {
+                            if (!unitFormation.FormationGroupEntity.HasValue)
+                                return;
+
+                            Entity groupEntity = unitFormation.FormationGroupEntity.Value;
+
+                            if(!previewDestinations.TryGetValue(groupEntity, out float2 destination) || !groups.HasComponent(groupEntity))
+                                return;
+
+                            var group = groups[groupEntity];
+                            if (group.UnitsPerRow <= 0 || group.AliveUnitCount <= 0)
+                                return;
+
+                            int rowCount = (group.AliveUnitCount + group.UnitsPerRow - 1) / group.UnitsPerRow;
+
+                            float2 slot = FormationManagerSystem.CalculatePhalanxPosition(
+    unitFormation.SlotIndex,
+    group.UnitsPerRow,
+    group.UnitSpacing,
+    destination,
+    rowCount);
+
+                            DrawSlotCircle(slot);
+
+
+                        }).WithoutBurst().Run();
+                }
+                previewDestinations.Dispose();
                 break; // Important: Only process one key per frame
             }
         }
@@ -354,6 +386,30 @@ public class PlayerControlSystem : SystemBase
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
 
+    private void DrawSlotCircle(float2 slot)
+    {
+        const float radius = 0.0625f; // 0.125 world units in diameter
+        const int segments = 12;
+
+        var center = new Vector3(slot.x, slot.y, 0f);
+        var first = center + Vector3.right * radius;
+        var previous = first;
+
+        for (int i = 1; i < segments; i++)
+        {
+            float angle = i * (2f * Mathf.PI / segments);
+            var next = center + new Vector3(
+                Mathf.Cos(angle) * radius,
+                Mathf.Sin(angle) * radius,
+                0f);
+
+            Debug.DrawLine(previous, next, Color.cyan, 0f);
+            previous = next;
+        }
+
+        Debug.DrawLine(previous, first, Color.cyan, 0f);
+    }
+
     private bool isStillBlocking(DefenseComponent defenseComponent)
     {
         return defenseComponent.BlockDuration > 0f;
@@ -452,21 +508,21 @@ public class PlayerControlSystem : SystemBase
 
     [SerializeField] float smooth = 0.2f;
     private float zoomVelocity;
+    private bool overViewEnabled = false;
+    public bool IsOverviewEnabled => overViewEnabled;
 
     private void UpdateCameraZoom()
     {
-        float targetSize = 3f;
 
-        if (Input.GetKey(KeyCode.LeftShift))
-            targetSize = 4f;
-        if (Input.GetKey(KeyCode.Tab))
-            targetSize = 8f;
+        if (Input.GetKeyDown(KeyCode.Tab))
+            overViewEnabled = !overViewEnabled;
 
-        Camera.main.orthographicSize = Mathf.SmoothDamp(
-            Camera.main.orthographicSize,
-            targetSize,
-            ref zoomVelocity,
-            smooth);
+        float targetSize = overViewEnabled
+            ? 8f
+            : (Input.GetKey(KeyCode.LeftShift) ? 4f : 3f);
+
+        Camera.main.orthographicSize = Mathf.SmoothDamp(Camera.main.orthographicSize, targetSize, ref zoomVelocity, smooth);
+
     }
 
     //private void UpdateCameraPosition(float3 playerPosition)
@@ -481,14 +537,30 @@ public class PlayerControlSystem : SystemBase
         targetPosition.z = -13f;
 
         //TODO: Add camera offset based on player facing direction or mouse position
-        if (Input.GetKey(KeyCode.Tab))
-            targetPosition.y = playerPosition.y + 5f; 
+        //if (Input.GetKey(KeyCode.Tab))
+        //    targetPosition.y = playerPosition.y + 5f; 
+
+        if (overViewEnabled)
+        {
+            Vector3 mouse = Input.mousePosition;
+            Vector2 fromCenter = new Vector2(
+                mouse.x - Screen.width * 0.5f,
+                mouse.y - Screen.height * 0.5f);
+
+            float screenRadius = Mathf.Max(1f, Mathf.Min(Screen.width, Screen.height) * 0.5f);
+            Vector2 offset = Vector2.ClampMagnitude(fromCenter / screenRadius, 1f) * 5f;
+
+            targetPosition.x += offset.x;
+            targetPosition.y += offset.y;
+        }
+
+        float panSmoothTime = overViewEnabled ? 0.3f : 0.1f;
 
         Vector3 smoothedPosition = Vector3.SmoothDamp(
             Camera.main.transform.position,
             targetPosition,
             ref cameraVelocity,
-            0.1f); // Adjust 0.1f for smooth time
+            panSmoothTime);
 
         Camera.main.transform.position = smoothedPosition;
     }

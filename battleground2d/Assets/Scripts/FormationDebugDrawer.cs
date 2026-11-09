@@ -159,7 +159,7 @@ public class FormationDebugDrawer : MonoBehaviour
             ComponentType.ReadOnly<Translation>(),
             ComponentType.ReadOnly<AnimationComponent>()))
         using (var entities =
-            query.ToEntityArray(Unity.Collections.Allocator.Temp))
+            query.ToEntityArray(Unity.Collections.Allocator.TempJob))
         {
             foreach (var entity in entities)
             {
