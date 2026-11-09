@@ -156,7 +156,12 @@ public class PlayerControlSystem : SystemBase
         // Number keys 1-9
         for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
         {
-            if (Input.GetKeyDown((KeyCode)key))
+            var orderKey = (KeyCode)key;
+            bool preview = orderKey == KeyCode.Alpha5 && Input.GetKey(orderKey);
+            bool issue = orderKey == KeyCode.Alpha5 ? Input.GetKeyUp(orderKey) : Input.GetKeyDown(orderKey);
+
+            //if (Input.GetKeyDown((KeyCode)key))
+            if (preview || issue)
             {
                 int orderType = key - (int)KeyCode.Alpha1;
                 var newOrder = CreateOrderFromKey(orderType, commanderTranslation.Value, GetMouseWorldPosition());
@@ -166,30 +171,26 @@ public class PlayerControlSystem : SystemBase
                 // Use a local variable to capture the command for the job
                 var orderCopy = newOrder;
 
-                // SINGLE job that does both operations safely
-                //var commandJobHandle = Entities
-                //    .WithName("ProcessCommandInput")
-                //    .WithAll<Unit>()
-                //    .WithNone<CommanderComponent>()
-                //    .ForEach((Entity entity, int entityInQueryIndex, ref CommandData commandData, in AnimationComponent animationComponent) =>
-                //    {
-                //        if (animationComponent.UnitType == EntitySpawner.UnitType.Enemy)
-                //        {
-                //            return;
-                //        }
-                //        // First remove FormationSlotGoal component
-                //        parallelEcb.RemoveComponent<FormationSlotGoal>(entityInQueryIndex, entity);
 
-                //        // Then update command data
-                //        commandData = orderCopy;
-
-                //    }).ScheduleParallel(Dependency);
-
-
-                //Debug.Log($"Assigned command: {newOrder.Command} to all units");
-                //Dependency = commandJobHandle;
-
-
+                //get average group center
+                float2 groupCenter = float2.zero;
+                int groupCount = 0;
+                Entities
+                     .WithName("UpdateGroupCenter")
+                     .WithAll<FormationGroupComponent>()
+                     .WithAll<AllyTag>()
+                     .WithAll<OrderData>()
+                     .WithNone<CommanderComponent, Unit>()
+                     .ForEach((Entity entity, int entityInQueryIndex,
+                     in FormationGroupComponent formationGroup) =>
+                     {
+                         groupCenter += formationGroup.CurrentUnitAveragePosition;
+                         groupCount++;
+                     }).WithoutBurst().Run();
+                if (groupCount > 0)
+                {
+                    groupCenter /= groupCount; 
+                }
 
                 //update groups
                 Entities
@@ -202,11 +203,30 @@ public class PlayerControlSystem : SystemBase
                      {
 
                          // Then update command data
-                         order = orderCopy;
-                         //if (orderCopy.Command == CommandType.FindTarget)
-                         //{
-                         //    formationGroup.FormationGroupStatus = FormationStatusEnum.Engaged;
-                         //}
+                         var plannedOrder = orderCopy;
+
+                         if (plannedOrder.CurrentOrder == OrderType.MoveTo)
+                         {
+                             float2 offset = formationGroup.CurrentUnitAveragePosition - groupCenter;
+                             plannedOrder.TargetPosition = orderCopy.TargetPosition + offset;
+
+                             float2 shift = plannedOrder.TargetPosition - formationGroup.CurrentUnitAveragePosition;
+                             float2 min = formationGroup.BoundsMin + shift;
+                             float2 max = formationGroup.BoundsMax + shift;
+
+                             var bottomLeft = new Vector3(min.x, min.y, 0f);
+                             var bottomRight = new Vector3(max.x, min.y, 0f);
+                             var topRight = new Vector3(max.x, max.y, 0f);
+                             var topLeft = new Vector3(min.x, max.y, 0f);
+
+                             Debug.DrawLine(bottomLeft, bottomRight, Color.cyan, 0f);
+                             Debug.DrawLine(bottomRight, topRight, Color.cyan, 0f);
+                             Debug.DrawLine(topRight, topLeft, Color.cyan, 0f);
+                             Debug.DrawLine(topLeft, bottomLeft, Color.cyan, 0f);
+                         }
+
+                         if (issue)
+                             order = plannedOrder;
 
                      }).WithoutBurst().Run();
                 break; // Important: Only process one key per frame

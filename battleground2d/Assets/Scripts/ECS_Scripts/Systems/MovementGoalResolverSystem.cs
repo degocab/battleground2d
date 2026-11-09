@@ -24,7 +24,8 @@ public partial class MovementGoalResolverSystem : SystemBase
             return;
         var ecb = _ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
-
+        ComponentDataFromEntity<FormationGroupComponent> formationGroups =
+GetComponentDataFromEntity<FormationGroupComponent>(true);
         var behaviors =
     GetComponentDataFromEntity<FormationBehaviorComponent>(true);
         Entities
@@ -34,16 +35,18 @@ public partial class MovementGoalResolverSystem : SystemBase
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
             .WithReadOnly(behaviors)
-            .ForEach((ref MovementGoal movementGoal,  in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran,in FormationComponent formation
+            .WithReadOnly(formationGroups)
+            .ForEach((ref MovementGoal movementGoal, in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran, in FormationComponent formation
             ) =>
             {
                 bool allowPursuit = true;
+                Entity groupEntity = Entity.Null;
                 if (formation.FormationGroupEntity.HasValue)
                 {
-                    Entity group = formation.FormationGroupEntity.Value;
+                    groupEntity = formation.FormationGroupEntity.Value;
 
-                    if (behaviors.HasComponent(group))
-                        allowPursuit = behaviors[group].AllowPursuit;
+                    if (behaviors.HasComponent(groupEntity))
+                        allowPursuit = behaviors[groupEntity].AllowPursuit;
                 }
                 //decide which movement goal to use for final movement calc in unitmovetostarget system
                 //if there a combat target 
@@ -52,7 +55,10 @@ public partial class MovementGoalResolverSystem : SystemBase
                 ////  go to this second
                 if (orderData.CurrentOrder == OrderType.Defend || orderData.CurrentOrder == OrderType.MoveTo || orderData.CurrentOrder == OrderType.MoveDirectionalRange)
                 {
+
+
                     movementGoal.Position = formationSlotGoal.TargetPosition;
+
                 }
                 else if (combatState.CurrentState == CombatState.State.Waiting)
                 {
@@ -62,9 +68,14 @@ public partial class MovementGoalResolverSystem : SystemBase
                 {
                     //if (combatState.CurrentState == CombatState.State.SeekingTarget) //follow combat target first
                     //{
-                    if (allowPursuit)
+                    if (formationGroups.HasComponent(groupEntity) && formationGroups[groupEntity].HoldFormation)
                     {
-                        movementGoal.Position = combatTarget.TargetPosition;
+                        movementGoal.Position = formationSlotGoal.TargetPosition;
+                    }
+                    else if (allowPursuit)
+                    {
+
+                            movementGoal.Position = combatTarget.TargetPosition;
                     }
                     else
                     {

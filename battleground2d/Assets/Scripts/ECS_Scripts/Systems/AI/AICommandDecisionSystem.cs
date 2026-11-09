@@ -6,6 +6,7 @@ using Unity.Transforms;
 using UnityEngine;
 using static EntitySpawner;
 using static UnityEngine.EventSystems.EventTrigger;
+using static UnityEngine.GraphicsBuffer;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(CommandAwarenessSystem))]
@@ -41,7 +42,8 @@ public partial class AICommandDecisionSystem : SystemBase
             GetComponentDataFromEntity<OrderData>(false);
         ComponentDataFromEntity<Translation> formationPositions =
             GetComponentDataFromEntity<Translation>(false);
-
+        ComponentDataFromEntity<FormationGroupComponent> formationGroups =
+    GetComponentDataFromEntity<FormationGroupComponent>(false);
 
         Entities
             .WithName("ProcessAICommanders")
@@ -85,6 +87,9 @@ public partial class AICommandDecisionSystem : SystemBase
 
                 if (now < command.NextEvaluationTime)
                     return;
+
+
+
                 // Decision timing will go here next.
                 command.NextEvaluationTime = now + EvaluationInterval;
                 for (int i = 0; i < knownFormations.Length; i++)
@@ -96,6 +101,21 @@ public partial class AICommandDecisionSystem : SystemBase
                     // Check if the known formation is owned by this command
                     if (knownFormation.Faction != command.FactionType)
                         continue;
+
+                    Entity formationEntity = knownFormation.Formation;
+                    if (OwnsFormation(formationEntity, ownedFormations) && formationGroups.HasComponent(formationEntity))
+                    {
+                        var group = formationGroups[formationEntity];
+                        //shuld a formatoin hold its formation shape
+                        bool shouldHold = ShouldHoldFormation(knownFormation);
+
+                        if (group.HoldFormation != shouldHold)
+                        {
+                            group.HoldFormation = shouldHold;
+                            formationGroups[formationEntity] = group;
+                        }
+                    }
+
                     bool alreadyAssigned = HasDecision(ref decisions, knownFormation);
 
                     if (alreadyAssigned)
@@ -124,6 +144,22 @@ public partial class AICommandDecisionSystem : SystemBase
             })
             .WithoutBurst()
             .Run();
+    }
+
+    private bool OwnsFormation(Entity formationEntity, DynamicBuffer<OwnedFormationGroup> ownedFormations)
+    {
+        for (int i = 0; i < ownedFormations.Length; i++)
+        {
+            if (ownedFormations[i].Value == formationEntity)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool ShouldHoldFormation(CommandKnownFormation knownFormation)
+    {
+        return (knownFormation.CurrentOrder == OrderType.MoveTo || knownFormation.CurrentOrder == OrderType.MoveDirectionalRange);
     }
 
     private static bool HasDecision(ref DynamicBuffer<AICommandDecisionState> decisions, CommandKnownFormation knownFormation)
@@ -288,6 +324,52 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
                 }
             }
         }
+        else if (decisionState.ActiveDecision.Type == AICommandDecisionType.Retreat)
+        {
+
+            var retreat = decisionState.ActiveDecision;
+
+            if (!formationOrders.HasComponent(retreat.OrderedFormation))
+            {
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+            var currentOrder = formationOrders[retreat.OrderedFormation];
+
+            if (currentOrder.CurrentOrder != OrderType.MoveTo ||
+                !currentOrder.TargetPosition.Equals(retreat.TargetPosition))
+            {
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+
+            if (now >= decisionState.DecisionTimeOut)
+            {
+                Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} acive decision resets!");
+                ClearActiveDecision(ref decisionState, now);
+                return;
+            }
+            else
+            {
+                if (!TryGetKnownFormation(decisionState.ActiveDecision.OrderedFormation, knownFormations, out CommandKnownFormation activeFormation))
+                {
+                    ClearActiveDecision(ref decisionState, now);
+                    return;
+                }
+                float2 currentPosition = GetKnownPosition(activeFormation);
+                float distanceSq = math.distancesq(currentPosition, decisionState.ActiveDecision.TargetPosition);
+                if (distanceSq < 1f)
+                {
+                    Debug.Log($"AI formation {decisionState.ActiveDecision.OrderedFormation} has arrived to retreat position.");
+
+                    formationOrders[activeFormation.Formation] =
+                        OrderFactory.CreateDefendOrder(new float3(currentPosition, 0));
+                    ClearActiveDecision(ref decisionState, now);
+                    return;
+                }
+            }
+        }
     }
 
     private static void ClearActiveDecision(ref AICommandDecisionState decisionState, double now)
@@ -346,7 +428,7 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
     {
         //loop through ownde formations and check if any of them are struggling, if so, try to find a suitable helper formation to reinforce it
         bool retreat = IsInNeedOfRetreat(knownFormation, command.FactionType);
-        if(retreat)
+        if (retreat)
             Debug.Log($"AI formation {knownFormation.Formation} is in need of retreat!");
 
         if (retreat && TryCreateRetreatDecision(command, knownFormation, ownedFormations, knownFormations, out decision))
@@ -405,7 +487,7 @@ $"AI cancelled {decisionState.PendingDecision.Type}.");
         if ((float)formation.AliveUnitCount / formation.InitialUnitCount < 0.5f)
             return false;
 
-        if (formation.CaptainState == FormationCaptainState.Pressured || 
+        if (formation.CaptainState == FormationCaptainState.Pressured ||
             formation.CaptainState == FormationCaptainState.Broken ||
             formation.CaptainState == FormationCaptainState.Collapsing)
             return false;
