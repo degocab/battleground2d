@@ -70,14 +70,14 @@ public class FormationCollisionSystem : SystemBase
                 groupCommandMap.TryAdd(entity, order);
 
 
-                if (order.CurrentOrder == OrderType.MoveDirectionalRange)
-                {
-                    // If colliding, switch to MoveTo with current anchor as target
-                    if (isColliding)
-                    {
-                        order.CurrentOrder = OrderType.Attack;
-                    }
-                }
+                //if (order.CurrentOrder == OrderType.MoveDirectionalRange)
+                //{
+                //    // If colliding, switch to MoveTo with current anchor as target
+                //    if (isColliding)
+                //    {
+                //        order.CurrentOrder = OrderType.Attack;
+                //    }
+                //}
 
             }).Run();
 

@@ -3,6 +3,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.Burst;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateBefore(typeof(UnitMoveToTargetSystem))]
@@ -26,17 +27,21 @@ public partial class MovementGoalResolverSystem : SystemBase
 
         ComponentDataFromEntity<FormationGroupComponent> formationGroups =
 GetComponentDataFromEntity<FormationGroupComponent>(true);
+
+        var combatTargets = GetComponentDataFromEntity<CombatTarget>(true);
+
         var behaviors =
     GetComponentDataFromEntity<FormationBehaviorComponent>(true);
         Entities
             .WithName("MovementGoalResolverJob")
             .WithAll<FormationSlotGoal>()
-            .WithAll<CombatTarget>()
+            //.WithAll<CombatTarget>()
             .WithNone<PlayerInputComponent>()
             .WithNone<RestrictMovementTag>()
             .WithReadOnly(behaviors)
             .WithReadOnly(formationGroups)
-            .ForEach((ref MovementGoal movementGoal, in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in CombatTarget combatTarget, in OrderData orderData, in Translation tran, in FormationComponent formation
+            .WithReadOnly(combatTargets)
+            .ForEach((Entity entity, ref MovementGoal movementGoal, in MovementSpeedComponent movementSpeed, in FormationSlotGoal formationSlotGoal, in CombatState combatState, in OrderData orderData, in Translation tran, in FormationComponent formation
             ) =>
             {
                 bool allowPursuit = true;
@@ -72,10 +77,11 @@ GetComponentDataFromEntity<FormationGroupComponent>(true);
                     {
                         movementGoal.Position = formationSlotGoal.TargetPosition;
                     }
-                    else if (allowPursuit)
+                    else if (allowPursuit &&
+                    combatTargets.HasComponent(entity) &&
+                             combatTargets[entity].TargetEntity != Entity.Null)
                     {
-
-                            movementGoal.Position = combatTarget.TargetPosition;
+                        movementGoal.Position = combatTargets[entity].TargetPosition;
                     }
                     else
                     {

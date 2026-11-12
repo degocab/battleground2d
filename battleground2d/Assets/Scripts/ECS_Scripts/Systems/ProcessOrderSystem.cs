@@ -124,7 +124,6 @@ ComponentType.Exclude<CommanderComponent>());
                      ref OrderData order,
                      ref FormationGroupComponent formationGroup) =>
             {
-
                 float distance = math.distance(formationGroup.CurrentUnitAveragePosition, formationGroup.AnchorPosition);
                 if (formationGroup.FormationGroupStatus == FormationStatusEnum.Engaged && order.CurrentOrder == OrderType.Idle)
                 {
@@ -148,11 +147,10 @@ ComponentType.Exclude<CommanderComponent>());
                     case OrderType.Charge:
                         break;
                     case OrderType.MoveDirectionalRange:
-                        if (order.InitialOrder)//only set this once at start of order!
+                        if (order.InitialOrder)
                         {
-                            var currentFormationPos = formationGroup.AnchorPosition;
-                            var directionVector = CombatUtils.GetDirectionVector(order.FormationDirectionToMove) * order.MoveRange;
-                            formationGroup.AnchorPosition = currentFormationPos + (directionVector * .25f);//.25 to convert to meters! 
+                            float2 direction = CombatUtils.GetDirectionVector(order.FormationDirectionToMove);
+                            formationGroup.AnchorPosition += direction * (order.MoveRange * 0.25f);
                             order.InitialOrder = false;
                         }
                         break;

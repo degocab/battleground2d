@@ -42,11 +42,9 @@ public class RenderSystem : SystemBase
         public int Compare(RenderData a, RenderData b)
         {
             if (a.isFrozen != b.isFrozen)
-                return a.isFrozen ? -1 : 1; 
-            if (a.position.y < b.position.y)
-                return 1;
-            else
-                return -1;
+                return a.isFrozen ? -1 : 1;
+
+            return b.position.y.CompareTo(a.position.y);
         }
     }
 

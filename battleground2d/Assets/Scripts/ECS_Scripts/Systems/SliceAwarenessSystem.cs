@@ -226,8 +226,10 @@ public struct CommandComponent : IComponentData
 {
     public UnitType FactionType;
     public int CommandID;          // Left / Center / Right (or enum later)
+    public OrderType CommandOrder;
 
-    public double NextEvaluationTime { get; internal set; }
+    public double NextEvaluationTime;
+    public bool AdvanceOrderApplied;
 }
 public struct OwnedFormationGroup : IBufferElementData
 {

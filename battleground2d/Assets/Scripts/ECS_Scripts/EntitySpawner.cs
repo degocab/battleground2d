@@ -105,16 +105,24 @@ public class EntitySpawner : MonoBehaviour
                 // --- ALLIES ---
                 // Add more rows here whenever you want (e.g., new[] {0f, -8f, -16f})
                 float[] allyRowsY = { -3f/*, -5f */};
-                Entity playerCommander = unitFactory.SpawnCommander(UnitType.Ally, new float2(4, 0), 100000f, true);
+                Entity playerCommander = unitFactory.SpawnCommander(UnitType.Ally, new float2(14, 0), 100000f, true);
                 _entityManager.AddComponent<PlayerInputComponent>(playerCommander);
                 SpawnAllyPhalanxRows(unitFactory, playerCommander, entitiesToSpawn, allyRowsY);
+
 
                 // --- ENEMIES ---
                 float enemyMoveRange = 50f;
                 // Add more rows by just appending values
-                float[] enemyRowsY = { 10f, 12f/*, 15f, 20f, 25f*/ };
-                Entity enemyCommander = unitFactory.SpawnCommander(UnitType.Enemy, new float2(4, 2), 100000f, false);
-                SpawnEnemyHordeRows(unitFactory, enemyCommander, entitiesToSpawn, enemyMoveRange, enemyRowsY);
+                float[] enemyRowsY = { /*10f */ 3f};
+
+                Entity enemyLeftCommand = unitFactory.SpawnCommander(UnitType.Enemy, new float2(4, 2), 100000f, false);
+                SpawnEnemyHordeRows(unitFactory, enemyLeftCommand, entitiesToSpawn,
+    enemyMoveRange, enemyRowsY, new[] { -12f,-6f, 0f, 6f }, 0);
+
+                Entity enemyRightCommand = unitFactory.SpawnCommander(
+    UnitType.Enemy, new float2(12f, 2f), 100000f, false);
+                SpawnEnemyHordeRows(unitFactory, enemyRightCommand, entitiesToSpawn,
+                    enemyMoveRange, enemyRowsY, new[] {12f, 18f, 24f, 30f }, 1);
 
                 hasSpawnedUnits = true;
             }
@@ -171,14 +179,16 @@ public class EntitySpawner : MonoBehaviour
             buffer.Add(new OwnedFormationGroup { Value = spawnedGroups[i] });
     }
 
-    private void SpawnEnemyHordeRows(UnitFactory factory, Entity commanderEntity, int unitsPerFormation, float enemyMoveRange, float[] rowsY)
+    private void SpawnEnemyHordeRows(UnitFactory factory, Entity commanderEntity, int unitsPerFormation, float enemyMoveRange, float[] rowsY, float[] colsX, int commandId)
     {
-        float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f };
+        //float[] colsX = { -12f, -6f, 0f, 6f, 12f, 18f, 24f, 30f };
 
         _entityManager.AddComponentData(commanderEntity, new CommandComponent
         {
             FactionType = UnitType.Enemy,
-            CommandID = 0
+            CommandID = commandId,
+            CommandOrder = OrderType.Defend,
+            AdvanceOrderApplied = false
         });
 
         _entityManager.AddComponentData(commanderEntity, new CommandPerception
@@ -206,16 +216,18 @@ public class EntitySpawner : MonoBehaviour
                 if (rowY != 12f)
                 {
                     var position2D = new float2(x, rowY);
-                    var moveOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
-                OrderType.MoveDirectionalRange,
-                enemyMoveRange,
-                Direction.Down);
+                    var defendOrder = OrderFactory.CreateDefendOrder(new float3(position2D, 0f));
+
+                //    var moveOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
+                //OrderType.MoveDirectionalRange,
+                //enemyMoveRange,
+                //Direction.Down);
 
                     var formationGroupEntity = factory.SpawnUnits(
                         unitsPerFormation,
                         UnitType.Enemy,
                         Direction.Right,
-                        moveOrder,
+                        defendOrder,
                         position2D,
                         FormationType.Horde);
                     spawnedGroups.Add(formationGroupEntity);

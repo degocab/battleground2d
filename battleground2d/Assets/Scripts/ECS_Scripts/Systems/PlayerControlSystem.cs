@@ -22,10 +22,16 @@ public class PlayerControlSystem : SystemBase
 
     public Transform cameraMain;
     private Vector3 cameraVelocity = Vector3.zero;
+
+
+    private FormationPreview FormationPreview;
+
     protected override void OnStartRunning()
     {
         if (cameraMain == null)
             cameraMain = Camera.main.transform;
+
+        FormationPreview = GameObject.FindObjectOfType<FormationPreview>();
     }
 
     private EndSimulationEntityCommandBufferSystem _ecbSystem;
@@ -33,7 +39,17 @@ public class PlayerControlSystem : SystemBase
     protected override void OnCreate()
     {
         _ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        previewSlots = new NativeList<float2>(Allocator.Persistent);
+    }    
+    
+    protected override void OnDestroy()
+    {
+        previewSlots.Dispose();
     }
+
+    private Entity selectedFormation = Entity.Null;
+    private NativeList<float2> previewSlots;//= new NativeList<float2>(Allocator.Persistent);
+
     protected override void OnUpdate()
     {
         if (GetSingleton<GameStateComponent>().CurrentState != GameState.Playing)
@@ -53,28 +69,40 @@ public class PlayerControlSystem : SystemBase
         if (Input.GetKey(KeyCode.A)) moveX = -1f;
         if (Input.GetKey(KeyCode.D)) moveX = 1f;
         if (Input.GetKey(KeyCode.LeftShift)) isRunnning = true;
-
+        UpdateCameraZoom();
         // Get mouse position for aiming
         Vector3 mousePosition = Input.mousePosition;
         mousePosition.z = -Camera.main.transform.position.z;
         Vector3 worldMousePos = Camera.main.ScreenToWorldPoint(mousePosition);
         float2 worldMousePosFloat = new float2(worldMousePos.x, worldMousePos.y);
 
-        // Get commander position FIRST using .Run()
-        float2 commanderPosition = float2.zero;
-        //Entities
-        //    .WithAll<CommanderComponent>()
-        //    .ForEach((in Translation translation) =>
-        //    {
-        //        commanderPosition = translation.Value.xy;
-        //    }).Run();
+        if (overViewEnabled && Input.GetMouseButtonDown(0) && !Input.GetKey(KeyCode.Alpha5) && !Input.GetKeyUp(KeyCode.Alpha5))
+        {
+            // Pick a formation group to select based on mouse position inside the group bounds or if overlapping, the closest unit in a group to then get the unit's group
+            Entity picked = Entity.Null;
+            float closestDistanceSq = float.MaxValue;
 
-        // We need to get the commander's position first
-        //float2 commanderPosition = float2.zero;
+            Entities.WithName("PickFormation")
+                .WithAll<FormationGroupComponent>()
+                .WithAll<AllyTag, OrderData>()
+                .WithNone<CommanderComponent, Unit>()
+                .ForEach((Entity entity, in FormationGroupComponent formationGroup) =>
+                {
+                    // Check if mouse is inside the group's AABB
+                    if (formationGroup.AliveUnitCount <= 0 || !math.all(worldMousePosFloat >= formationGroup.BoundsMin) || !math.all(worldMousePosFloat <= formationGroup.BoundsMax))
+                        return;
 
-        // Calculate movement penalty based on angle between movement and aim
-        //if (foundCommander)
-
+                    // If not inside, check distance to the group's anchor position
+                    float distanceSq = math.distancesq(formationGroup.CurrentUnitAveragePosition, worldMousePosFloat);
+                    if (distanceSq < closestDistanceSq)
+                    {
+                        closestDistanceSq = distanceSq;
+                        picked = entity;
+                    }
+                }).WithoutBurst().Run();
+            selectedFormation = picked;
+        }
+            float2 commanderPosition = float2.zero;
         if (Input.GetMouseButton(0) || Input.GetMouseButton(1))
         {
 
@@ -117,22 +145,6 @@ public class PlayerControlSystem : SystemBase
             }
 
         }
-        // This job sets the desired velocity based on input or AI for commander.
-        //var inputJobHandle = 
-        //Entities
-        //    .WithName("SetCommanderVelocity")
-        //    .WithAll<PlayerInputComponent>()
-        //    .ForEach((ref MovementSpeedComponent movementSpeedComponent) =>
-        //    {
-
-
-
-        //        movementSpeedComponent.velocity = new float3(moveX, moveY, 0);
-        //        movementSpeedComponent.isRunnning = isRunnning;
-        //        movementSpeedComponent.isPlayerControlled = true;
-        //        movementSpeedComponent.aimDirection = worldMousePosFloat;
-
-        //    }).Run();
 
 
         //var ecb = _ecbSystem.CreateCommandBuffer();
@@ -153,126 +165,51 @@ public class PlayerControlSystem : SystemBase
             })
             .WithoutBurst()
             .Run();
-        // Number keys 1-9
-        for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
+        if (IsOverviewEnabled)
         {
-            var orderKey = (KeyCode)key;
-            bool preview = orderKey == KeyCode.Alpha5 && Input.GetKey(orderKey);
-            bool issue = orderKey == KeyCode.Alpha5 ? Input.GetKeyUp(orderKey) : Input.GetKeyDown(orderKey);
+            //var previewSlots = new NativeList<float2>(Allocator.TempJob);
 
-            //if (Input.GetKeyDown((KeyCode)key))
-            if (preview || issue)
+
+            // Number keys 1-9
+            bool issue = false;
+            for (int key = (int)KeyCode.Alpha1; key <= (int)KeyCode.Alpha9; key++)
             {
-                int orderType = key - (int)KeyCode.Alpha1;
-                var newOrder = CreateOrderFromKey(orderType, commanderTranslation.Value, GetMouseWorldPosition());
-                // DEBUG UI
-                lastOrderText = $"Order: {newOrder.CurrentOrder.ToString()}";
-                lastOrderTime = (float)Time.ElapsedTime;
-                // Use a local variable to capture the command for the job
-                var orderCopy = newOrder;
+                var orderKey = (KeyCode)key;
+                bool preview = orderKey == KeyCode.Alpha5 && Input.GetKey(orderKey);
+                issue = orderKey == KeyCode.Alpha5 ? Input.GetKeyUp(orderKey) : Input.GetKeyDown(orderKey);
 
-
-                //get average group center
-                float2 groupCenter = float2.zero;
-                int groupCount = 0;
-                Entities
-                     .WithName("UpdateGroupCenter")
-                     .WithAll<FormationGroupComponent>()
-                     .WithAll<AllyTag>()
-                     .WithAll<OrderData>()
-                     .WithNone<CommanderComponent, Unit>()
-                     .ForEach((Entity entity, int entityInQueryIndex,
-                     in FormationGroupComponent formationGroup) =>
-                     {
-                         groupCenter += formationGroup.CurrentUnitAveragePosition;
-                         groupCount++;
-                     }).WithoutBurst().Run();
-                if (groupCount > 0)
+                //if (Input.GetKeyDown((KeyCode)key))
+                if (preview || issue)
                 {
-                    groupCenter /= groupCount; 
+                    //if(selectedFormation != Entity.Null)
+                    Preview(worldMousePosFloat, commanderTranslation, key, preview, issue, previewSlots);
+                    break;
                 }
-                //privew destinations lookup for formation groups
-                var previewDestinations = new NativeHashMap<Entity, float2>(
-    math.max(1, groupCount), Allocator.Temp);
-
-
-                //update groups
-                Entities
-                     .WithName("UpdateOrdersForGroups")
-                     .WithAll<FormationGroupComponent>()
-                     .WithAll<AllyTag>()
-                     .WithNone<CommanderComponent, Unit>()
-                     .ForEach((Entity entity, int entityInQueryIndex,
-                     ref FormationGroupComponent formationGroup, ref OrderData order) =>
-                     {
-
-                         // Then update command data
-                         var plannedOrder = orderCopy;
-
-                         if (plannedOrder.CurrentOrder == OrderType.MoveTo)
-                         {
-                             float2 offset = formationGroup.CurrentUnitAveragePosition - groupCenter;
-                             plannedOrder.TargetPosition = orderCopy.TargetPosition + offset;
-
-                             if (preview)
-                                 previewDestinations.TryAdd(entity, plannedOrder.TargetPosition);
-                         }
-
-                         if (issue)
-                             order = plannedOrder;
-
-                     }).WithoutBurst().Run();
-
-
-                if (preview)
-                {
-                    var groups = GetComponentDataFromEntity<FormationGroupComponent>(true);
-                    Entities.WithName("DrawMovePreviewSlots")
-                        .WithAll<Unit>()
-                        .WithNone<DeadTagComponent, CommanderComponent>()
-                        .WithReadOnly(groups)
-                        .WithReadOnly(previewDestinations)
-                        .ForEach((in FormationComponent unitFormation) => 
-                        {
-                            if (!unitFormation.FormationGroupEntity.HasValue)
-                                return;
-
-                            Entity groupEntity = unitFormation.FormationGroupEntity.Value;
-
-                            if(!previewDestinations.TryGetValue(groupEntity, out float2 destination) || !groups.HasComponent(groupEntity))
-                                return;
-
-                            var group = groups[groupEntity];
-                            if (group.UnitsPerRow <= 0 || group.AliveUnitCount <= 0)
-                                return;
-
-                            int rowCount = (group.AliveUnitCount + group.UnitsPerRow - 1) / group.UnitsPerRow;
-
-                            float2 slot = FormationManagerSystem.CalculatePhalanxPosition(
-    unitFormation.SlotIndex,
-    group.UnitsPerRow,
-    group.UnitSpacing,
-    destination,
-    rowCount);
-
-                            DrawSlotCircle(slot);
-
-
-                        }).WithoutBurst().Run();
-                }
-                previewDestinations.Dispose();
-                break; // Important: Only process one key per frame
             }
+            if (selectedFormation != Entity.Null && !Input.GetKey(KeyCode.Alpha5))
+            {
+                ShowSelected(worldMousePosFloat, commanderTranslation, 0, true, false, previewSlots);
+            }
+
+            if (issue && FormationPreview != null)
+                FormationPreview.Hide();
         }
+        else
+        {
+            selectedFormation = Entity.Null;
+            FormationPreview?.Hide();
+            previewSlots.Clear();
+        }
+
         //this.Dependency.Complete();
         float deltaTime = Time.DeltaTime;
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
-        bool isAttacking = Input.GetMouseButtonDown(0);
+        bool isAttacking = Input.GetMouseButtonDown(0) && !overViewEnabled;
         bool isDefending = Input.GetMouseButton(1);
         //Debug.Log($"Is Defending: {isDefending}");
 
 
-        UpdateCameraZoom();
+        //UpdateCameraZoom();
         float currentTime = (float)Time.ElapsedTime;
 
         Dependency.Complete();
@@ -385,6 +322,185 @@ public class PlayerControlSystem : SystemBase
         // Add the command buffer system
         _ecbSystem.AddJobHandleForProducer(Dependency);
     }
+
+    private void Preview(float2 worldMousePosFloat, Translation commanderTranslation, int key, bool preview, bool issue, NativeList<float2> previewSlots)
+    {
+        previewSlots.Clear();
+        int orderType = key - (int)KeyCode.Alpha1;
+        var newOrder = CreateOrderFromKey(orderType, commanderTranslation.Value, worldMousePosFloat);// GetMouseWorldPosition());
+                                                                                                     // DEBUG UI
+        lastOrderText = $"Order: {newOrder.CurrentOrder.ToString()}";
+        lastOrderTime = (float)Time.ElapsedTime;
+        // Use a local variable to capture the command for the job
+        var orderCopy = newOrder;
+
+
+        //get average group center
+        float2 groupCenter = float2.zero;
+        int groupCount = 0;
+        Entities
+             .WithName("UpdateGroupCenter")
+             .WithAll<FormationGroupComponent>()
+             .WithAll<AllyTag>()
+             .WithAll<OrderData>()
+             .WithNone<CommanderComponent, Unit>()
+             .ForEach((Entity entity, int entityInQueryIndex,
+             in FormationGroupComponent formationGroup) =>
+             {
+                 if (orderCopy.CurrentOrder == OrderType.MoveTo && entity != selectedFormation)
+                     return;
+
+                 groupCenter += formationGroup.CurrentUnitAveragePosition;
+                 groupCount++;
+             }).WithoutBurst().Run();
+        if (groupCount > 0)
+        {
+            groupCenter /= groupCount;
+        }
+        //privew destinations lookup for formation groups
+        var previewDestinations = new NativeHashMap<Entity, float2>(
+math.max(1, groupCount), Allocator.Temp);
+
+
+        //update groups
+        Entities
+             .WithName("UpdateOrdersForGroups")
+             .WithAll<FormationGroupComponent>()
+             .WithAll<AllyTag>()
+             .WithNone<CommanderComponent, Unit>()
+             .ForEach((Entity entity, int entityInQueryIndex,
+             ref FormationGroupComponent formationGroup, ref OrderData order) =>
+             {
+                 if (orderCopy.CurrentOrder == OrderType.MoveTo && entity != selectedFormation)
+                     return;
+                 // Then update command data
+                 var plannedOrder = orderCopy;
+
+                 if (plannedOrder.CurrentOrder == OrderType.MoveTo)
+                 {
+                     float2 offset = formationGroup.CurrentUnitAveragePosition - groupCenter;
+                     plannedOrder.TargetPosition = orderCopy.TargetPosition + offset;
+
+                     if (preview)
+                         previewDestinations.TryAdd(entity, plannedOrder.TargetPosition);
+                 }
+
+                 if (issue)
+                     order = plannedOrder;
+
+             }).WithoutBurst().Run();
+
+
+        if (preview && FormationPreview != null)
+        {
+            //var previewSlots = new NativeList<float2>(Allocator.TempJob);
+            var groups = GetComponentDataFromEntity<FormationGroupComponent>(true);
+            Entities.WithName("DrawMovePreviewSlots")
+                .WithAll<Unit>()
+                .WithNone<DeadTagComponent, CommanderComponent>()
+                .WithReadOnly(groups)
+                .WithReadOnly(previewDestinations)
+                .ForEach((in FormationComponent unitFormation) =>
+                {
+                    if (!unitFormation.FormationGroupEntity.HasValue)
+                        return;
+
+                    Entity groupEntity = unitFormation.FormationGroupEntity.Value;
+
+                    if (!previewDestinations.TryGetValue(groupEntity, out float2 destination) || !groups.HasComponent(groupEntity))
+                        return;
+
+                    var group = groups[groupEntity];
+                    if (group.UnitsPerRow <= 0 || group.AliveUnitCount <= 0)
+                        return;
+
+                    int rowCount = (group.AliveUnitCount + group.UnitsPerRow - 1) / group.UnitsPerRow;
+
+                    float2 slot = FormationManagerSystem.CalculatePhalanxPosition(
+unitFormation.SlotIndex,
+group.UnitsPerRow,
+group.UnitSpacing,
+destination,
+rowCount);
+
+                    //DrawSlotCircle(slot);
+                    //FormationPreview.ShowSlots(slot);
+                    if (!previewSlots.IsCreated)
+                    {
+                        previewSlots = new NativeList<float2>();
+                    }
+                    previewSlots.Add(slot);
+
+
+                }).WithoutBurst().Run();
+            FormationPreview.ShowSlots(previewSlots.AsArray());
+            //previewSlots.Dispose();
+        }
+
+        //if (issue && FormationPreview != null)
+        //    FormationPreview.Hide();
+
+        previewDestinations.Dispose();
+        return; // Important: Only process one key per frame
+    }    
+    
+    private void ShowSelected(float2 worldMousePosFloat, Translation commanderTranslation, int key, bool preview, bool issue, NativeList<float2> previewSlots)
+    {
+        previewSlots.Clear();
+        //privew destinations lookup for formation groups
+        var previewDestinations = new NativeHashMap<Entity, float2>(
+math.max(1, 90), Allocator.Temp);
+
+
+
+        if (FormationPreview != null)
+        {
+            var groups = GetComponentDataFromEntity<FormationGroupComponent>(true);
+            Entities.WithName("DrawSelectedSlots")
+                .WithAll<Unit>()
+                .WithNone<DeadTagComponent, CommanderComponent>()
+                .WithReadOnly(groups)
+                .WithReadOnly(previewDestinations)
+                .ForEach((in FormationComponent unitFormation, in Translation translation) =>
+                {
+                    if (!unitFormation.FormationGroupEntity.HasValue)
+                        return;
+
+                    Entity groupEntity = unitFormation.FormationGroupEntity.Value;
+
+                    if (!groups.HasComponent(groupEntity))
+                        return;
+
+                    var group = groups[groupEntity];
+                    if (groupEntity != selectedFormation) return;
+                    if (group.UnitsPerRow <= 0 || group.AliveUnitCount <= 0)
+                        return;
+
+                    //DrawSlotCircle(slot);
+                    //FormationPreview.ShowSlots(slot);
+                    if (!previewSlots.IsCreated)
+                    {
+                        previewSlots = new NativeList<float2>();
+                    }
+                    float2 position = translation.Value.xy;
+                    position.y -= 0.4f;
+                    previewSlots.Add(position);
+                    previewSlots.Add(position);
+
+
+                }).WithoutBurst().Run();
+            FormationPreview.ShowSlots(previewSlots.AsArray());
+            //previewSlots.Dispose();
+        }
+
+        if (issue && FormationPreview != null)
+            FormationPreview.Hide();
+        //FormationPreview.ShowSlots(previewSlots.AsArray());
+        previewDestinations.Dispose();
+        return; // Important: Only process one key per frame
+    }
+
+
 
     private void DrawSlotCircle(float2 slot)
     {
@@ -586,7 +702,7 @@ public class PlayerControlSystem : SystemBase
         attackComponent.AttackRateRemaining = attackComponent.AttackRate;
         combatState.CurrentState = CombatState.State.Attacking;
         //attackComponent.isAttacking = true;
-        animationComponent.finishAnimation = true;
+        //animationComponent.finishAnimation = true;
         //animationComponent.AnimationType = EntitySpawner.AnimationType.Attack;
 
         //Debug.Log("Player attacked!");

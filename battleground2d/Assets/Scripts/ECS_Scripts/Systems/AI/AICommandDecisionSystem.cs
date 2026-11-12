@@ -61,6 +61,33 @@ public partial class AICommandDecisionSystem : SystemBase
                 in DynamicBuffer<CommandKnownFormation> knownFormations) =>
             {
 
+
+                //Get AI Commander decisions to apply before anything
+                if (command.CommandOrder == OrderType.Defend)//TODO: remove, only for testing
+                    return;
+
+                if (command.CommandOrder == OrderType.MoveDirectionalRange && !command.AdvanceOrderApplied)
+                {
+                    var advanceOrder = OrderFactory.CreateMoveDirectionalRangeOrder(
+                        OrderType.MoveDirectionalRange,
+                        50f,
+                        EntitySpawner.Direction.Down);
+
+                    for (int i = 0; i < ownedFormations.Length; i++)
+                    {
+                        Entity formation = ownedFormations[i].Value;
+
+                        if (formationOrders.HasComponent(formation))
+                        {
+                            formationOrders[formation] = advanceOrder;
+                            Debug.Log($"Command {command.CommandID}: {formation} -> {advanceOrder.CurrentOrder}");
+                        }
+                    }
+
+                    command.AdvanceOrderApplied = true;
+                    return;
+                }
+
                 for (int i = decisions.Length - 1; i >= 0; i--)
                 {
                     AICommandDecisionState decisionState = decisions[i];
@@ -106,7 +133,7 @@ public partial class AICommandDecisionSystem : SystemBase
                     if (OwnsFormation(formationEntity, ownedFormations) && formationGroups.HasComponent(formationEntity))
                     {
                         var group = formationGroups[formationEntity];
-                        //shuld a formatoin hold its formation shape
+                        //should a formation hold its formation shape
                         bool shouldHold = ShouldHoldFormation(knownFormation);
 
                         if (group.HoldFormation != shouldHold)
@@ -962,4 +989,116 @@ public struct AICommandDecisionState : IBufferElementData
     public AICommandDecision ActiveDecision;
 
     public double DecisionTimeOut;
+}
+
+
+
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(AICommandDecisionSystem))]
+public partial class AIArmyCommanderSystem : SystemBase
+{
+    //testing timer
+    private double lastCommandTime = 0f;
+
+    bool leftCommandInitDecision = false;
+    bool rightCommandInitDecision = false;
+
+    private const double ArmyEvaluationInterval = 1.0;
+    private double nextArmyEvaluationTime;
+    private double rightAdvanceAt = double.PositiveInfinity;
+    // Run the scripted Left / Right sequence here.
+    protected override void OnUpdate()
+    {
+
+        //_entityManager.AddBuffer<OwnedFormationGroup>(commanderEntity);
+        //AddCommandAwarenessComponents(commanderEntity);
+
+        //increment last command time by delta time
+        lastCommandTime += Time.DeltaTime;
+        double now = Time.ElapsedTime;
+
+        if (now < nextArmyEvaluationTime)
+            return;
+
+        nextArmyEvaluationTime = now + ArmyEvaluationInterval;
+
+        ComponentDataFromEntity<FormationGroupComponent> formationGroups =
+GetComponentDataFromEntity<FormationGroupComponent>(true);
+
+        //get commands (left and right by id) in entities.foreach and decide what to do based on time for first test
+        bool leftIsEngaged = false;
+        Entities
+            .WithName("AIArmyCommanderSystem")
+            .WithAll<CommandComponent>()
+            .WithNone<PlayerInputComponent>()
+            .WithReadOnly(formationGroups)
+            .ForEach((ref CommandComponent commandComponent, in DynamicBuffer<OwnedFormationGroup> ownedFormationGroups) =>
+        {
+            bool isLeftCommand = false;
+            //if id = 0 then left else 1 is right
+            if (commandComponent.CommandID == 0)
+                isLeftCommand = true;
+            else { isLeftCommand = false; }
+
+            //left command marches after 5 seconds
+            if (isLeftCommand)
+            {
+                //after 5 seconds
+                if (lastCommandTime > 5f && !leftCommandInitDecision)
+                {
+                    commandComponent.CommandOrder = OrderType.MoveDirectionalRange;
+                    leftCommandInitDecision = true;
+                }
+                Debug.Log($"ownedFormationGroups.Length: {ownedFormationGroups.Length}");
+
+                for (int i = 0; i < ownedFormationGroups.Length; i++)
+                {
+                    var group = ownedFormationGroups[i];
+                    Debug.Log($"{group.Value}");
+
+                    if (group.Value != Entity.Null && formationGroups.HasComponent(group.Value))
+                    {
+                        var formationGroup = formationGroups[group.Value];
+                        Debug.Log($"FormationStatus: {formationGroup.FormationGroupStatus.ToString()}");
+                        if (formationGroup.FormationGroupStatus == FormationStatusEnum.Engaged)
+                        {
+                            leftIsEngaged = true;
+                            if (double.IsPositiveInfinity(rightAdvanceAt))
+                                rightAdvanceAt = now + 2.0;
+                            Debug.Log("Left is engaged!");
+                            break;
+                        }
+                    }
+                }
+
+            }
+            else //right command
+            {
+                //check for engaged formations
+                //right command marches after first command engages
+                Debug.Log("Right command");
+                if (!rightCommandInitDecision)
+                {
+                    Debug.Log("Right command no decision yet");
+
+                    //if (lastCommandTime > 10f)
+                    //{
+                    //    commandComponent.CommandOrder = OrderType.MoveDirectionalRange;
+                    //    rightCommandInitDecision = true;
+                    //}
+                    if (leftIsEngaged)
+                    {
+                        Debug.Log("Left is engaged, right moves");
+
+                        commandComponent.CommandOrder = OrderType.MoveDirectionalRange;
+                        rightCommandInitDecision = true;
+                    }
+
+                }
+            }
+
+
+
+        }).WithoutBurst().Run();
+    }
 }

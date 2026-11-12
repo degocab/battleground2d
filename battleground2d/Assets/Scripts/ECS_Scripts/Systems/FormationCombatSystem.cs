@@ -420,7 +420,7 @@ public partial class FormationCombatSystem : SystemBase
                 do
                 {
                     if (currentEntity == data.Entity) continue;
-                    //if (formationGroup.UnitType == data.UnitType) continue;
+                    if (formationGroup.UnitType == data.UnitType) continue;
 
                     float distanceSq = math.distancesq(unitPosition, data.Position);
                     if (distanceSq >= closestDistanceSq) continue;
